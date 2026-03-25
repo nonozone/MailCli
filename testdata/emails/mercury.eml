@@ -1,0 +1,34 @@
+From: Mercury <the-messenger@mercury.com>
+To: nono@example.com
+Subject: =?UTF-8?Q?=F0=9F=93=8A_Real-time_financial_clarity,_built_right_in?=
+Message-ID: <mercury-123@example.com>
+Date: Wed, 26 Mar 2026 09:00:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="boundary-mercury"
+List-Unsubscribe: <https://email.mercury.com/unsubscribe/token123>
+
+--boundary-mercury
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Mercury Insights is now live in your dashboard.
+View online: https://app.mercury.com/insights
+
+--boundary-mercury
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <head>
+    <style>.hidden { display:none; }</style>
+    <script>console.log("noise")</script>
+  </head>
+  <body>
+    <h2>=F0=9F=93=8A Real-time financial clarity, built right in</h2>
+    <p>Mercury Insights is now live in your dashboard.</p>
+    <p><a href=3D"https://app.mercury.com/insights">Open Mercury Insights</a></p>
+    <p><a href=3D"https://email.mercury.com/unsubscribe/token123">Unsubscribe</a></p>
+  </body>
+</html>
+
+--boundary-mercury--

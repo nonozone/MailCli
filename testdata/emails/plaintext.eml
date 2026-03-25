@@ -1,0 +1,10 @@
+From: Example Sender <sender@example.com>
+To: nono@example.com
+Subject: Plaintext message
+Message-ID: <plain-123@example.com>
+Date: Wed, 26 Mar 2026 11:00:00 +0800
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Hello from plaintext email.
+This is a simple body for parser smoke tests.

@@ -1,0 +1,22 @@
+From: Mail Delivery Subsystem <mailer-daemon@googlemail.com>
+To: nono@example.com
+Subject: Delivery Status Notification (Failure)
+Message-ID: <bounce-123@example.com>
+Date: Wed, 26 Mar 2026 10:00:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="boundary-bounce"
+Auto-Submitted: auto-replied
+
+--boundary-bounce
+Content-Type: text/plain; charset=UTF-8
+
+邮件未送达。
+
+Remote server returned:
+535 Invalid login: 535 Authentication credentials invalid
+
+Failed recipient: hi@nono.im
+Original-Message-ID: <orig-123@example.com>
+Original-Subject: ohrelay smtp 第一次
+
+--boundary-bounce--

@@ -1,0 +1,35 @@
+{
+  "id": "<mercury-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Mercury",
+      "address": "the-messenger@mercury.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "📊 Real-time financial clarity, built right in",
+    "date": "2026-03-26T01:00:00Z",
+    "message_id": "<mercury-123@example.com>",
+    "list_unsubscribe": [
+      "https://email.mercury.com/unsubscribe/token123"
+    ]
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## 📊 Real-time financial clarity, built right in\n\nMercury Insights is now live in your dashboard.\n\n[Open Mercury Insights](https://app.mercury.com/insights)\n\n[Unsubscribe](https://email.mercury.com/unsubscribe/token123)",
+    "snippet": "## 📊 Real-time financial clarity, built right in Mercury Insights is now live in your dashboard. [Open Mercury Insights](https://app.mercury.com/insights) [Unsu..."
+  },
+  "actions": [
+    {
+      "type": "unsubscribe",
+      "label": "Unsubscribe",
+      "url": "https://email.mercury.com/unsubscribe/token123"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 20
+  }
+}
