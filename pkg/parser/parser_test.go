@@ -22,7 +22,21 @@ func TestStandardMessageShape(t *testing.T) {
 }
 
 func TestParseMercuryEmail(t *testing.T) {
-	raw, err := os.ReadFile("../../testdata/emails/mercury.eml")
+	assertFixtureMatchesGolden(t, "../../testdata/emails/mercury.eml", "../../testdata/golden/mercury.json")
+}
+
+func TestParseBounceEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/bounce.eml", "../../testdata/golden/bounce.json")
+}
+
+func TestParsePlaintextEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/plaintext.eml", "../../testdata/golden/plaintext.json")
+}
+
+func assertFixtureMatchesGolden(t *testing.T, fixturePath, goldenPath string) {
+	t.Helper()
+
+	raw, err := os.ReadFile(fixturePath)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -32,7 +46,7 @@ func TestParseMercuryEmail(t *testing.T) {
 		t.Fatalf("parse failed: %v", err)
 	}
 
-	want, err := os.ReadFile("../../testdata/golden/mercury.json")
+	want, err := os.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatal(err)
 	}

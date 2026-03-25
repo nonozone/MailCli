@@ -1,1 +1,25 @@
-{}
+{
+  "id": "<plain-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Example Sender",
+      "address": "sender@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Plaintext message",
+    "date": "2026-03-26T03:00:00Z",
+    "message_id": "<plain-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "Hello from plaintext email.\nThis is a simple body for parser smoke tests.",
+    "snippet": "Hello from plaintext email. This is a simple body for parser smoke tests."
+  },
+  "token_usage": {
+    "estimated_input_tokens": 13
+  }
+}

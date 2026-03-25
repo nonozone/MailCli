@@ -1,1 +1,38 @@
-{}
+{
+  "id": "<bounce-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Mail Delivery Subsystem",
+      "address": "mailer-daemon@googlemail.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Delivery Status Notification (Failure)",
+    "date": "2026-03-26T02:00:00Z",
+    "message_id": "<bounce-123@example.com>",
+    "is_auto_submitted": true
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "邮件未送达。\n\nRemote server returned:\n535 Invalid login: 535 Authentication credentials invalid\n\nFailed recipient: hi@nono.im\nOriginal-Message-ID: <orig-123@example.com>\nOriginal-Subject: ohrelay smtp 第一次",
+    "snippet": "邮件未送达。 Remote server returned: 535 Invalid login: 535 Authentication credentials invalid Failed recipient: hi@nono.im Original-Message-ID: <orig-123@example.com...",
+    "category": "system_error"
+  },
+  "error_context": {
+    "failed_recipient": "hi@nono.im",
+    "status_code": "535",
+    "diagnostic_code": "535 Invalid login: 535 Authentication credentials invalid",
+    "original_message_id": "<orig-123@example.com>",
+    "original_subject": "ohrelay smtp 第一次"
+  },
+  "labels": [
+    "bounce",
+    "error"
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 20
+  }
+}
