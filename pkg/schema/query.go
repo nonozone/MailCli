@@ -1,7 +1,9 @@
 package schema
 
 type SearchQuery struct {
-	Query string `json:"query,omitempty" yaml:"query,omitempty"`
+	Query   string `json:"query,omitempty" yaml:"query,omitempty"`
+	Mailbox string `json:"mailbox,omitempty" yaml:"mailbox,omitempty"`
+	Limit   int    `json:"limit,omitempty" yaml:"limit,omitempty"`
 }
 
 type MessageMetaSummary struct {

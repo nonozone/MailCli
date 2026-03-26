@@ -24,6 +24,26 @@ MailCLI is an independent, open-source toolkit that turns raw email into AI-cons
 - Golden tests based on representative Mercury, bounce, and plaintext samples validate parser behavior before publishing.
 - The CLI stays minimal: parse command plus future hooks for output formatting and account context.
 
+## Current Commands
+
+- `mailcli parse --format json|yaml|table <file|->`
+- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>]`
+
+## Minimal Config Example
+
+```yaml
+current_account: work
+accounts:
+  - name: work
+    driver: imap
+    host: imap.example.com
+    port: 993
+    username: you@example.com
+    password: app-password-or-token
+    tls: true
+    mailbox: INBOX
+```
+
 ## Architecture
 
 - `Cmd` layer manages Cobra commands, stdin/file handling, and formatter wiring.

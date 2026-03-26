@@ -12,6 +12,7 @@ func NewRootCmd() *cobra.Command {
 	}
 
 	cmd.AddCommand(newParseCmd())
+	cmd.AddCommand(newListCmd())
 
 	return cmd
 }
