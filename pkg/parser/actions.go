@@ -138,6 +138,10 @@ func classifyAction(label, href string) string {
 	switch {
 	case strings.Contains(lowerLabel, "unsubscribe") || strings.Contains(lowerHref, "unsubscribe"):
 		return "unsubscribe"
+	case looksLikeDownloadAttachment(lowerLabel, lowerHref):
+		return "download_attachment"
+	case looksLikeViewAttachment(lowerLabel, lowerHref):
+		return "view_attachment"
 	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser") || strings.Contains(lowerLabel, "read in browser") || strings.Contains(lowerHref, "view-online"):
 		return "view_online"
 	case strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email"):
@@ -157,6 +161,10 @@ func actionLabel(actionType, label string) string {
 	switch actionType {
 	case "unsubscribe":
 		return "Unsubscribe"
+	case "download_attachment":
+		return "Download attachment"
+	case "view_attachment":
+		return "View attachment"
 	case "view_online":
 		return "View online"
 	case "confirm_subscription":
@@ -212,6 +220,30 @@ func looksLikeRedirectWrapper(parsed *url.URL) bool {
 		if strings.Contains(combined, token) {
 			return true
 		}
+	}
+
+	return false
+}
+
+func looksLikeDownloadAttachment(label, href string) bool {
+	if strings.Contains(label, "download attachment") || strings.Contains(label, "download file") || strings.Contains(label, "download invoice") {
+		return true
+	}
+
+	if strings.Contains(href, "/download/") && strings.Contains(href, "attachment") {
+		return true
+	}
+
+	return strings.Contains(href, "download=1") && strings.Contains(href, "attachment")
+}
+
+func looksLikeViewAttachment(label, href string) bool {
+	if strings.Contains(label, "view attachment") || strings.Contains(label, "open attachment") {
+		return true
+	}
+
+	if strings.Contains(href, "attachment") && !strings.Contains(href, "/download/") && !strings.Contains(href, "download=1") {
+		return true
 	}
 
 	return false

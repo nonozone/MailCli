@@ -60,6 +60,12 @@ flowchart LR
 5. `MailCLI` 把它解析为 `StandardMessage`
 6. agent 基于结构化结果进行推理
 
+这个阶段常见的 agent 可用字段包括：
+
+- 干净的 Markdown 正文
+- 归一化后的 header 与线程元数据
+- 已提取的动作，例如 `unsubscribe`、`view_online`、`confirm_subscription`、`report_abuse`、`view_attachment`、`download_attachment`
+
 ### 示例
 
 ```bash

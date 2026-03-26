@@ -25,7 +25,7 @@ MailCLI exists to make email as easy for agents to consume and produce as a JSON
 - **Protocol/content separation**
   Drivers handle transport, parsers handle content, composers handle outbound MIME.
 - **Action extraction**
-  Extract unsubscribe links, bounce/error context, and thread-related metadata.
+  Extract unsubscribe links, attachment entry points, bounce/error context, and thread-related metadata.
 - **Developer-friendly CLI**
   Support `json`, `yaml`, and `table` output formats, stdin pipelines, and scriptable commands.
 - **Bidirectional workflow**

@@ -433,6 +433,56 @@ func TestExtractActionsClassifiesConfirmSubscriptionFromHrefPattern(t *testing.T
 	}
 }
 
+func TestExtractActionsClassifiesViewAttachmentLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/messages/123/attachment/456">View attachment</a>`)
+	action := findAction(actions, "view_attachment")
+	if action == nil {
+		t.Fatalf("expected view_attachment action, got %+v", actions)
+	}
+	if action.URL != "https://example.com/messages/123/attachment/456" {
+		t.Fatalf("expected view_attachment url, got %q", action.URL)
+	}
+	if action.Label != "View attachment" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesDownloadAttachmentLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/download/attachment/456">Download file</a>`)
+	action := findAction(actions, "download_attachment")
+	if action == nil {
+		t.Fatalf("expected download_attachment action, got %+v", actions)
+	}
+	if action.URL != "https://example.com/download/attachment/456" {
+		t.Fatalf("expected download_attachment url, got %q", action.URL)
+	}
+	if action.Label != "Download file" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDeduplicatesAttachmentActions(t *testing.T) {
+	html := `<a href="https://example.com/messages/123/attachment/456">View attachment</a><a href="https://example.com/messages/123/attachment/456">View attachment</a><a href="https://example.com/download/attachment/456">Download attachment</a><a href="https://example.com/download/attachment/456">Download attachment</a>`
+	actions := extractActions(schema.MessageMeta{}, html)
+
+	viewCount := 0
+	downloadCount := 0
+	for _, action := range actions {
+		switch action.Type {
+		case "view_attachment":
+			viewCount++
+		case "download_attachment":
+			downloadCount++
+		}
+	}
+	if viewCount != 1 {
+		t.Fatalf("expected one deduplicated view_attachment action, got %d", viewCount)
+	}
+	if downloadCount != 1 {
+		t.Fatalf("expected one deduplicated download_attachment action, got %d", downloadCount)
+	}
+}
+
 func TestParseExtractsReportAbuseActionFromHeaders(t *testing.T) {
 	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Abuse header\r\nMessage-ID: <abuse-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nX-Report-Abuse-To: abuse@example.com\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nHello")
 
