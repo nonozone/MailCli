@@ -97,6 +97,16 @@
 }
 ```
 
+当前稳定错误码：
+
+- `auth_failed`
+- `account_not_found`
+- `account_not_selected`
+- `message_not_found`
+- `transport_not_configured`
+- `invalid_draft`
+- `transport_failed`
+
 ## 编译器职责
 
 `mailcli` 应负责把 `DraftMessage` 和 `ReplyDraft` 编译成真实邮件，并自动处理：
@@ -130,3 +140,5 @@ cat reply.json | mailcli reply -
 `mailcli send` 已经接通，在有账户配置时可以把 MIME 交给 driver。
 
 `mailcli reply` 也已经接通，在有账户配置时可以把 MIME 交给 driver。
+
+对于非 dry-run 的发送命令，MailCLI 现在会在成功和业务失败时都返回 `SendResult` JSON，agent 可以直接根据 `error.code` 分支，而不必解析原始 stderr 文本。

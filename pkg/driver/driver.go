@@ -2,8 +2,15 @@ package driver
 
 import (
 	"context"
+	"errors"
 
 	"github.com/yourname/mailcli/pkg/schema"
+)
+
+var (
+	ErrMessageNotFound        = errors.New("message not found")
+	ErrTransportNotConfigured = errors.New("transport not configured")
+	ErrDriverConfigInvalid    = errors.New("driver config invalid")
 )
 
 type Driver interface {

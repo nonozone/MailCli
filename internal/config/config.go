@@ -1,11 +1,17 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 
 	"gopkg.in/yaml.v3"
+)
+
+var (
+	ErrNoAccountSelected = errors.New("no account selected")
+	ErrAccountNotFound   = errors.New("account not found")
 )
 
 type Config struct {
@@ -14,19 +20,19 @@ type Config struct {
 }
 
 type AccountConfig struct {
-	Name     string `yaml:"name"`
-	Driver   string `yaml:"driver"`
-	Host     string `yaml:"host,omitempty"`
-	Port     int    `yaml:"port,omitempty"`
-	Username string `yaml:"username,omitempty"`
-	Password string `yaml:"password,omitempty"`
-	TLS      bool   `yaml:"tls,omitempty"`
-	Mailbox  string `yaml:"mailbox,omitempty"`
-	SMTPHost string `yaml:"smtp_host,omitempty"`
-	SMTPPort int    `yaml:"smtp_port,omitempty"`
+	Name         string `yaml:"name"`
+	Driver       string `yaml:"driver"`
+	Host         string `yaml:"host,omitempty"`
+	Port         int    `yaml:"port,omitempty"`
+	Username     string `yaml:"username,omitempty"`
+	Password     string `yaml:"password,omitempty"`
+	TLS          bool   `yaml:"tls,omitempty"`
+	Mailbox      string `yaml:"mailbox,omitempty"`
+	SMTPHost     string `yaml:"smtp_host,omitempty"`
+	SMTPPort     int    `yaml:"smtp_port,omitempty"`
 	SMTPUsername string `yaml:"smtp_username,omitempty"`
 	SMTPPassword string `yaml:"smtp_password,omitempty"`
-	SMTPTLS bool   `yaml:"smtp_tls,omitempty"`
+	SMTPTLS      bool   `yaml:"smtp_tls,omitempty"`
 }
 
 func DefaultPath() string {
@@ -70,8 +76,8 @@ func (c Config) ResolveAccount(name string) (AccountConfig, error) {
 	}
 
 	if target == "" {
-		return AccountConfig{}, fmt.Errorf("no account selected")
+		return AccountConfig{}, ErrNoAccountSelected
 	}
 
-	return AccountConfig{}, fmt.Errorf("account not found: %s", target)
+	return AccountConfig{}, fmt.Errorf("%w: %s", ErrAccountNotFound, target)
 }

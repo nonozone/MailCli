@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -12,6 +13,12 @@ import (
 	"github.com/yourname/mailcli/pkg/parser"
 	"github.com/yourname/mailcli/pkg/schema"
 )
+
+var errSendFailure = errors.New("outbound command failed")
+
+func ErrSendFailureForExit() error {
+	return errSendFailure
+}
 
 func newSendCmd() *cobra.Command {
 	var (
@@ -25,19 +32,32 @@ func newSendCmd() *cobra.Command {
 		Short: "Send a draft message or print its MIME in dry-run mode",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			accountName := account
+			providerName := ""
+
 			raw, err := readInput(cmd, args[0])
 			if err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			var draft schema.DraftMessage
 			if err := json.Unmarshal(raw, &draft); err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
+			accountName = firstNonEmpty(accountName, draft.Account)
 
 			mime, err := composer.ComposeDraft(draft)
 			if err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			if dryRun {
@@ -47,22 +67,24 @@ func newSendCmd() *cobra.Command {
 
 			selectedAccount, err := resolveSelectedAccount(configPath, account, draft.Account)
 			if err != nil {
-				return err
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
+			accountName = selectedAccount.Name
+			providerName = selectedAccount.Driver
 
 			drv, err := driverFactoryFunc(selectedAccount)
 			if err != nil {
-				return err
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			if err := drv.SendRaw(cmd.Context(), mime); err != nil {
-				return err
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			result := schema.SendResult{
 				OK:       true,
-				Provider: selectedAccount.Driver,
-				Account:  selectedAccount.Name,
+				Provider: providerName,
+				Account:  accountName,
 			}
 			return writeJSON(cmd.OutOrStdout(), &result)
 		},
@@ -86,15 +108,25 @@ func newReplyCmd() *cobra.Command {
 		Short: "Compile a reply draft into MIME or print it in dry-run mode",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			accountName := account
+			providerName := ""
+
 			raw, err := readInput(cmd, args[0])
 			if err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			var draft schema.ReplyDraft
 			if err := json.Unmarshal(raw, &draft); err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
+			accountName = firstNonEmpty(accountName, draft.Account)
 
 			var (
 				selectedAccount config.AccountConfig
@@ -103,22 +135,30 @@ func newReplyCmd() *cobra.Command {
 			if strings.TrimSpace(draft.ReplyToID) != "" || !dryRun {
 				selectedAccount, err = resolveSelectedAccount(configPath, account, draft.Account)
 				if err != nil {
-					return err
+					return writeSendFailure(cmd, providerName, accountName, err)
 				}
+				accountName = selectedAccount.Name
+				providerName = selectedAccount.Driver
 
 				drv, err = driverFactoryFunc(selectedAccount)
 				if err != nil {
-					return err
+					return writeSendFailure(cmd, providerName, accountName, err)
 				}
 			}
 
 			if err := enrichReplyDraft(cmd.Context(), drv, &draft); err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			mime, err := composer.ComposeReply(draft)
 			if err != nil {
-				return err
+				if dryRun {
+					return err
+				}
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			if dryRun {
@@ -127,13 +167,13 @@ func newReplyCmd() *cobra.Command {
 			}
 
 			if err := drv.SendRaw(cmd.Context(), mime); err != nil {
-				return err
+				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			result := schema.SendResult{
 				OK:       true,
-				Provider: selectedAccount.Driver,
-				Account:  selectedAccount.Name,
+				Provider: providerName,
+				Account:  accountName,
 			}
 			return writeJSON(cmd.OutOrStdout(), &result)
 		},
@@ -194,4 +234,61 @@ func enrichReplyDraft(ctx context.Context, drv driver.Driver, draft *schema.Repl
 	}
 
 	return nil
+}
+
+func writeSendFailure(cmd *cobra.Command, provider, account string, err error) error {
+	result := schema.SendResult{
+		OK:       false,
+		Provider: provider,
+		Account:  account,
+		Error:    mapSendError(err),
+	}
+	if writeErr := writeJSON(cmd.OutOrStdout(), &result); writeErr != nil {
+		return writeErr
+	}
+	return errSendFailure
+}
+
+func mapSendError(err error) *schema.SendError {
+	if err == nil {
+		return nil
+	}
+
+	message := err.Error()
+	lower := strings.ToLower(message)
+
+	code := "transport_failed"
+	switch {
+	case errors.Is(err, config.ErrAccountNotFound) || strings.Contains(lower, "account not found"):
+		code = "account_not_found"
+	case errors.Is(err, config.ErrNoAccountSelected) || strings.Contains(lower, "no account selected"):
+		code = "account_not_selected"
+	case errors.Is(err, driver.ErrMessageNotFound) || strings.Contains(lower, "message not found"):
+		code = "message_not_found"
+	case errors.Is(err, driver.ErrTransportNotConfigured) || strings.Contains(lower, "smtp settings not configured"):
+		code = "transport_not_configured"
+	case errors.Is(err, driver.ErrDriverConfigInvalid):
+		code = "transport_failed"
+	case strings.Contains(lower, "auth") || strings.Contains(lower, "authentication") || strings.Contains(lower, "credentials invalid") || strings.Contains(lower, "535"):
+		code = "auth_failed"
+	case strings.Contains(lower, "missing from header") ||
+		strings.Contains(lower, "missing recipients") ||
+		strings.Contains(lower, "invalid character") ||
+		strings.Contains(lower, "unexpected end of json input"):
+		code = "invalid_draft"
+	}
+
+	return &schema.SendError{
+		Code:    code,
+		Message: message,
+	}
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }

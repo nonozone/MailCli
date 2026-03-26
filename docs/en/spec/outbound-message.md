@@ -97,6 +97,16 @@ Failure example:
 }
 ```
 
+Current stable error codes:
+
+- `auth_failed`
+- `account_not_found`
+- `account_not_selected`
+- `message_not_found`
+- `transport_not_configured`
+- `invalid_draft`
+- `transport_failed`
+
 ## Compiler Responsibilities
 
 `mailcli` should compile `DraftMessage` and `ReplyDraft` into real email messages and automatically manage:
@@ -130,3 +140,5 @@ The repository already contains a local MIME composer in `pkg/composer` for `Dra
 `mailcli send` is now wired for driver-backed transport when an account is configured.
 
 `mailcli reply` is also wired for driver-backed transport when an account is configured.
+
+For non-dry-run outbound commands, MailCLI now returns `SendResult` JSON on both success and operational failure, so agents can branch on `error.code` without scraping raw stderr text.

@@ -61,7 +61,7 @@ var smtpSendFunc = sendSMTP
 
 func newIMAPDriver(account config.AccountConfig) (Driver, error) {
 	if stringsTrim(account.Host) == "" || account.Port == 0 || stringsTrim(account.Username) == "" || stringsTrim(account.Password) == "" {
-		return nil, fmt.Errorf("imap account requires host, port, username, and password")
+		return nil, fmt.Errorf("%w: imap account requires host, port, username, and password", ErrDriverConfigInvalid)
 	}
 
 	mailbox := account.Mailbox
@@ -185,7 +185,7 @@ func (d *imapDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
 			return nil, err
 		}
 		if len(matches) == 0 {
-			return nil, fmt.Errorf("message not found: %s", id)
+			return nil, fmt.Errorf("%w: %s", ErrMessageNotFound, id)
 		}
 		return fetchMessageBody(ctx, client, false, matches[0], id)
 	default:
@@ -195,7 +195,7 @@ func (d *imapDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
 
 func (d *imapDriver) SendRaw(ctx context.Context, raw []byte) error {
 	if stringsTrim(d.smtp.host) == "" || d.smtp.port == 0 || stringsTrim(d.smtp.username) == "" || stringsTrim(d.smtp.password) == "" {
-		return fmt.Errorf("smtp settings not configured for account")
+		return fmt.Errorf("%w: smtp settings not configured for account", ErrTransportNotConfigured)
 	}
 
 	from, recipients, err := extractEnvelope(raw)
