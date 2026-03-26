@@ -122,8 +122,11 @@ func newSyncCmd() *cobra.Command {
 func newSearchCmd() *cobra.Command {
 	var (
 		indexPath string
+		account   string
+		mailbox   string
 		format    string
 		limit     int
+		full      bool
 	)
 
 	cmd := &cobra.Command{
@@ -132,10 +135,22 @@ func newSearchCmd() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			store := mailindex.NewFileStore(indexPath)
-			results, err := store.Search(mailindex.SearchQuery{
-				Query: args[0],
-				Limit: limit,
-			})
+			query := mailindex.SearchQuery{
+				Query:   args[0],
+				Account: account,
+				Mailbox: mailbox,
+				Limit:   limit,
+			}
+
+			if full {
+				items, err := store.SearchMessages(query)
+				if err != nil {
+					return err
+				}
+				return writeFullSearchResults(cmd.OutOrStdout(), items, format)
+			}
+
+			results, err := store.Search(query)
 			if err != nil {
 				return err
 			}
@@ -144,7 +159,10 @@ func newSearchCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVar(&indexPath, "index", "", "local index file path")
+	cmd.Flags().StringVar(&account, "account", "", "filter local results by account")
+	cmd.Flags().StringVar(&mailbox, "mailbox", "", "filter local results by mailbox")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of search results")
+	cmd.Flags().BoolVar(&full, "full", false, "return full indexed messages instead of compact search results")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }
@@ -191,6 +209,17 @@ func writeSearchResults(out io.Writer, results []mailindex.SearchResult, format 
 		table.AppendBulk(rows)
 		table.Render()
 		return nil
+	default:
+		return fmt.Errorf("unsupported format: %s", format)
+	}
+}
+
+func writeFullSearchResults(out io.Writer, results []mailindex.IndexedMessage, format string) error {
+	switch strings.ToLower(strings.TrimSpace(format)) {
+	case "", "json":
+		return writeJSON(out, results)
+	case "table":
+		return fmt.Errorf("full search results do not support table format")
 	default:
 		return fmt.Errorf("unsupported format: %s", format)
 	}

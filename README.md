@@ -116,7 +116,7 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
-- `mailcli search [--index <path>] [--limit <n>] <query>`
+- `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
 
 ### Write path
 
@@ -267,6 +267,14 @@ By default, `sync` skips messages that are already indexed for the same account 
 ```bash
 mailcli search invoice
 ```
+
+Use `--full` when an agent wants the full indexed message payload instead of the compact search summary:
+
+```bash
+mailcli search --full invoice
+```
+
+Use `--account` and `--mailbox` to filter local results in multi-account setups.
 
 ### Dry-run an outbound draft
 

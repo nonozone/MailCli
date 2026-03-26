@@ -116,7 +116,7 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
-- `mailcli search [--index <path>] [--limit <n>] <query>`
+- `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
 
 ### 写路径
 
@@ -267,6 +267,14 @@ mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
 ```bash
 mailcli search invoice
 ```
+
+如果 agent 需要直接拿到本地索引里的完整消息，而不是紧凑摘要，可以使用 `--full`：
+
+```bash
+mailcli search --full invoice
+```
+
+在多账户场景下，可以使用 `--account` 和 `--mailbox` 对本地结果做过滤。
 
 ### Dry-run 新邮件
 

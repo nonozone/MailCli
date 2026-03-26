@@ -115,6 +115,14 @@ mailcli search invoice
 - existing indexed records are skipped
 - `--refresh` forces a re-fetch and overwrite
 
+When an agent wants to reason over full local message content without re-fetching the remote mailbox, use:
+
+```bash
+mailcli search --full invoice
+```
+
+For multi-account local retrieval, combine `search` with `--account` and `--mailbox`.
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

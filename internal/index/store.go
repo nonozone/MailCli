@@ -20,8 +20,10 @@ type IndexedMessage struct {
 }
 
 type SearchQuery struct {
-	Query string
-	Limit int
+	Query   string
+	Account string
+	Mailbox string
+	Limit   int
 }
 
 type SearchResult struct {
@@ -119,19 +121,13 @@ func (s *FileStore) Upsert(message IndexedMessage) error {
 }
 
 func (s *FileStore) Search(query SearchQuery) ([]SearchResult, error) {
-	data, err := s.load()
+	items, err := s.SearchMessages(query)
 	if err != nil {
 		return nil, err
 	}
 
-	needle := strings.ToLower(strings.TrimSpace(query.Query))
-	results := make([]SearchResult, 0, len(data.Messages))
-
-	for i := len(data.Messages) - 1; i >= 0; i-- {
-		item := data.Messages[i]
-		if needle != "" && !strings.Contains(searchableText(item), needle) {
-			continue
-		}
+	results := make([]SearchResult, 0, len(items))
+	for _, item := range items {
 		results = append(results, SearchResult{
 			Account:   item.Account,
 			Mailbox:   item.Mailbox,
@@ -144,6 +140,34 @@ func (s *FileStore) Search(query SearchQuery) ([]SearchResult, error) {
 			Labels:    append([]string(nil), item.Message.Labels...),
 			IndexedAt: item.IndexedAt,
 		})
+	}
+
+	return results, nil
+}
+
+func (s *FileStore) SearchMessages(query SearchQuery) ([]IndexedMessage, error) {
+	data, err := s.load()
+	if err != nil {
+		return nil, err
+	}
+
+	needle := strings.ToLower(strings.TrimSpace(query.Query))
+	account := strings.TrimSpace(query.Account)
+	mailbox := strings.TrimSpace(query.Mailbox)
+	results := make([]IndexedMessage, 0, len(data.Messages))
+
+	for i := len(data.Messages) - 1; i >= 0; i-- {
+		item := data.Messages[i]
+		if account != "" && item.Account != account {
+			continue
+		}
+		if mailbox != "" && !strings.EqualFold(item.Mailbox, mailbox) {
+			continue
+		}
+		if needle != "" && !strings.Contains(searchableText(item), needle) {
+			continue
+		}
+		results = append(results, item)
 		if query.Limit > 0 && len(results) >= query.Limit {
 			break
 		}

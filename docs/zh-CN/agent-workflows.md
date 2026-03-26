@@ -115,6 +115,14 @@ mailcli search invoice
 - 已存在的本地索引记录会被跳过
 - 使用 `--refresh` 可以强制重新抓取并覆盖
 
+如果 agent 希望直接基于本地索引中的完整消息内容进行推理，而不重新访问远端邮箱，可以使用：
+
+```bash
+mailcli search --full invoice
+```
+
+在多账户本地检索场景下，可以结合 `--account` 和 `--mailbox` 使用。
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。

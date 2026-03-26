@@ -127,3 +127,56 @@ func TestFileStoreHasUsesAccountAndID(t *testing.T) {
 		t.Fatalf("expected missing message to be absent")
 	}
 }
+
+func TestFileStoreSearchSupportsAccountAndMailboxFilters(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, record := range []IndexedMessage{
+		{
+			Account: "work",
+			Mailbox: "INBOX",
+			ID:      "msg-work",
+			Message: schema.StandardMessage{
+				ID: "msg-work",
+				Meta: schema.MessageMeta{Subject: "Invoice from work"},
+				Content: schema.Content{
+					Snippet: "invoice work",
+					BodyMD:  "invoice work",
+				},
+			},
+		},
+		{
+			Account: "personal",
+			Mailbox: "Archive",
+			ID:      "msg-personal",
+			Message: schema.StandardMessage{
+				ID: "msg-personal",
+				Meta: schema.MessageMeta{Subject: "Invoice from personal"},
+				Content: schema.Content{
+					Snippet: "invoice personal",
+					BodyMD:  "invoice personal",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(record); err != nil {
+			t.Fatalf("expected index write to succeed: %v", err)
+		}
+	}
+
+	results, err := store.Search(SearchQuery{
+		Query:   "invoice",
+		Account: "personal",
+		Mailbox: "Archive",
+		Limit:   10,
+	})
+	if err != nil {
+		t.Fatalf("expected filtered search to succeed: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected one filtered result, got %d", len(results))
+	}
+	if results[0].ID != "msg-personal" {
+		t.Fatalf("expected personal record, got %q", results[0].ID)
+	}
+}

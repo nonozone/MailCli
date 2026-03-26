@@ -15,6 +15,11 @@ Current commands:
 - `mailcli sync`
 - `mailcli search`
 
+Current search modes:
+
+- compact search results by default
+- full indexed message output with `mailcli search --full`
+
 ## Storage Model
 
 Current implementation uses a JSON file on local disk.
@@ -62,6 +67,13 @@ Current local search is case-insensitive substring matching over a combined text
 - normalized sender
 
 This is not full-text search yet. It is a deterministic baseline intended for agent workflows and future storage evolution.
+
+`mailcli search` also supports local filtering by:
+
+- account
+- mailbox
+
+When `--full` is used, the command returns full indexed records rather than the compact summary shape.
 
 ## Sync Semantics
 
