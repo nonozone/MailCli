@@ -12,6 +12,7 @@ Read:
 - [Config Spec](../spec/config.md)
 - `pkg/driver/driver.go`
 - `pkg/driver/factory.go`
+- `pkg/driver/stub.go`
 
 Open an issue first if your driver requires changes to:
 
@@ -35,6 +36,7 @@ Open an issue first if your driver requires changes to:
 - never return partially parsed message content from the driver
 - do not duplicate parser logic in the driver
 - do not hardcode provider-specific business interpretation into shared layers
+- prefer starting from the `stub` driver shape before adding network concerns
 
 ## Testing Expectations
 

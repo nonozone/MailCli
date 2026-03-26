@@ -50,6 +50,15 @@ Driver 不应该负责：
 
 当前契约不包含运行时动态插件。
 
+## 参考实现
+
+当前仓库内已经有两种不同形态的 driver 实现：
+
+- `pkg/driver/imap.go`：真实网络传输，实现 IMAP 读取和 SMTP 发送
+- `pkg/driver/stub.go`：确定性的本地 driver，用于开发和扩展示例
+
+如果你要贡献新的 driver，建议先读 `stub.go` 理解最小实现，再对照 `imap.go` 了解有状态的网络型实现该如何组织。
+
 ## 稳定边界
 
 当前相对稳定的 driver 边界包括：

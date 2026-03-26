@@ -53,6 +53,27 @@ Per account:
 - `smtp_password`
 - `smtp_tls`
 
+## Known Driver Types
+
+For `v0.1 RC`, built-in driver types are:
+
+- `imap`
+- `stub`
+
+`imap` uses the mailbox and SMTP fields shown in the main example.
+
+`stub` is a local deterministic development driver. It does not require host, port, username, or password.
+
+Example:
+
+```yaml
+current_account: demo
+accounts:
+  - name: demo
+    driver: stub
+    mailbox: INBOX
+```
+
 ## Secret Handling
 
 Current secret expansion is intentionally narrow.

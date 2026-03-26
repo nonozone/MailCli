@@ -50,6 +50,15 @@ That means contributors add a new driver by:
 
 Runtime-loaded plugins are not part of the current contract.
 
+## Reference Implementations
+
+Current in-tree drivers provide two different implementation shapes:
+
+- `pkg/driver/imap.go`: real network transport with IMAP read and SMTP send
+- `pkg/driver/stub.go`: deterministic local-only driver for development and extension examples
+
+If you are contributing a new driver, start by reading `stub.go` for the smallest possible implementation, then compare `imap.go` for a stateful network-backed implementation.
+
 ## Stable Boundary
 
 The stable driver boundary for now is:

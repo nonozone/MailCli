@@ -42,6 +42,11 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 出站 HTML 渲染质量和附件体验
 - 更广的 provider 覆盖与扩展文档
 
+当前内置的 driver 类型：
+
+- `imap`，用于真实邮箱接入
+- `stub`，用于本地开发、测试和 driver 扩展示例
+
 当前 parser 样本集已经覆盖：
 
 - 纯文本邮件
@@ -191,6 +196,18 @@ accounts:
     smtp_port: 587
     smtp_username: you@example.com
     smtp_password: ${MAILCLI_SMTP_PASSWORD}
+```
+
+### 开发用配置示例
+
+如果你想在不接入真实邮箱的前提下验证 agent 流程、CLI 输出或 parser 集成，可以直接使用内置的 `stub` driver：
+
+```yaml
+current_account: demo
+accounts:
+  - name: demo
+    driver: stub
+    mailbox: INBOX
 ```
 
 当前支持环境变量展开的秘密字段：

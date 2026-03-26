@@ -53,6 +53,27 @@ accounts:
 - `smtp_password`
 - `smtp_tls`
 
+## 当前已知的 Driver 类型
+
+在 `v0.1 RC` 阶段，当前内置的 driver 类型有：
+
+- `imap`
+- `stub`
+
+`imap` 使用上面主示例中的邮箱和 SMTP 字段。
+
+`stub` 是一个本地、确定性的开发 driver，不要求 `host`、`port`、`username` 或 `password`。
+
+示例：
+
+```yaml
+current_account: demo
+accounts:
+  - name: demo
+    driver: stub
+    mailbox: INBOX
+```
+
 ## Secret 处理
 
 当前环境变量展开能力刻意保持很窄。

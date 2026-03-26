@@ -12,6 +12,7 @@
 - [配置规范](../spec/config.md)
 - `pkg/driver/driver.go`
 - `pkg/driver/factory.go`
+- `pkg/driver/stub.go`
 
 如果你的 driver 需要修改以下公开边界，请先开 issue 讨论：
 
@@ -35,6 +36,7 @@
 - driver 不要返回“部分解析后的消息内容”
 - 不要在 driver 中重复实现 parser 逻辑
 - 不要把 provider 私有业务判断硬编码进共享层
+- 建议先从 `stub` driver 这种最小实现形态起步，再逐步引入网络传输复杂度
 
 ## 测试要求
 

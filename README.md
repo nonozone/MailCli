@@ -42,6 +42,11 @@ Still evolving:
 - richer outbound HTML rendering and attachment ergonomics
 - broader provider coverage and extension guidance
 
+Current built-in driver types:
+
+- `imap` for real mailbox access
+- `stub` for local development, tests, and driver-extension examples
+
 Current parser fixture coverage now includes:
 
 - plaintext mail
@@ -191,6 +196,18 @@ accounts:
     smtp_port: 587
     smtp_username: you@example.com
     smtp_password: ${MAILCLI_SMTP_PASSWORD}
+```
+
+### Development Config Example
+
+Use the built-in `stub` driver when you want to validate agent flows, CLI output, or parser integration without connecting a real mailbox:
+
+```yaml
+current_account: demo
+accounts:
+  - name: demo
+    driver: stub
+    mailbox: INBOX
 ```
 
 Secret fields currently support environment-variable expansion:
