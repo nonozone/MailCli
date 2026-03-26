@@ -75,4 +75,5 @@ accounts:
 ## Links
 
 - [中文文档](README.zh-CN.md)
+- [Agent Workflows](docs/en/agent-workflows.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)

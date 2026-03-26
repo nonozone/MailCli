@@ -75,4 +75,5 @@ accounts:
 ## 链接
 
 - [English documentation](README.md)
+- [Agent 协作流程](docs/zh-CN/agent-workflows.md)
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
