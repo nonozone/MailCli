@@ -269,7 +269,7 @@ func mapSendError(err error) *schema.SendError {
 		code = "transport_not_configured"
 	case errors.Is(err, driver.ErrDriverConfigInvalid):
 		code = "transport_failed"
-	case strings.Contains(lower, "auth") || strings.Contains(lower, "authentication") || strings.Contains(lower, "credentials invalid") || strings.Contains(lower, "535"):
+	case errors.Is(err, driver.ErrAuthFailed) || strings.Contains(lower, "auth") || strings.Contains(lower, "authentication") || strings.Contains(lower, "credentials invalid") || strings.Contains(lower, "535"):
 		code = "auth_failed"
 	case strings.Contains(lower, "missing from header") ||
 		strings.Contains(lower, "missing recipients") ||

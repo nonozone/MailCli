@@ -107,6 +107,8 @@
 - `invalid_draft`
 - `transport_failed`
 
+在内部实现上，若条件允许，应优先使用 typed operational errors，再映射成这组稳定的公开错误码。
+
 ## 编译器职责
 
 `mailcli` 应负责把 `DraftMessage` 和 `ReplyDraft` 编译成真实邮件，并自动处理：

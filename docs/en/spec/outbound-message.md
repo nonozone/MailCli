@@ -107,6 +107,8 @@ Current stable error codes:
 - `invalid_draft`
 - `transport_failed`
 
+Implementations should prefer typed operational errors internally where practical, then map them into this stable public code set.
+
 ## Compiler Responsibilities
 
 `mailcli` should compile `DraftMessage` and `ReplyDraft` into real email messages and automatically manage:

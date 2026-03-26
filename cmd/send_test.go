@@ -169,6 +169,46 @@ func TestSendCommandReturnsStructuredAuthFailure(t *testing.T) {
 	}
 }
 
+func TestSendCommandReturnsStructuredTypedAuthFailure(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n")
+	loadConfigFunc = config.Load
+
+	fake := &fakeSendDriver{sendErr: driver.ErrAuthFailed}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "from": {"address": "support@nono.im"},
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"send", "--config", configPath, draftPath})
+
+	err := cmd.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected outbound failure sentinel, got %v", err)
+	}
+
+	if !strings.Contains(out.String(), `"ok": false`) || !strings.Contains(out.String(), `"code": "auth_failed"`) {
+		t.Fatalf("expected typed auth_failed send result, got %s", out.String())
+	}
+}
+
 func TestSendCommandReturnsStructuredAccountNotFound(t *testing.T) {
 	restoreLoad := loadConfigFunc
 	restoreDriver := driverFactoryFunc
@@ -330,6 +370,44 @@ func TestSendCommandReturnsStructuredTransportNotConfigured(t *testing.T) {
 
 	if !strings.Contains(out.String(), `"ok": false`) || !strings.Contains(out.String(), `"code": "transport_not_configured"`) {
 		t.Fatalf("expected transport_not_configured send result, got %s", out.String())
+	}
+}
+
+func TestSendCommandReturnsStructuredTypedInvalidDriverConfig(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n")
+	loadConfigFunc = config.Load
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return nil, driver.ErrDriverConfigInvalid
+	}
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "from": {"address": "support@nono.im"},
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"send", "--config", configPath, draftPath})
+
+	err := cmd.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected outbound failure sentinel, got %v", err)
+	}
+
+	if !strings.Contains(out.String(), `"ok": false`) || !strings.Contains(out.String(), `"code": "transport_failed"`) {
+		t.Fatalf("expected transport_failed result for typed invalid driver config, got %s", out.String())
 	}
 }
 

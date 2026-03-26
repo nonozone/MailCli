@@ -68,6 +68,7 @@ Driver 应优先返回：
 - `ErrMessageNotFound`
 - `ErrTransportNotConfigured`
 - `ErrDriverConfigInvalid`
+- `ErrAuthFailed`
 
 其他 provider 私有错误仍然可以继续冒泡，但如果能提升上层行为，优先补充稳定的 typed error。
 

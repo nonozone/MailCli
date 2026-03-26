@@ -11,6 +11,7 @@ var (
 	ErrMessageNotFound        = errors.New("message not found")
 	ErrTransportNotConfigured = errors.New("transport not configured")
 	ErrDriverConfigInvalid    = errors.New("driver config invalid")
+	ErrAuthFailed            = errors.New("auth failed")
 )
 
 type Driver interface {

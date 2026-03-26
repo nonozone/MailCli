@@ -68,6 +68,7 @@ Drivers should prefer returning:
 - `ErrMessageNotFound`
 - `ErrTransportNotConfigured`
 - `ErrDriverConfigInvalid`
+- `ErrAuthFailed`
 
 Other provider-specific errors may still bubble up, but stable typed errors are preferred when they improve caller behavior.
 

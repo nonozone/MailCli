@@ -421,10 +421,10 @@ func sendSMTP(cfg smtpConfig, from string, to []string, raw []byte) error {
 	auth := smtp.PlainAuth("", cfg.username, cfg.password, cfg.host)
 
 	if cfg.useTLS {
-		return sendSMTPTLS(addr, cfg.host, auth, from, to, raw)
+		return wrapAuthError(sendSMTPTLS(addr, cfg.host, auth, from, to, raw))
 	}
 
-	return smtp.SendMail(addr, auth, from, to, raw)
+	return wrapAuthError(smtp.SendMail(addr, auth, from, to, raw))
 }
 
 func sendSMTPTLS(addr, host string, auth smtp.Auth, from string, to []string, raw []byte) error {
@@ -441,14 +441,14 @@ func sendSMTPTLS(addr, host string, auth smtp.Auth, from string, to []string, ra
 	defer client.Quit()
 
 	if err := client.Auth(auth); err != nil {
-		return err
+		return wrapAuthError(err)
 	}
 	if err := client.Mail(from); err != nil {
-		return err
+		return wrapAuthError(err)
 	}
 	for _, recipient := range to {
 		if err := client.Rcpt(recipient); err != nil {
-			return err
+			return wrapAuthError(err)
 		}
 	}
 
@@ -461,4 +461,22 @@ func sendSMTPTLS(addr, host string, auth smtp.Auth, from string, to []string, ra
 		return err
 	}
 	return writer.Close()
+}
+
+func wrapAuthError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if stringsContainsAuth(err.Error()) {
+		return fmt.Errorf("%w: %v", ErrAuthFailed, err)
+	}
+	return err
+}
+
+func stringsContainsAuth(message string) bool {
+	lower := strings.ToLower(message)
+	return strings.Contains(lower, "auth") ||
+		strings.Contains(lower, "authentication") ||
+		strings.Contains(lower, "credentials invalid") ||
+		strings.Contains(lower, "535")
 }
