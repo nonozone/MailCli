@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	netmail "net/mail"
+	"net/smtp"
 	"strings"
 
 	"github.com/emersion/go-imap"
@@ -19,7 +21,18 @@ type imapDriver struct {
 	password string
 	useTLS   bool
 	mailbox  string
+	smtp     smtpConfig
 }
+
+type smtpConfig struct {
+	host     string
+	port     int
+	username string
+	password string
+	useTLS   bool
+}
+
+var smtpSendFunc = sendSMTP
 
 func newIMAPDriver(account config.AccountConfig) (Driver, error) {
 	if stringsTrim(account.Host) == "" || account.Port == 0 || stringsTrim(account.Username) == "" || stringsTrim(account.Password) == "" {
@@ -38,6 +51,13 @@ func newIMAPDriver(account config.AccountConfig) (Driver, error) {
 		password: account.Password,
 		useTLS:   account.TLS || account.Port == 993,
 		mailbox:  mailbox,
+		smtp: smtpConfig{
+			host:     account.SMTPHost,
+			port:     account.SMTPPort,
+			username: firstNonEmptyTrim(account.SMTPUsername, account.Username),
+			password: firstNonEmptyTrim(account.SMTPPassword, account.Password),
+			useTLS:   account.SMTPTLS || account.SMTPPort == 465,
+		},
 	}, nil
 }
 
@@ -114,7 +134,16 @@ func (d *imapDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
 }
 
 func (d *imapDriver) SendRaw(ctx context.Context, raw []byte) error {
-	return fmt.Errorf("imap send raw not implemented")
+	if stringsTrim(d.smtp.host) == "" || d.smtp.port == 0 || stringsTrim(d.smtp.username) == "" || stringsTrim(d.smtp.password) == "" {
+		return fmt.Errorf("smtp settings not configured for account")
+	}
+
+	from, recipients, err := extractEnvelope(raw)
+	if err != nil {
+		return err
+	}
+
+	return smtpSendFunc(d.smtp, from, recipients, raw)
 }
 
 func (d *imapDriver) connect() (*imapclient.Client, error) {
@@ -153,4 +182,89 @@ func safeEnvelopeSubject(msg *imap.Message) string {
 
 func stringsTrim(value string) string {
 	return strings.TrimSpace(value)
+}
+
+func firstNonEmptyTrim(values ...string) string {
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func extractEnvelope(raw []byte) (string, []string, error) {
+	msg, err := netmail.ReadMessage(strings.NewReader(string(raw)))
+	if err != nil {
+		return "", nil, err
+	}
+
+	fromList, err := msg.Header.AddressList("From")
+	if err != nil || len(fromList) == 0 {
+		return "", nil, fmt.Errorf("missing From header")
+	}
+
+	var recipients []string
+	for _, header := range []string{"To", "Cc", "Bcc"} {
+		addrs, err := msg.Header.AddressList(header)
+		if err != nil {
+			continue
+		}
+		for _, addr := range addrs {
+			recipients = append(recipients, addr.Address)
+		}
+	}
+
+	if len(recipients) == 0 {
+		return "", nil, fmt.Errorf("missing recipients")
+	}
+
+	return fromList[0].Address, recipients, nil
+}
+
+func sendSMTP(cfg smtpConfig, from string, to []string, raw []byte) error {
+	addr := fmt.Sprintf("%s:%d", cfg.host, cfg.port)
+	auth := smtp.PlainAuth("", cfg.username, cfg.password, cfg.host)
+
+	if cfg.useTLS {
+		return sendSMTPTLS(addr, cfg.host, auth, from, to, raw)
+	}
+
+	return smtp.SendMail(addr, auth, from, to, raw)
+}
+
+func sendSMTPTLS(addr, host string, auth smtp.Auth, from string, to []string, raw []byte) error {
+	conn, err := tls.Dial("tcp", addr, &tls.Config{ServerName: host})
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client, err := smtp.NewClient(conn, host)
+	if err != nil {
+		return err
+	}
+	defer client.Quit()
+
+	if err := client.Auth(auth); err != nil {
+		return err
+	}
+	if err := client.Mail(from); err != nil {
+		return err
+	}
+	for _, recipient := range to {
+		if err := client.Rcpt(recipient); err != nil {
+			return err
+		}
+	}
+
+	writer, err := client.Data()
+	if err != nil {
+		return err
+	}
+	if _, err := writer.Write(raw); err != nil {
+		_ = writer.Close()
+		return err
+	}
+	return writer.Close()
 }

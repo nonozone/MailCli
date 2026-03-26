@@ -22,6 +22,11 @@ type AccountConfig struct {
 	Password string `yaml:"password,omitempty"`
 	TLS      bool   `yaml:"tls,omitempty"`
 	Mailbox  string `yaml:"mailbox,omitempty"`
+	SMTPHost string `yaml:"smtp_host,omitempty"`
+	SMTPPort int    `yaml:"smtp_port,omitempty"`
+	SMTPUsername string `yaml:"smtp_username,omitempty"`
+	SMTPPassword string `yaml:"smtp_password,omitempty"`
+	SMTPTLS bool   `yaml:"smtp_tls,omitempty"`
 }
 
 func DefaultPath() string {

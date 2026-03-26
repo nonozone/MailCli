@@ -50,6 +50,10 @@ accounts:
     password: app-password-or-token
     tls: true
     mailbox: INBOX
+    smtp_host: smtp.example.com
+    smtp_port: 587
+    smtp_username: you@example.com
+    smtp_password: app-password-or-token
 ```
 
 ## 架构概要
