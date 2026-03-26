@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	securityPhraseRe  = regexp.MustCompile(`(?i)\b(verification code|security code|one[- ]time code|login code|sign[- ]in code|two[- ]factor code|2fa code)\b`)
+	securityPhraseRe  = regexp.MustCompile(`(?i)(\b(verification code|security code|one[- ]time code|login code|sign[- ]in code|two[- ]factor code|2fa code)\b|验证码|校验码|登录验证码|安全码|一次性验证码)`)
 	codeCandidateRe   = regexp.MustCompile(`\b(?:\d[\s-]?){4,8}\b`)
 	digitsOnlyRe      = regexp.MustCompile(`^\d{4,8}$`)
 	verificationLabel = "Verification code"
@@ -29,11 +29,9 @@ func extractCodes(inputs ...string) []schema.Code {
 		if window == "" {
 			continue
 		}
-		if i+1 < len(lines) {
-			next := strings.TrimSpace(lines[i+1])
-			if next != "" && digitsOnlyRe.MatchString(strings.ReplaceAll(next, " ", "")) {
-				window += "\n" + next
-			}
+
+		if next := nextNonEmptyLine(lines, i+1); next != "" && digitsOnlyRe.MatchString(normalizeCodeValue(next)) {
+			window += "\n" + next
 		}
 
 		if !securityPhraseRe.MatchString(window) {
@@ -66,4 +64,14 @@ func normalizeCodeValue(input string) string {
 	input = strings.ReplaceAll(input, " ", "")
 	input = strings.ReplaceAll(input, "-", "")
 	return strings.TrimSpace(input)
+}
+
+func nextNonEmptyLine(lines []string, start int) string {
+	for i := start; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if line != "" {
+			return line
+		}
+	}
+	return ""
 }

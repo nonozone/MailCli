@@ -10,6 +10,8 @@
 
 ---
 
+**Follow-up enhancement:** After the initial `codes` field landed, parser extraction was tightened for real mail layouts by adding support for common Chinese verification phrases and codes placed on the next non-empty line after the security phrase.
+
 ## Chunk 1: Schema And Failing Tests
 
 ### Task 1: Add schema slot and failing tests

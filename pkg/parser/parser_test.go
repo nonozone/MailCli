@@ -161,6 +161,38 @@ func TestParseDoesNotExtractOrderNumberAsVerificationCode(t *testing.T) {
 	}
 }
 
+func TestParseExtractsVerificationCodeFromNextNonEmptyLine(t *testing.T) {
+	raw := []byte("From: Security Team <security@example.com>\r\nTo: user@example.com\r\nSubject: Your verification code\r\nMessage-ID: <verify-next-line@example.com>\r\nDate: Thu, 26 Mar 2026 12:20:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nYour verification code is:\r\n\r\n654 321\r\n\r\nEnter it to continue signing in.")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Codes) != 1 {
+		t.Fatalf("expected one extracted code, got %+v", got.Codes)
+	}
+	if got.Codes[0].Value != "654321" {
+		t.Fatalf("expected normalized next-line code value, got %q", got.Codes[0].Value)
+	}
+}
+
+func TestParseExtractsChineseVerificationCode(t *testing.T) {
+	raw := []byte("From: 安全中心 <security@example.com>\r\nTo: user@example.com\r\nSubject: 登录验证码\r\nMessage-ID: <verify-cn@example.com>\r\nDate: Thu, 26 Mar 2026 12:30:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n您的验证码是 246810，5 分钟内有效。")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Codes) != 1 {
+		t.Fatalf("expected one extracted code from chinese verification mail, got %+v", got.Codes)
+	}
+	if got.Codes[0].Value != "246810" {
+		t.Fatalf("expected chinese code value, got %q", got.Codes[0].Value)
+	}
+}
+
 func TestCleanHTMLPrefersMainContentRoot(t *testing.T) {
 	input := `<html><body>
 <header><p>Account navigation</p></header>
