@@ -123,6 +123,51 @@ func TestSendCommandUsesConfiguredDriver(t *testing.T) {
 	}
 }
 
+func TestReplyCommandUsesConfiguredDriver(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n")
+	loadConfigFunc = config.Load
+
+	fake := &fakeSendDriver{}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "from": {"address": "support@nono.im"},
+  "to": [{"address": "user@example.com"}],
+  "subject": "Question",
+  "body_text": "Thanks for the email.",
+  "reply_to_message_id": "<orig-123@example.com>",
+  "references": ["<orig-123@example.com>"]
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "--config", configPath, replyPath})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected reply command to succeed: %v", err)
+	}
+
+	if len(fake.lastRaw) == 0 || !strings.Contains(string(fake.lastRaw), "In-Reply-To: <orig-123@example.com>") {
+		t.Fatalf("expected reply command to send MIME with thread headers")
+	}
+	if !strings.Contains(out.String(), "\"ok\": true") {
+		t.Fatalf("expected send result output")
+	}
+}
+
 func writeTempFile(t *testing.T, name, content string) string {
 	t.Helper()
 

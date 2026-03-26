@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/yourname/mailcli/internal/config"
@@ -72,7 +71,11 @@ func newSendCmd() *cobra.Command {
 }
 
 func newReplyCmd() *cobra.Command {
-	var dryRun bool
+	var (
+		configPath string
+		account    string
+		dryRun     bool
+	)
 
 	cmd := &cobra.Command{
 		Use:   "reply [file|-]",
@@ -94,15 +97,36 @@ func newReplyCmd() *cobra.Command {
 				return err
 			}
 
-			if !dryRun {
-				return fmt.Errorf("reply send path not implemented yet; use --dry-run")
+			if dryRun {
+				_, err = cmd.OutOrStdout().Write(mime)
+				return err
 			}
 
-			_, err = cmd.OutOrStdout().Write(mime)
-			return err
+			selectedAccount, err := resolveSelectedAccount(configPath, account, draft.Account)
+			if err != nil {
+				return err
+			}
+
+			drv, err := driverFactoryFunc(selectedAccount)
+			if err != nil {
+				return err
+			}
+
+			if err := drv.SendRaw(cmd.Context(), mime); err != nil {
+				return err
+			}
+
+			result := schema.SendResult{
+				OK:       true,
+				Provider: selectedAccount.Driver,
+				Account:  selectedAccount.Name,
+			}
+			return writeJSON(cmd.OutOrStdout(), &result)
 		},
 	}
 
+	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
+	cmd.Flags().StringVar(&account, "account", "", "account name override")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print MIME instead of sending it")
 	return cmd
 }

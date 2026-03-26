@@ -121,6 +121,6 @@ cat reply.json | mailcli reply -
 
 仓库中已经有 `pkg/composer`，可以在本地把 `DraftMessage` 和 `ReplyDraft` 编译成 MIME。
 
-`mailcli send` 已经部分接通，可以把 MIME 交给配置好的 driver。
+`mailcli send` 已经接通，在有账户配置时可以把 MIME 交给 driver。
 
-`mailcli reply` 目前先支持 dry-run 的 MIME 生成。
+`mailcli reply` 也已经接通，在有账户配置时可以把 MIME 交给 driver。

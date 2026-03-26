@@ -36,7 +36,7 @@ MailCLI is an independent, open-source toolkit that turns raw email into AI-cons
 
 - `pkg/composer` can already compile `DraftMessage` and `ReplyDraft` into raw MIME locally.
 - `mailcli send` can also hand MIME to the configured driver when an account is available.
-- `mailcli reply` currently supports dry-run MIME generation only.
+- `mailcli reply` can now also hand MIME to the configured driver when an account is available.
 
 ## Minimal Config Example
 
