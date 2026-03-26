@@ -80,3 +80,50 @@ func TestResolveAccountFailsForMissingName(t *testing.T) {
 		t.Fatalf("expected missing account to fail")
 	}
 }
+
+func TestUnmarshalExpandsEnvironmentVariablesForSecretFields(t *testing.T) {
+	t.Setenv("MAILCLI_IMAP_PASSWORD", "imap-secret")
+	t.Setenv("MAILCLI_SMTP_PASSWORD", "smtp-secret")
+
+	cfg, err := Unmarshal([]byte(`
+current_account: work
+accounts:
+  - name: work
+    driver: imap
+    password: ${MAILCLI_IMAP_PASSWORD}
+    smtp_password: ${MAILCLI_SMTP_PASSWORD}
+`))
+	if err != nil {
+		t.Fatalf("expected unmarshal to succeed: %v", err)
+	}
+
+	account, err := cfg.ResolveAccount("work")
+	if err != nil {
+		t.Fatalf("expected account to resolve: %v", err)
+	}
+
+	if account.Password != "imap-secret" {
+		t.Fatalf("expected imap password expansion, got %q", account.Password)
+	}
+	if account.SMTPPassword != "smtp-secret" {
+		t.Fatalf("expected smtp password expansion, got %q", account.SMTPPassword)
+	}
+}
+
+func TestUnmarshalDoesNotExpandEnvironmentVariablesForNonSecretFields(t *testing.T) {
+	t.Setenv("MAILCLI_ACCOUNT_NAME", "expanded-name")
+
+	cfg, err := Unmarshal([]byte(`
+current_account: work
+accounts:
+  - name: ${MAILCLI_ACCOUNT_NAME}
+    driver: imap
+`))
+	if err != nil {
+		t.Fatalf("expected unmarshal to succeed: %v", err)
+	}
+
+	if cfg.Accounts[0].Name != "${MAILCLI_ACCOUNT_NAME}" {
+		t.Fatalf("expected non-secret fields to remain literal, got %q", cfg.Accounts[0].Name)
+	}
+}

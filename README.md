@@ -155,14 +155,25 @@ accounts:
     host: imap.example.com
     port: 993
     username: you@example.com
-    password: app-password-or-token
+    password: ${MAILCLI_IMAP_PASSWORD}
     tls: true
     mailbox: INBOX
     smtp_host: smtp.example.com
     smtp_port: 587
     smtp_username: you@example.com
-    smtp_password: app-password-or-token
+    smtp_password: ${MAILCLI_SMTP_PASSWORD}
 ```
+
+Secret fields currently support environment-variable expansion:
+
+- `password`
+- `smtp_password`
+
+Recommended usage:
+
+- use app passwords or provider-issued tokens
+- inject them through environment variables
+- avoid committing real mailbox secrets into config files
 
 ## Quick Start
 
@@ -283,6 +294,7 @@ Apache-2.0
 - [Agent Decision Spec](docs/en/spec/agent-decisions.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
 - [Agent Provider Contract](docs/en/spec/agent-provider.md)
+- [Config Spec](docs/en/spec/config.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)
 - [Contribution Guide](CONTRIBUTING.md)

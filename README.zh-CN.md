@@ -155,14 +155,25 @@ accounts:
     host: imap.example.com
     port: 993
     username: you@example.com
-    password: app-password-or-token
+    password: ${MAILCLI_IMAP_PASSWORD}
     tls: true
     mailbox: INBOX
     smtp_host: smtp.example.com
     smtp_port: 587
     smtp_username: you@example.com
-    smtp_password: app-password-or-token
+    smtp_password: ${MAILCLI_SMTP_PASSWORD}
 ```
+
+当前支持环境变量展开的秘密字段：
+
+- `password`
+- `smtp_password`
+
+推荐方式：
+
+- 使用 app password 或 provider 提供的 token
+- 通过环境变量注入
+- 不要把真实邮箱密码直接提交进配置文件
 
 ## 快速开始
 
@@ -284,6 +295,7 @@ Apache-2.0
 - [Agent Decision 规范](docs/zh-CN/spec/agent-decisions.md)
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
 - [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)
+- [配置规范](docs/zh-CN/spec/config.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md)
 - [贡献指南](CONTRIBUTING.zh-CN.md)

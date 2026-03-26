@@ -51,7 +51,16 @@ func Marshal(cfg Config) ([]byte, error) {
 func Unmarshal(data []byte) (Config, error) {
 	var cfg Config
 	err := yaml.Unmarshal(data, &cfg)
-	return cfg, err
+	if err != nil {
+		return Config{}, err
+	}
+
+	for i := range cfg.Accounts {
+		cfg.Accounts[i].Password = expandSecretEnv(cfg.Accounts[i].Password)
+		cfg.Accounts[i].SMTPPassword = expandSecretEnv(cfg.Accounts[i].SMTPPassword)
+	}
+
+	return cfg, nil
 }
 
 func Load(path string) (Config, error) {
@@ -80,4 +89,11 @@ func (c Config) ResolveAccount(name string) (AccountConfig, error) {
 	}
 
 	return AccountConfig{}, fmt.Errorf("%w: %s", ErrAccountNotFound, target)
+}
+
+func expandSecretEnv(value string) string {
+	if value == "" {
+		return ""
+	}
+	return os.ExpandEnv(value)
 }
