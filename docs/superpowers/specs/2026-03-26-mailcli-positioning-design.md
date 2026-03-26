@@ -185,11 +185,62 @@ The architecture should preserve a clean split between transport, parsing, and c
 
    负责 MIME 遍历、字符集归一化、HTML 清洗、Markdown 转换、动作提取以及标准结构输出。
 
+4. `Composer`
+   Responsible for turning agent-generated drafts into standards-compliant outgoing email, including MIME assembly, thread headers, and message encoding.
+
+   负责将 agent 生成的草稿编译为标准邮件，包括 MIME 组装、线程头补全和消息编码。
+
 ### Architectural principle / 架构原则
 
 `protocol belongs to drivers, content belongs to parsers, orchestration belongs to the CLI core`
 
 `协议归驱动，内容归解析器，流程调度归 CLI 核心`
+
+### Read path and write path / 读路径与写路径
+
+Read path:
+
+读路径：
+
+`Agent -> MailCLI -> Driver -> Raw Email -> Parser -> StandardMessage`
+
+Write path:
+
+写路径：
+
+`Agent -> MailCLI -> DraftMessage/ReplyDraft -> Composer -> Raw MIME -> Driver -> Provider`
+
+### Outbound schema principle / 发送侧 schema 原则
+
+Agents should not construct raw MIME directly.
+
+agent 不应直接拼装原始 MIME。
+
+Instead, they should produce intent-level objects:
+
+更合理的做法是生成意图级对象：
+
+- `DraftMessage` for new outgoing email
+- `ReplyDraft` for replies tied to an existing message or internal message id
+- `SendResult` for transport result reporting
+
+- `DraftMessage` 用于新邮件
+- `ReplyDraft` 用于回复既有邮件或内部 message id
+- `SendResult` 用于返回发送结果
+
+The CLI core should compile these into standards-compliant outbound email and automatically manage:
+
+CLI 核心应负责把这些对象编译为标准邮件，并自动处理：
+
+- `Message-ID`
+- `Date`
+- `From`
+- `In-Reply-To`
+- `References`
+- `multipart/alternative`
+- text / HTML generation
+- attachment packaging
+- charset and transfer encoding
 
 ## 8. MVP Strategy / MVP 策略
 
@@ -437,7 +488,47 @@ Recommended initial structure:
 - 将其描述为绑定某个单一 provider
 - 在项目定义中混入具体业务集成叙事
 
-## 14. Next Step / 下一步
+## 14. Contributor Guidance / 贡献者机制说明
+
+Contributors should understand that `MailCLI` is not only a parser project.
+
+贡献者需要明确：`MailCLI` 不只是一个 parser 项目。
+
+It has two equally important contracts:
+
+它有两类同等重要的协议边界：
+
+1. inbound normalization
+2. outbound composition
+
+1. 入站标准化
+2. 出站编译
+
+Inbound work should improve:
+
+入站方向应重点改进：
+
+- MIME traversal
+- content extraction
+- Markdown quality
+- action extraction
+- thread and metadata normalization
+
+Outbound work should improve:
+
+出站方向应重点改进：
+
+- draft schemas
+- reply threading behavior
+- MIME generation
+- attachment support
+- provider-safe send behavior
+
+When contributors touch parser semantics or outbound schemas, they should also update the public spec docs so the project remains understandable to new collaborators.
+
+当贡献者修改 parser 语义或发送侧 schema 时，也应同步更新公开规范文档，确保新加入的开发者能快速理解项目机制。
+
+## 15. Next Step / 下一步
 
 The next planning step should focus on implementation sequencing, starting with a parser-first MVP.
 

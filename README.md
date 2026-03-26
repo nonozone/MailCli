@@ -29,7 +29,9 @@ MailCLI is an independent, open-source toolkit that turns raw email into AI-cons
 - `Cmd` layer manages Cobra commands, stdin/file handling, and formatter wiring.
 - `Driver` interfaces provide transport (fetch/send) without touching content semantics.
 - `Parser` handles MIME traversal, charset normalization, HTML cleanup, Markdown conversion, action extraction, and schema output.
+- Future send/reply flows will use intent-level schemas such as `DraftMessage` and `ReplyDraft`, while `mailcli` compiles them into real MIME messages with thread headers.
 
 ## Links
 
 - [中文文档](README.zh-CN.md)
+- [Outbound Message Spec](docs/en/spec/outbound-message.md)
