@@ -74,6 +74,10 @@ mailcli list --config ~/.config/mailcli/config.yaml
 mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 ```
 
+Reference example:
+
+- [Agent Inbox Assistant](examples/agent-inbox-assistant.md)
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

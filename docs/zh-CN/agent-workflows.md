@@ -74,6 +74,10 @@ mailcli list --config ~/.config/mailcli/config.yaml
 mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 ```
 
+参考示例：
+
+- [Agent Inbox Assistant](examples/agent-inbox-assistant.md)
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。

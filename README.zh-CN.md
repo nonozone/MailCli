@@ -169,6 +169,14 @@ mailcli send --dry-run draft.json
 mailcli reply --dry-run reply.json
 ```
 
+### 运行 agent 示例
+
+```bash
+python3 examples/python/agent_inbox_assistant.py \
+  --mailcli-bin ./mailcli \
+  --email testdata/emails/verification.eml
+```
+
 ## 路线图
 
 ### Phase 1: The Brain
@@ -204,6 +212,7 @@ mailcli reply --dry-run reply.json
 
 - Python 解析示例：`examples/python/parse_email.py`
 - Python 回复 dry-run 示例：`examples/python/reply_dry_run.py`
+- Python inbox agent 示例：`examples/python/agent_inbox_assistant.py`
 - Shell 解析示例：`examples/shell/parse_email.sh`
 - Shell 回复 dry-run 示例：`examples/shell/reply_dry_run.sh`
 
@@ -239,3 +248,4 @@ Apache-2.0
 - [English documentation](README.md)
 - [Agent 协作流程](docs/zh-CN/agent-workflows.md)
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
+- [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
