@@ -10,6 +10,8 @@
 
 ---
 
+**Follow-up enhancement:** The example now also supports an external provider mode, so developers can plug in their own LLM or agent runtime through a simple stdin/stdout JSON contract without adding SDK dependencies to the repository.
+
 ## Chunk 1: Failing Integration Tests
 
 ### Task 1: Define the example contract through tests

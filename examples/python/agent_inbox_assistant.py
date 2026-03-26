@@ -9,19 +9,22 @@ def main() -> int:
     args = parse_args()
 
     message = load_message(args)
+    analysis = analyze_with_provider(message, args)
     report: dict[str, Any] = {
         "tool": "mailcli-agent-example",
         "source": build_source(args),
         "message": message,
-        "analysis": analyze_message(message, wants_reply=bool(args.reply_text)),
+        "analysis": analysis,
     }
 
-    if args.reply_text:
+    reply_text = args.reply_text or analysis.get("reply_text")
+    if reply_text:
         if not args.from_address:
             print("--from-address is required when --reply-text is used", file=sys.stderr)
             return 2
 
         draft = build_reply_draft(message, args)
+        draft["body_text"] = reply_text
         mime = run_mailcli(
             [args.mailcli_bin, "reply", "--dry-run", "-"],
             stdin=json.dumps(draft),
@@ -50,10 +53,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reply-text", help="optional reply body text to compile with mailcli reply --dry-run")
     parser.add_argument("--from-address", help="from address to use for reply dry-run")
     parser.add_argument("--from-name", help="optional from display name for reply dry-run")
+    parser.add_argument("--agent-provider", choices=["builtin", "external"], default="builtin", help="analysis provider")
+    parser.add_argument("--provider-command", help="external provider command")
+    parser.add_argument("--provider-arg", action="append", default=[], help="repeatable argument for the external provider command")
 
     args = parser.parse_args()
     if bool(args.email) == bool(args.message_id):
         parser.error("exactly one of --email or --message-id is required")
+    if args.agent_provider == "external" and not args.provider_command:
+        parser.error("--provider-command is required when --agent-provider external is used")
     return args
 
 
@@ -130,6 +138,28 @@ def analyze_message(message: dict[str, Any], wants_reply: bool) -> dict[str, Any
     }
 
 
+def analyze_with_provider(message: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
+    if args.agent_provider == "external":
+        payload = {
+            "source": build_source(args),
+            "message": message,
+            "wants_reply": bool(args.reply_text),
+        }
+        output = run_mailcli(
+            [args.provider_command, *args.provider_arg],
+            stdin=json.dumps(payload),
+        )
+        analysis = json.loads(output)
+        if not isinstance(analysis, dict):
+            raise SystemExit("external provider must return a JSON object")
+        analysis.setdefault("provider", "external")
+        return analysis
+
+    analysis = analyze_message(message, wants_reply=bool(args.reply_text))
+    analysis.setdefault("provider", "builtin")
+    return analysis
+
+
 def build_reply_draft(message: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:
     meta = message.get("meta", {})
     sender = meta.get("from") or {}
@@ -145,7 +175,7 @@ def build_reply_draft(message: dict[str, Any], args: argparse.Namespace) -> dict
     draft: dict[str, Any] = {
         "from": {"address": args.from_address},
         "to": [{"address": sender_address}],
-        "body_text": args.reply_text,
+        "body_text": args.reply_text or "",
         "reply_to_message_id": message_id,
         "references": references,
         "subject": meta.get("subject") or "",

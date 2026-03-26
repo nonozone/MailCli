@@ -62,3 +62,37 @@ python3 examples/python/agent_inbox_assistant.py \
 - The example uses rule-based analysis so the control flow is easy to inspect.
 - Replace the `analyze_message` function with your own LLM or agent framework.
 - Keep `mailcli` as the boundary for parsing, reply compilation, and protocol access.
+
+## External Provider Mode
+
+You can delegate the analysis step to your own script or agent runtime:
+
+```bash
+python3 examples/python/agent_inbox_assistant.py \
+  --mailcli-bin ./mailcli \
+  --email testdata/emails/plaintext.eml \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg ./my_provider.py
+```
+
+The external provider receives JSON on stdin:
+
+```json
+{
+  "source": {},
+  "message": {},
+  "wants_reply": false
+}
+```
+
+It should return a JSON object like:
+
+```json
+{
+  "decision": "draft_reply",
+  "summary": "Short analysis",
+  "reply_text": "Thanks for your email."
+}
+```

@@ -2,6 +2,7 @@ package examples_test
 
 import (
 	"encoding/json"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -92,6 +93,57 @@ func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
 	}
 }
 
+func TestAgentInboxAssistantUsesExternalProvider(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	providerPath := writeTempFile(t, "provider.py", `import json
+import sys
+
+payload = json.load(sys.stdin)
+message = payload["message"]
+print(json.dumps({
+  "decision": "draft_reply",
+  "summary": message["content"]["snippet"],
+  "reply_text": "Handled by external provider."
+}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+		"--from-address", "support@nono.im",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("agent example failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["decision"] != "draft_reply" {
+		t.Fatalf("expected provider-driven draft_reply decision, got %#v", analysis["decision"])
+	}
+	if analysis["provider"] != "external" {
+		t.Fatalf("expected provider metadata, got %#v", analysis["provider"])
+	}
+
+	reply := mustMap(t, report["reply"])
+	draft := mustMap(t, reply["draft"])
+	if draft["body_text"] != "Handled by external provider." {
+		t.Fatalf("expected provider reply text, got %#v", draft["body_text"])
+	}
+}
+
 func requirePython(t *testing.T) string {
 	t.Helper()
 
@@ -123,6 +175,16 @@ func buildMailcliBinary(t *testing.T, repoRoot string) string {
 		t.Fatalf("failed to build mailcli binary: %v\n%s", err, string(output))
 	}
 	return binPath
+}
+
+func writeTempFile(t *testing.T, name, content string) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), name)
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
 }
 
 func mustMap(t *testing.T, value any) map[string]any {

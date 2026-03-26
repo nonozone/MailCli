@@ -213,6 +213,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - Python 解析示例：`examples/python/parse_email.py`
 - Python 回复 dry-run 示例：`examples/python/reply_dry_run.py`
 - Python inbox agent 示例：`examples/python/agent_inbox_assistant.py`
+  支持内置规则 provider，也支持外部命令 provider。
 - Shell 解析示例：`examples/shell/parse_email.sh`
 - Shell 回复 dry-run 示例：`examples/shell/reply_dry_run.sh`
 
