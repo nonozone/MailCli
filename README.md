@@ -39,6 +39,13 @@ MailCLI is an independent, open-source toolkit that turns raw email into AI-cons
 - `mailcli send` can also hand MIME to the configured driver when an account is available.
 - `mailcli reply` can now also hand MIME to the configured driver when an account is available.
 
+## Examples
+
+- Python parse example: `examples/python/parse_email.py`
+- Python reply dry-run example: `examples/python/reply_dry_run.py`
+- Shell parse example: `examples/shell/parse_email.sh`
+- Shell reply dry-run example: `examples/shell/reply_dry_run.sh`
+
 ## Minimal Config Example
 
 ```yaml
