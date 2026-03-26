@@ -14,7 +14,7 @@ func cleanHTML(input string) (string, error) {
 		return "", err
 	}
 
-	doc.Find("style,script,svg,textarea").Each(func(i int, s *goquery.Selection) {
+	doc.Find("style,script,svg,textarea,noscript,template,nav,footer,form").Each(func(i int, s *goquery.Selection) {
 		s.Remove()
 	})
 
@@ -24,8 +24,7 @@ func cleanHTML(input string) (string, error) {
 		}
 	})
 
-	htmlStr, err := doc.Find("body").Html()
-	if err == nil && strings.TrimSpace(htmlStr) != "" {
+	if htmlStr, ok := selectPrimaryHTML(doc); ok {
 		return htmlStr, nil
 	}
 
@@ -34,6 +33,33 @@ func cleanHTML(input string) (string, error) {
 		return "", err
 	}
 	return full, nil
+}
+
+func selectPrimaryHTML(doc *goquery.Document) (string, bool) {
+	for _, selector := range []string{"main", "article", `[role="main"]`} {
+		selection := doc.Find(selector).First()
+		if selection.Length() == 0 {
+			continue
+		}
+
+		htmlStr, err := selection.Html()
+		if err == nil && strings.TrimSpace(htmlStr) != "" {
+			return htmlStr, true
+		}
+	}
+
+	body := doc.Find("body").First()
+	if body.Length() > 0 {
+		body.ChildrenFiltered("header").Each(func(i int, s *goquery.Selection) {
+			s.Remove()
+		})
+		htmlStr, err := body.Html()
+		if err == nil && strings.TrimSpace(htmlStr) != "" {
+			return htmlStr, true
+		}
+	}
+
+	return "", false
 }
 
 func filterAttrs(node *html.Node) {
