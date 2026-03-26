@@ -19,6 +19,8 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 将本地 `.eml` 或 stdin 解析为 `StandardMessage`
 - 从已配置的 IMAP 账户列出邮件
 - 通过序号、UID 或 `Message-ID` 抓取并解析邮件
+- 将近期邮件同步到本地可检索索引
+- 在不重复远程抓取的前提下检索本地邮件索引
 - 编译出站草稿和回复草稿
 - 通过 SMTP 为 IMAP 风格账户发信
 - 通过稳定 JSON 契约与 Python / shell agent 工作流协作
@@ -28,6 +30,8 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - `mailcli parse`
 - `mailcli list`
 - `mailcli get`
+- `mailcli sync`
+- `mailcli search`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -111,6 +115,8 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli parse --format json|yaml|table <file|->`
 - `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
+- `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
+- `mailcli search [--index <path>] [--limit <n>] <query>`
 
 ### 写路径
 
@@ -155,6 +161,12 @@ MailCLI 不只是一个 parser，它是 agent 和邮件系统之间的桥梁。
 Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMessage -> Agent
 ```
 
+### 本地检索循环
+
+```text
+Agent -> mailcli sync -> Local Index -> mailcli search -> Indexed Message Context -> Agent
+```
+
 ### 回复循环
 
 ```text
@@ -171,6 +183,7 @@ Agent -> DraftMessage -> mailcli send -> Composer -> Raw MIME -> Driver -> Provi
 
 - [Agent 协作流程](docs/zh-CN/agent-workflows.md)
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
+- [本地索引规范](docs/zh-CN/spec/local-index.md)
 
 ## 从源码构建
 
@@ -241,6 +254,18 @@ mailcli list --config ~/.config/mailcli/config.yaml --format table
 mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 ```
 
+### 把近期邮件同步到本地索引
+
+```bash
+mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
+```
+
+### 检索本地索引
+
+```bash
+mailcli search invoice
+```
+
 ### Dry-run 新邮件
 
 ```bash
@@ -278,6 +303,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - [x] 增加基础 IMAP 读路径
 - [x] 为 IMAP 风格账户增加 SMTP 发信路径
 - [x] 完成 IMAP `FetchRaw`，支持序号、UID 和 `Message-ID`
+- [x] 增加面向 agent 检索闭环的本地文件索引 / 搜索基线
 - [x] 将常见发送失败映射为稳定结果码
 
 ### Phase 3: The Memory

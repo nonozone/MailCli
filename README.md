@@ -19,6 +19,8 @@ Working today:
 - parse local `.eml` input or stdin into `StandardMessage`
 - list messages from configured IMAP accounts
 - fetch and parse messages by sequence number, UID, or `Message-ID`
+- sync recent messages into a local searchable index
+- search a local message index without re-fetching remote mail
 - compile outbound drafts and replies
 - send through SMTP-backed IMAP-style accounts
 - integrate with Python or shell agent workflows through stable JSON contracts
@@ -28,6 +30,8 @@ Stable enough to build against for `v0.1 RC`:
 - `mailcli parse`
 - `mailcli list`
 - `mailcli get`
+- `mailcli sync`
+- `mailcli search`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -111,6 +115,8 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli parse --format json|yaml|table <file|->`
 - `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
+- `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
+- `mailcli search [--index <path>] [--limit <n>] <query>`
 
 ### Write path
 
@@ -155,6 +161,12 @@ MailCLI is not just a parser. It is the bridge between agents and email systems.
 Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMessage -> Agent
 ```
 
+### Local retrieval loop
+
+```text
+Agent -> mailcli sync -> Local Index -> mailcli search -> Indexed Message Context -> Agent
+```
+
 ### Reply loop
 
 ```text
@@ -171,6 +183,7 @@ Detailed workflow docs:
 
 - [Agent Workflows](docs/en/agent-workflows.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
+- [Local Index Spec](docs/en/spec/local-index.md)
 
 ## Build From Source
 
@@ -241,6 +254,18 @@ mailcli list --config ~/.config/mailcli/config.yaml --format table
 mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 ```
 
+### Sync recent messages into the local index
+
+```bash
+mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
+```
+
+### Search the local index
+
+```bash
+mailcli search invoice
+```
+
 ### Dry-run an outbound draft
 
 ```bash
@@ -278,6 +303,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - [x] Add baseline IMAP read path
 - [x] Add SMTP-backed send path for IMAP-style accounts
 - [x] Implement IMAP `FetchRaw` for sequence numbers, UIDs, and `Message-ID`
+- [x] Add a local file-backed indexing/search baseline for agent retrieval loops
 - [x] Map operational send failures into stable result codes
 
 ### Phase 3: The Memory

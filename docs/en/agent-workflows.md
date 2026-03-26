@@ -78,6 +78,38 @@ Reference example:
 
 - [Agent Inbox Assistant](examples/agent-inbox-assistant.md)
 
+## The Local Retrieval Path
+
+Use this path when an agent wants a fast local retrieval loop across recently synced messages.
+
+```mermaid
+flowchart LR
+  A["Agent"] --> B["mailcli sync"]
+  B --> C["Driver"]
+  C --> D["Raw Email"]
+  D --> E["Parser"]
+  E --> F["Local Index"]
+  F --> G["mailcli search"]
+  G --> H["Indexed Message Results"]
+  H --> A
+```
+
+### Typical local retrieval loop
+
+1. Agent calls `mailcli sync`
+2. `MailCLI` lists recent messages from the configured account
+3. `MailCLI` fetches and parses each message
+4. `MailCLI` stores normalized records in the local index
+5. Agent calls `mailcli search <query>`
+6. Agent decides whether to fetch a full message again, reply, or continue triage
+
+### Example
+
+```bash
+mailcli sync --config ~/.config/mailcli/config.yaml --limit 20
+mailcli search invoice
+```
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.
@@ -183,6 +215,12 @@ mailcli send --dry-run draft.json
 mailcli list -> choose id -> mailcli get -> classify -> archive/reply/escalate
 ```
 
+### Local retrieval
+
+```text
+mailcli sync -> mailcli search -> choose id -> mailcli get/reply
+```
+
 ### Support reply
 
 ```text
@@ -223,6 +261,8 @@ For agent developers, the stable contracts should be:
 - `mailcli list`
 - `mailcli get`
 - `mailcli parse`
+- `mailcli sync`
+- `mailcli search`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`

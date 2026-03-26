@@ -78,6 +78,38 @@ mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 
 - [Agent Inbox Assistant](examples/agent-inbox-assistant.md)
 
+## 本地检索路径
+
+当 agent 希望围绕“最近同步过的邮件”进行快速本地检索时，走这条链路。
+
+```mermaid
+flowchart LR
+  A["Agent"] --> B["mailcli sync"]
+  B --> C["Driver"]
+  C --> D["Raw Email"]
+  D --> E["Parser"]
+  E --> F["Local Index"]
+  F --> G["mailcli search"]
+  G --> H["Indexed Message Results"]
+  H --> A
+```
+
+### 典型本地检索循环
+
+1. agent 调用 `mailcli sync`
+2. `MailCLI` 从当前账户列出近期邮件
+3. `MailCLI` 抓取并解析这些邮件
+4. `MailCLI` 把归一化结果写入本地索引
+5. agent 调用 `mailcli search <query>`
+6. agent 决定是否继续 `get` 全量邮件、直接回复，或继续分拣
+
+### 示例
+
+```bash
+mailcli sync --config ~/.config/mailcli/config.yaml --limit 20
+mailcli search invoice
+```
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。
@@ -183,6 +215,12 @@ mailcli send --dry-run draft.json
 mailcli list -> 选中 id -> mailcli get -> 分类 -> 归档 / 回复 / 升级
 ```
 
+### 本地检索
+
+```text
+mailcli sync -> mailcli search -> 选中 id -> mailcli get/reply
+```
+
 ### 客服回复
 
 ```text
@@ -223,6 +261,8 @@ agent 生成 DraftMessage -> mailcli send
 - `mailcli list`
 - `mailcli get`
 - `mailcli parse`
+- `mailcli sync`
+- `mailcli search`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
