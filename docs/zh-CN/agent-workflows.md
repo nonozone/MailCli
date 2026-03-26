@@ -64,6 +64,7 @@ flowchart LR
 
 - 干净的 Markdown 正文
 - 归一化后的 header 与线程元数据
+- 提取出来的 `codes`，用于验证码类邮件
 - 已提取的动作，例如 `unsubscribe`、`view_online`、`confirm_subscription`、`report_abuse`、`view_attachment`、`download_attachment`、`view_invoice`、`pay_invoice`、`reset_password`、`verify_sign_in`
 
 ### 示例

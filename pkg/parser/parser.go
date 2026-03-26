@@ -48,6 +48,7 @@ func Parse(raw []byte) (*schema.StandardMessage, error) {
 		Meta:       meta,
 		Content:    content,
 		Actions:    extractActions(meta, htmlBody, extractReportAbuseTargets(env)...),
+		Codes:      extractCodes(meta.Subject, env.Text, bodyMD),
 		TokenUsage: estimateTokenUsage(bodyMD),
 	}
 	if msg.ID == "" {

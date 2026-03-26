@@ -5,6 +5,7 @@ type StandardMessage struct {
 	Meta         MessageMeta   `json:"meta" yaml:"meta"`
 	Content      Content       `json:"content" yaml:"content"`
 	Actions      []Action      `json:"actions,omitempty" yaml:"actions,omitempty"`
+	Codes        []Code        `json:"codes,omitempty" yaml:"codes,omitempty"`
 	ErrorContext *ErrorContext `json:"error_context,omitempty" yaml:"error_context,omitempty"`
 	Labels       []string      `json:"labels,omitempty" yaml:"labels,omitempty"`
 	TokenUsage   *TokenUsage   `json:"token_usage,omitempty" yaml:"token_usage,omitempty"`
@@ -38,6 +39,12 @@ type Action struct {
 	Type  string `json:"type" yaml:"type"`
 	Label string `json:"label,omitempty" yaml:"label,omitempty"`
 	URL   string `json:"url,omitempty" yaml:"url,omitempty"`
+}
+
+type Code struct {
+	Type  string `json:"type" yaml:"type"`
+	Value string `json:"value" yaml:"value"`
+	Label string `json:"label,omitempty" yaml:"label,omitempty"`
 }
 
 type ErrorContext struct {

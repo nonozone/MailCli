@@ -33,6 +33,10 @@ func TestParsePlaintextEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/plaintext.eml", "../../testdata/golden/plaintext.json")
 }
 
+func TestParseVerificationEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/verification.eml", "../../testdata/golden/verification.json")
+}
+
 func assertFixtureMatchesGolden(t *testing.T, fixturePath, goldenPath string) {
 	t.Helper()
 
@@ -119,6 +123,41 @@ func TestParseBounceEmailExtractsErrorContext(t *testing.T) {
 
 	if got.ErrorContext == nil || got.ErrorContext.StatusCode == "" {
 		t.Fatalf("expected bounce status code to be extracted")
+	}
+}
+
+func TestParseExtractsVerificationCode(t *testing.T) {
+	raw := []byte("From: Security Team <security@example.com>\r\nTo: user@example.com\r\nSubject: Your verification code\r\nMessage-ID: <verify-inline@example.com>\r\nDate: Thu, 26 Mar 2026 12:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nYour verification code is 123 456.\r\nUse this one-time code to sign in.")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Codes) != 1 {
+		t.Fatalf("expected one extracted code, got %+v", got.Codes)
+	}
+	if got.Codes[0].Type != "verification_code" {
+		t.Fatalf("expected verification_code, got %q", got.Codes[0].Type)
+	}
+	if got.Codes[0].Value != "123456" {
+		t.Fatalf("expected normalized code value, got %q", got.Codes[0].Value)
+	}
+	if got.Codes[0].Label != "Verification code" {
+		t.Fatalf("expected verification label, got %q", got.Codes[0].Label)
+	}
+}
+
+func TestParseDoesNotExtractOrderNumberAsVerificationCode(t *testing.T) {
+	raw := []byte("From: Store <store@example.com>\r\nTo: user@example.com\r\nSubject: Order received\r\nMessage-ID: <order-inline@example.com>\r\nDate: Thu, 26 Mar 2026 12:10:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nYour order number is 123456.\r\nWe are processing it now.")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Codes) != 0 {
+		t.Fatalf("expected no verification codes, got %+v", got.Codes)
 	}
 }
 

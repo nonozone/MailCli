@@ -1,0 +1,32 @@
+{
+  "id": "<verification-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Security Team",
+      "address": "security@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Your verification code",
+    "date": "2026-03-26T04:00:00Z",
+    "message_id": "<verification-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "Your verification code is 123 456.\nUse this one-time code to sign in to Example.\nThis code expires in 10 minutes.",
+    "snippet": "Your verification code is 123 456. Use this one-time code to sign in to Example. This code expires in 10 minutes."
+  },
+  "codes": [
+    {
+      "type": "verification_code",
+      "value": "123456",
+      "label": "Verification code"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 21
+  }
+}
