@@ -96,3 +96,7 @@ It should return a JSON object like:
   "reply_text": "Thanks for your email."
 }
 ```
+
+Contract reference:
+
+- [Agent Provider Contract](../spec/agent-provider.md)

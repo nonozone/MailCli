@@ -152,6 +152,12 @@ def analyze_with_provider(message: dict[str, Any], args: argparse.Namespace) -> 
         analysis = json.loads(output)
         if not isinstance(analysis, dict):
             raise SystemExit("external provider must return a JSON object")
+        decision = analysis.get("decision")
+        if not isinstance(decision, str) or not decision.strip():
+            raise SystemExit("external provider response must include a non-empty decision")
+        reply_text = analysis.get("reply_text")
+        if reply_text is not None and not isinstance(reply_text, str):
+            raise SystemExit("external provider reply_text must be a string when present")
         analysis.setdefault("provider", "external")
         return analysis
 

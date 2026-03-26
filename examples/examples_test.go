@@ -144,6 +144,32 @@ print(json.dumps({
 	}
 }
 
+func TestAgentInboxAssistantRejectsInvalidExternalProviderResponse(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	providerPath := writeTempFile(t, "provider_invalid.py", `import json
+print(json.dumps({"summary": "missing decision"}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected invalid provider response to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider response must include a non-empty decision") {
+		t.Fatalf("expected contract error, got %s", string(output))
+	}
+}
+
 func requirePython(t *testing.T) string {
 	t.Helper()
 

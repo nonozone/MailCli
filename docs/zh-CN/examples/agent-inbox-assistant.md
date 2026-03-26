@@ -94,3 +94,7 @@ python3 examples/python/agent_inbox_assistant.py \
   "reply_text": "Thanks for your email."
 }
 ```
+
+契约参考：
+
+- [Agent Provider 契约](../spec/agent-provider.md)
