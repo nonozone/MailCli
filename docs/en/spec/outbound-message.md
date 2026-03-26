@@ -122,6 +122,21 @@ Current stable error codes:
 - content-transfer encoding
 - attachment packaging
 
+## v0.1 RC Support Matrix
+
+Current baseline behavior:
+
+- `body_text` only: emits a single `text/plain` message
+- `body_md` plus optional `body_text`: emits `multipart/alternative`
+- `attachments`: emits `multipart/mixed`, with the body as the first part
+- `reply_to_message_id` and `references`: emitted into reply headers
+
+Current limitations:
+
+- HTML output is generated from Markdown with a deliberately simple renderer
+- attachment support is path-based; inline attachments and remote fetch are out of scope
+- this is a transport-safe baseline, not a full newsletter-grade MIME engine
+
 ## Command Direction
 
 Recommended future commands:
@@ -136,6 +151,12 @@ This keeps the contract language-agnostic and works well for agents, shell scrip
 ## Current Status
 
 The repository already contains a local MIME composer in `pkg/composer` for `DraftMessage` and `ReplyDraft`.
+
+That composer now supports:
+
+- plain `text/plain` output
+- `multipart/alternative` when Markdown content is present
+- `multipart/mixed` when attachments are present
 
 `mailcli send` is now wired for driver-backed transport when an account is configured.
 

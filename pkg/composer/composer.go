@@ -2,7 +2,14 @@ package composer
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
+	"html"
+	"mime"
+	"mime/multipart"
+	"net/textproto"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -11,11 +18,10 @@ import (
 
 func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {
 	headers := map[string]string{
-		"Message-ID": fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano()),
-		"Date":       time.Now().UTC().Format(time.RFC1123Z),
-		"Subject":    draft.Subject,
+		"Message-ID":   fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano()),
+		"Date":         time.Now().UTC().Format(time.RFC1123Z),
+		"Subject":      draft.Subject,
 		"MIME-Version": "1.0",
-		"Content-Type": "text/plain; charset=UTF-8",
 	}
 
 	if draft.From != nil {
@@ -34,17 +40,20 @@ func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {
 		headers[k] = v
 	}
 
-	body := strings.TrimSpace(firstBody(draft.BodyText, draft.BodyMD))
+	contentType, body, err := composeMessageBody(draft.BodyText, draft.BodyMD, draft.Attachments)
+	if err != nil {
+		return nil, err
+	}
+	headers["Content-Type"] = contentType
 	return renderMessage(headers, body), nil
 }
 
 func ComposeReply(draft schema.ReplyDraft) ([]byte, error) {
 	headers := map[string]string{
-		"Message-ID": fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano()),
-		"Date":       time.Now().UTC().Format(time.RFC1123Z),
-		"Subject":    ensureReplySubject(draft.Subject),
+		"Message-ID":   fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano()),
+		"Date":         time.Now().UTC().Format(time.RFC1123Z),
+		"Subject":      ensureReplySubject(draft.Subject),
 		"MIME-Version": "1.0",
-		"Content-Type": "text/plain; charset=UTF-8",
 	}
 
 	if draft.From != nil {
@@ -66,11 +75,15 @@ func ComposeReply(draft schema.ReplyDraft) ([]byte, error) {
 		headers["References"] = strings.Join(draft.References, " ")
 	}
 
-	body := strings.TrimSpace(firstBody(draft.BodyText, draft.BodyMD))
+	contentType, body, err := composeMessageBody(draft.BodyText, draft.BodyMD, draft.Attachments)
+	if err != nil {
+		return nil, err
+	}
+	headers["Content-Type"] = contentType
 	return renderMessage(headers, body), nil
 }
 
-func renderMessage(headers map[string]string, body string) []byte {
+func renderMessage(headers map[string]string, body []byte) []byte {
 	var buf bytes.Buffer
 	writeHeader(&buf, "From", headers["From"])
 	writeHeader(&buf, "To", headers["To"])
@@ -91,7 +104,7 @@ func renderMessage(headers map[string]string, body string) []byte {
 		writeHeader(&buf, key, value)
 	}
 	buf.WriteString("\r\n")
-	buf.WriteString(body)
+	buf.Write(body)
 	return buf.Bytes()
 }
 
@@ -136,4 +149,183 @@ func formatAddress(addr schema.Address) string {
 		return addr.Address
 	}
 	return fmt.Sprintf("%s <%s>", addr.Name, addr.Address)
+}
+
+func composeMessageBody(bodyText, bodyMD string, attachments []schema.Attachment) (string, []byte, error) {
+	bodyContentType, body, err := composeBodyPart(bodyText, bodyMD)
+	if err != nil {
+		return "", nil, err
+	}
+
+	if len(attachments) == 0 {
+		return bodyContentType, body, nil
+	}
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	if err := writeMultipartPart(writer, bodyContentType, body, map[string]string{
+		"Content-Transfer-Encoding": "8bit",
+	}); err != nil {
+		return "", nil, err
+	}
+
+	for _, attachment := range attachments {
+		if err := writeAttachmentPart(writer, attachment); err != nil {
+			return "", nil, err
+		}
+	}
+
+	if err := writer.Close(); err != nil {
+		return "", nil, err
+	}
+
+	return fmt.Sprintf("multipart/mixed; boundary=%s", writer.Boundary()), buf.Bytes(), nil
+}
+
+func composeBodyPart(bodyText, bodyMD string) (string, []byte, error) {
+	if strings.TrimSpace(bodyMD) == "" {
+		return "text/plain; charset=UTF-8", []byte(strings.TrimSpace(firstBody(bodyText, bodyMD))), nil
+	}
+
+	plain := strings.TrimSpace(firstBody(bodyText, markdownToPlain(bodyMD)))
+	htmlBody := strings.TrimSpace(markdownToHTML(bodyMD))
+
+	var buf bytes.Buffer
+	writer := multipart.NewWriter(&buf)
+
+	if err := writeMultipartPart(writer, "text/plain; charset=UTF-8", []byte(plain), map[string]string{
+		"Content-Transfer-Encoding": "8bit",
+	}); err != nil {
+		return "", nil, err
+	}
+	if err := writeMultipartPart(writer, "text/html; charset=UTF-8", []byte(htmlBody), map[string]string{
+		"Content-Transfer-Encoding": "8bit",
+	}); err != nil {
+		return "", nil, err
+	}
+
+	if err := writer.Close(); err != nil {
+		return "", nil, err
+	}
+
+	return fmt.Sprintf("multipart/alternative; boundary=%s", writer.Boundary()), buf.Bytes(), nil
+}
+
+func writeMultipartPart(writer *multipart.Writer, contentType string, body []byte, extraHeaders map[string]string) error {
+	header := textproto.MIMEHeader{}
+	header.Set("Content-Type", contentType)
+	for key, value := range extraHeaders {
+		header.Set(key, value)
+	}
+
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = part.Write(body)
+	return err
+}
+
+func writeAttachmentPart(writer *multipart.Writer, attachment schema.Attachment) error {
+	path := strings.TrimSpace(attachment.Path)
+	if path == "" {
+		return fmt.Errorf("attachment path is required")
+	}
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	name := strings.TrimSpace(attachment.Name)
+	if name == "" {
+		name = filepath.Base(path)
+	}
+	if name == "." || name == "" {
+		return fmt.Errorf("attachment name is required")
+	}
+
+	contentType := strings.TrimSpace(attachment.ContentType)
+	if contentType == "" {
+		contentType = mime.TypeByExtension(filepath.Ext(name))
+	}
+	if contentType == "" {
+		contentType = "application/octet-stream"
+	}
+
+	header := textproto.MIMEHeader{}
+	header.Set("Content-Type", fmt.Sprintf("%s; name=%q", contentType, name))
+	header.Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	header.Set("Content-Transfer-Encoding", "base64")
+
+	part, err := writer.CreatePart(header)
+	if err != nil {
+		return err
+	}
+
+	_, err = part.Write([]byte(wrapBase64(base64.StdEncoding.EncodeToString(content))))
+	return err
+}
+
+func markdownToPlain(input string) string {
+	replacer := strings.NewReplacer(
+		"**", "",
+		"__", "",
+		"`", "",
+	)
+
+	lines := strings.Split(strings.TrimSpace(input), "\n")
+	for i, line := range lines {
+		line = strings.TrimSpace(line)
+		line = strings.TrimLeft(line, "#")
+		lines[i] = strings.TrimSpace(replacer.Replace(line))
+	}
+
+	return strings.TrimSpace(strings.Join(lines, "\n"))
+}
+
+func markdownToHTML(input string) string {
+	lines := strings.Split(strings.TrimSpace(input), "\n")
+	var blocks []string
+
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+
+		switch {
+		case strings.HasPrefix(trimmed, "### "):
+			blocks = append(blocks, "<h3>"+html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "### ")))+"</h3>")
+		case strings.HasPrefix(trimmed, "## "):
+			blocks = append(blocks, "<h2>"+html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")))+"</h2>")
+		case strings.HasPrefix(trimmed, "# "):
+			blocks = append(blocks, "<h1>"+html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "# ")))+"</h1>")
+		default:
+			blocks = append(blocks, "<p>"+html.EscapeString(trimmed)+"</p>")
+		}
+	}
+
+	if len(blocks) == 0 {
+		return ""
+	}
+
+	return strings.Join(blocks, "\n")
+}
+
+func wrapBase64(input string) string {
+	if input == "" {
+		return ""
+	}
+
+	const lineLength = 76
+	var out []string
+	for len(input) > lineLength {
+		out = append(out, input[:lineLength])
+		input = input[lineLength:]
+	}
+	out = append(out, input)
+	return strings.Join(out, "\r\n")
 }

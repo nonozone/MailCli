@@ -27,7 +27,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 
 - HTML 清洗与 URL 归一化策略
 - 更适合 inbox workflow 的 list/search 语义
-- 出站 composer 的 multipart 与附件支持
+- 出站 HTML 渲染质量和附件体验
 - 更广的 provider 覆盖与扩展文档
 
 ## 核心愿景

@@ -27,7 +27,7 @@ Still evolving:
 
 - HTML cleanup and URL normalization heuristics
 - richer list/search semantics for inbox workflows
-- multipart and attachment support in the outbound composer
+- richer outbound HTML rendering and attachment ergonomics
 - broader provider coverage and extension guidance
 
 ## Vision
