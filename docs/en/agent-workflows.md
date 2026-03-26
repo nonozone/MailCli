@@ -123,6 +123,8 @@ mailcli search --full invoice
 
 For multi-account local retrieval, combine `search` with `--account` and `--mailbox`.
 
+Compact local search results now expose a relevance `score`, which makes it easier for agents to pick the next message without additional ranking logic.
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

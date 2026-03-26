@@ -276,6 +276,8 @@ mailcli search --full invoice
 
 在多账户场景下，可以使用 `--account` 和 `--mailbox` 对本地结果做过滤。
 
+当前紧凑搜索结果还会返回一个确定性的 `score` 字段，并优先按相关性、再按时间排序。
+
 ### Dry-run 新邮件
 
 ```bash

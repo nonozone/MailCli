@@ -68,6 +68,17 @@ $CACHE_DIR/mailcli/index.json
 
 这还不是全文检索，只是一个确定性的基础版本，优先服务 agent 工作流以及未来存储后端的演进。
 
+当前紧凑搜索结果还会返回一个确定性的 `score` 字段。
+
+当前排序权重大致偏向于：
+
+- subject 命中
+- snippet 命中
+- body markdown 命中
+- 发件人命中
+
+结果会先按 score 排序，再按本地索引时间排序。
+
 `mailcli search` 也支持按以下维度做本地过滤：
 
 - account

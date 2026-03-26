@@ -180,3 +180,58 @@ func TestFileStoreSearchSupportsAccountAndMailboxFilters(t *testing.T) {
 		t.Fatalf("expected personal record, got %q", results[0].ID)
 	}
 }
+
+func TestFileStoreSearchRanksMoreRelevantResultsFirst(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, record := range []IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "subject-hit",
+			Message: schema.StandardMessage{
+				ID: "subject-hit",
+				Meta: schema.MessageMeta{
+					Subject: "Invoice invoice for March",
+				},
+				Content: schema.Content{
+					Snippet: "Billing reminder",
+					BodyMD:  "March billing summary",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "body-hit",
+			Message: schema.StandardMessage{
+				ID: "body-hit",
+				Meta: schema.MessageMeta{
+					Subject: "Monthly update",
+				},
+				Content: schema.Content{
+					Snippet: "General update",
+					BodyMD:  "Invoice details are in the attached PDF.",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(record); err != nil {
+			t.Fatalf("expected index write to succeed: %v", err)
+		}
+	}
+
+	results, err := store.Search(SearchQuery{Query: "invoice", Limit: 10})
+	if err != nil {
+		t.Fatalf("expected ranked search to succeed: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected two ranked results, got %d", len(results))
+	}
+	if results[0].ID != "subject-hit" {
+		t.Fatalf("expected subject-heavy result first, got %q", results[0].ID)
+	}
+	if results[0].Score <= results[1].Score {
+		t.Fatalf("expected first result to have higher score, got %d <= %d", results[0].Score, results[1].Score)
+	}
+}

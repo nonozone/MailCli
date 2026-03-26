@@ -276,6 +276,8 @@ mailcli search --full invoice
 
 Use `--account` and `--mailbox` to filter local results in multi-account setups.
 
+Compact search results now include a deterministic `score` field, and results are ordered by relevance before recency.
+
 ### Dry-run an outbound draft
 
 ```bash

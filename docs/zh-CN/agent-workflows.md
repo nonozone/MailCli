@@ -123,6 +123,8 @@ mailcli search --full invoice
 
 在多账户本地检索场景下，可以结合 `--account` 和 `--mailbox` 使用。
 
+当前紧凑本地搜索结果也会暴露一个相关性 `score`，方便 agent 在不额外做排序逻辑的情况下决定下一步处理哪封邮件。
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。

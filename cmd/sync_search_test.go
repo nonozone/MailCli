@@ -179,3 +179,29 @@ func TestSearchCommandSupportsAccountAndMailboxFilters(t *testing.T) {
 		t.Fatalf("expected personal message to remain, got %s", out.String())
 	}
 }
+
+func TestSearchCommandIncludesScoreInCompactResults(t *testing.T) {
+	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+
+	syncCmd := NewRootCmd()
+	syncCmd.SetOut(&bytes.Buffer{})
+	syncCmd.SetErr(&bytes.Buffer{})
+	syncCmd.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "2"})
+	if err := syncCmd.Execute(); err != nil {
+		t.Fatalf("expected sync command to succeed: %v", err)
+	}
+
+	searchCmd := NewRootCmd()
+	var out bytes.Buffer
+	searchCmd.SetOut(&out)
+	searchCmd.SetErr(&out)
+	searchCmd.SetArgs([]string{"search", "--index", indexPath, "invoice"})
+	if err := searchCmd.Execute(); err != nil {
+		t.Fatalf("expected search command to succeed: %v", err)
+	}
+
+	if !strings.Contains(out.String(), `"score":`) {
+		t.Fatalf("expected compact search output to include score, got %s", out.String())
+	}
+}

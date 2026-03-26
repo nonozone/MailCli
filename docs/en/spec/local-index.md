@@ -68,6 +68,17 @@ Current local search is case-insensitive substring matching over a combined text
 
 This is not full-text search yet. It is a deterministic baseline intended for agent workflows and future storage evolution.
 
+Current compact search results also include a deterministic `score` field.
+
+Ranking is currently weighted toward:
+
+- subject matches
+- snippet matches
+- body markdown matches
+- sender matches
+
+Results are ordered by score first, then by recency of local indexing.
+
 `mailcli search` also supports local filtering by:
 
 - account
