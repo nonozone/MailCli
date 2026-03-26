@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 
@@ -11,7 +9,9 @@ import (
 )
 
 func newParseCmd() *cobra.Command {
-	return &cobra.Command{
+	var format string
+
+	cmd := &cobra.Command{
 		Use:   "parse [file|-]",
 		Short: "Parse an email into normalized JSON",
 		Args:  cobra.ExactArgs(1),
@@ -26,15 +26,12 @@ func newParseCmd() *cobra.Command {
 				return err
 			}
 
-			encoder := json.NewEncoder(cmd.OutOrStdout())
-			encoder.SetIndent("", "  ")
-			if err := encoder.Encode(msg); err != nil {
-				return fmt.Errorf("encode json: %w", err)
-			}
-
-			return nil
+			return writeMessage(cmd.OutOrStdout(), msg, format)
 		},
 	}
+
+	cmd.Flags().StringVar(&format, "format", "json", "output format: json, yaml, table")
+	return cmd
 }
 
 func readInput(cmd *cobra.Command, arg string) ([]byte, error) {

@@ -52,6 +52,53 @@ func TestParseCommandReadsStdin(t *testing.T) {
 	}
 }
 
+func TestParseCommandSupportsYAMLFormat(t *testing.T) {
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"parse", "--format", "yaml", "../testdata/emails/plaintext.eml"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected yaml parse to succeed: %v", err)
+	}
+
+	if !strings.Contains(out.String(), "content:") {
+		t.Fatalf("expected yaml output")
+	}
+}
+
+func TestParseCommandSupportsTableFormat(t *testing.T) {
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"parse", "--format", "table", "../testdata/emails/plaintext.eml"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected table parse to succeed: %v", err)
+	}
+
+	if !strings.Contains(out.String(), "FIELD") || !strings.Contains(out.String(), "VALUE") {
+		t.Fatalf("expected table output")
+	}
+}
+
+func TestParseCommandRejectsUnknownFormat(t *testing.T) {
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"parse", "--format", "xml", "../testdata/emails/plaintext.eml"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected unknown format to fail")
+	}
+}
+
 func loadFixture(t *testing.T, path string) string {
 	t.Helper()
 
