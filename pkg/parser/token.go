@@ -3,7 +3,7 @@ package parser
 import (
 	"strings"
 
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func estimateTokenUsage(input string) *schema.TokenUsage {

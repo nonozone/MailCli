@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func TestStandardMessageShape(t *testing.T) {

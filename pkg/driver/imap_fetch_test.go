@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/emersion/go-imap"
-	"github.com/yourname/mailcli/internal/config"
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func TestResolveFetchTargetUID(t *testing.T) {

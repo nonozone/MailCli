@@ -7,8 +7,8 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/yourname/mailcli/internal/config"
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func newListCmd() *cobra.Command {

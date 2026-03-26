@@ -7,11 +7,11 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/yourname/mailcli/internal/config"
-	"github.com/yourname/mailcli/pkg/composer"
-	"github.com/yourname/mailcli/pkg/driver"
-	"github.com/yourname/mailcli/pkg/parser"
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/composer"
+	"github.com/nonozone/MailCli/pkg/driver"
+	"github.com/nonozone/MailCli/pkg/parser"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 var errSendFailure = errors.New("outbound command failed")

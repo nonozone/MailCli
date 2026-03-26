@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/jhillyerd/enmime"
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func readEnvelope(raw []byte) (*enmime.Envelope, error) {

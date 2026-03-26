@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/yourname/mailcli/cmd"
+	"github.com/nonozone/MailCli/cmd"
 )
 
 func main() {

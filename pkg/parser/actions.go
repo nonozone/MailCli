@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 var urlRegex = regexp.MustCompile(`https?://[^\s>"]+`)

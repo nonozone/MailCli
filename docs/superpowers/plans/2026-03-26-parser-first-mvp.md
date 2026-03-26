@@ -15,7 +15,7 @@
 - The current workspace is not yet a Git repository.
 - The current workspace does not yet have a Go module.
 - This plan uses parser-first scope only. It does not include IMAP list/send implementation.
-- If the final GitHub module path is not known yet, initialize with `github.com/yourname/mailcli` and replace it later before public release.
+- If the final GitHub module path is not known yet, initialize with `github.com/nonozone/MailCli` and replace it later before public release.
 
 ## Target File Layout
 
@@ -76,7 +76,7 @@ Expected: repository is initialized and `git status` works.
 Run:
 
 ```bash
-go mod init github.com/yourname/mailcli
+go mod init github.com/nonozone/MailCli
 ```
 
 Expected: `go.mod` exists.

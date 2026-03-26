@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {

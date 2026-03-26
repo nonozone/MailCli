@@ -1,4 +1,4 @@
-module github.com/yourname/mailcli
+module github.com/nonozone/MailCli
 
 go 1.26.1
 

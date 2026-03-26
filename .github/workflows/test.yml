@@ -1,0 +1,33 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run Go tests
+        run: go test ./...
+
+      - name: Build mailcli
+        run: go build ./cmd/mailcli
+
+      - name: Verify Python examples compile
+        run: |
+          python3 -m py_compile $(find examples/python -name '*.py' -print) $(find examples/providers -name '*.py' -print)

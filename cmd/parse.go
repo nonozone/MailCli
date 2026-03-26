@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/yourname/mailcli/pkg/parser"
+	"github.com/nonozone/MailCli/pkg/parser"
 )
 
 func newParseCmd() *cobra.Command {

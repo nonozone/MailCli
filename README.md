@@ -10,6 +10,26 @@ Traditional mail tools are designed for humans reading inboxes. MailCLI is desig
 
 Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and composable workflows.
 
+## Project Status
+
+MailCLI is currently in **pre-v0.1 release candidate** stage.
+
+Working today:
+
+- parse local `.eml` input or stdin into `StandardMessage`
+- list messages from configured IMAP accounts
+- fetch and parse messages by sequence number, UID, or `Message-ID`
+- compile outbound drafts and replies
+- send through SMTP-backed IMAP-style accounts
+- integrate with Python or shell agent workflows through stable JSON contracts
+
+Still evolving:
+
+- HTML cleanup and URL normalization heuristics
+- richer list/search semantics for inbox workflows
+- multipart and attachment support in the outbound composer
+- broader provider coverage and extension guidance
+
 ## Vision
 
 In the AI era, email should not be treated as a pile of HTML and transport headers.
@@ -118,6 +138,13 @@ Detailed workflow docs:
 - [Agent Workflows](docs/en/agent-workflows.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
 
+## Build From Source
+
+```bash
+go build -o mailcli ./cmd/mailcli
+./mailcli --help
+```
+
 ## Minimal Config Example
 
 ```yaml
@@ -193,8 +220,8 @@ python3 examples/python/agent_inbox_assistant.py \
 - [x] Add config-backed account selection
 - [x] Add baseline IMAP read path
 - [x] Add SMTP-backed send path for IMAP-style accounts
-- [ ] Implement full `FetchRaw` for IMAP drivers
-- [ ] Improve transport error mapping into stable result codes
+- [x] Implement IMAP `FetchRaw` for sequence numbers, UIDs, and `Message-ID`
+- [x] Map operational send failures into stable result codes
 
 ### Phase 3: The Memory
 
@@ -236,6 +263,10 @@ We want contributors in these areas:
 
 Major changes should be discussed first.
 
+Start here:
+
+- [Contribution Guide](CONTRIBUTING.md)
+
 The project is community-open, but it is still directionally curated to stay focused on:
 
 - AI-native workflows
@@ -254,4 +285,5 @@ Apache-2.0
 - [Agent Provider Contract](docs/en/spec/agent-provider.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)
+- [Contribution Guide](CONTRIBUTING.md)
 - [中文文档](README.zh-CN.md)

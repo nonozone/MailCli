@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/yourname/mailcli/internal/config"
+	"github.com/nonozone/MailCli/internal/config"
 )
 
 func TestIMAPDriverSendRawUsesSMTPSettings(t *testing.T) {

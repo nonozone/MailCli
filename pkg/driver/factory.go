@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/yourname/mailcli/internal/config"
+	"github.com/nonozone/MailCli/internal/config"
 )
 
 func NewFromAccount(account config.AccountConfig) (Driver, error) {

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/yourname/mailcli/internal/config"
-	"github.com/yourname/mailcli/pkg/driver"
-	"github.com/yourname/mailcli/pkg/schema"
+	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/driver"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 type fakeSendDriver struct {
