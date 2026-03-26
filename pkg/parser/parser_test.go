@@ -127,7 +127,7 @@ func TestParseBounceEmailExtractsErrorContext(t *testing.T) {
 }
 
 func TestParseExtractsVerificationCode(t *testing.T) {
-	raw := []byte("From: Security Team <security@example.com>\r\nTo: user@example.com\r\nSubject: Your verification code\r\nMessage-ID: <verify-inline@example.com>\r\nDate: Thu, 26 Mar 2026 12:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nYour verification code is 123 456.\r\nUse this one-time code to sign in.")
+	raw := []byte("From: Security Team <security@example.com>\r\nTo: user@example.com\r\nSubject: Your verification code\r\nMessage-ID: <verify-inline@example.com>\r\nDate: Thu, 26 Mar 2026 12:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nYour verification code is 123 456.\r\nUse this one-time code to sign in.\r\nThis code expires in 10 minutes.")
 
 	got, err := Parse(raw)
 	if err != nil {
@@ -145,6 +145,9 @@ func TestParseExtractsVerificationCode(t *testing.T) {
 	}
 	if got.Codes[0].Label != "Verification code" {
 		t.Fatalf("expected verification label, got %q", got.Codes[0].Label)
+	}
+	if got.Codes[0].ExpiresInSeconds != 600 {
+		t.Fatalf("expected expiry in seconds, got %d", got.Codes[0].ExpiresInSeconds)
 	}
 }
 
@@ -190,6 +193,9 @@ func TestParseExtractsChineseVerificationCode(t *testing.T) {
 	}
 	if got.Codes[0].Value != "246810" {
 		t.Fatalf("expected chinese code value, got %q", got.Codes[0].Value)
+	}
+	if got.Codes[0].ExpiresInSeconds != 300 {
+		t.Fatalf("expected chinese expiry in seconds, got %d", got.Codes[0].ExpiresInSeconds)
 	}
 }
 

@@ -64,7 +64,7 @@ flowchart LR
 
 - 干净的 Markdown 正文
 - 归一化后的 header 与线程元数据
-- 提取出来的 `codes`，用于验证码类邮件，支持常见多语言关键词与“下一非空行”排版
+- 提取出来的 `codes`，用于验证码类邮件，支持常见多语言关键词、“下一非空行”排版，以及可选的 `expires_in_seconds`
 - 已提取的动作，例如 `unsubscribe`、`view_online`、`confirm_subscription`、`report_abuse`、`view_attachment`、`download_attachment`、`view_invoice`、`pay_invoice`、`reset_password`、`verify_sign_in`
 
 ### 示例

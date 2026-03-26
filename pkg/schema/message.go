@@ -42,9 +42,10 @@ type Action struct {
 }
 
 type Code struct {
-	Type  string `json:"type" yaml:"type"`
-	Value string `json:"value" yaml:"value"`
-	Label string `json:"label,omitempty" yaml:"label,omitempty"`
+	Type             string `json:"type" yaml:"type"`
+	Value            string `json:"value" yaml:"value"`
+	Label            string `json:"label,omitempty" yaml:"label,omitempty"`
+	ExpiresInSeconds int    `json:"expires_in_seconds,omitempty" yaml:"expires_in_seconds,omitempty"`
 }
 
 type ErrorContext struct {

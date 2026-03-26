@@ -26,7 +26,7 @@ MailCLI exists to make email as easy for agents to consume and produce as a JSON
   Drivers handle transport, parsers handle content, composers handle outbound MIME.
 - **Action extraction**
   Extract unsubscribe links, security entry points, verification codes, invoice/payment entry points, attachment entry points, bounce/error context, and thread-related metadata.
-  Verification-code extraction is conservative but now handles common multilingual and next-line layouts.
+  Verification-code extraction is conservative but now handles common multilingual and next-line layouts, and can expose `expires_in_seconds` when the mail states a relative expiry.
 - **Developer-friendly CLI**
   Support `json`, `yaml`, and `table` output formats, stdin pipelines, and scriptable commands.
 - **Bidirectional workflow**

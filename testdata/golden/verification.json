@@ -23,7 +23,8 @@
     {
       "type": "verification_code",
       "value": "123456",
-      "label": "Verification code"
+      "label": "Verification code",
+      "expires_in_seconds": 600
     }
   ],
   "token_usage": {
