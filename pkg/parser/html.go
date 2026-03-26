@@ -71,6 +71,9 @@ func filterAttrs(node *html.Node) {
 	for _, attr := range node.Attr {
 		switch attr.Key {
 		case "href", "src", "alt", "title":
+			if attr.Key == "href" {
+				attr.Val = cleanURL(attr.Val)
+			}
 			attrs = append(attrs, attr)
 		}
 	}

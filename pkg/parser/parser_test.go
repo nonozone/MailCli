@@ -284,6 +284,96 @@ func TestCleanHTMLBodyFallbackRemovesTopLevelHeaderNoise(t *testing.T) {
 	}
 }
 
+func TestParseCleansTrackedURLsInMarkdown(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Tracked link\r\nMessage-ID: <tracked-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><p><a href=\"https://tracker.example.com/click?redirect=https%3A%2F%2Fapp.example.com%2Freport\">Open report</a></p></body></html>")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(got.Content.BodyMD, "https://app.example.com/report") {
+		t.Fatalf("expected markdown to use cleaned target url, got %q", got.Content.BodyMD)
+	}
+	if strings.Contains(got.Content.BodyMD, "tracker.example.com") {
+		t.Fatalf("expected markdown to avoid tracked wrapper url, got %q", got.Content.BodyMD)
+	}
+}
+
+func TestExtractActionsCleansTrackedUnsubscribeURLs(t *testing.T) {
+	meta := schema.MessageMeta{
+		ListUnsubscribe: []string{
+			"https://tracker.example.com/click?redirect=https%3A%2F%2Fexample.com%2Funsubscribe",
+		},
+	}
+
+	actions := extractActions(meta, `<a href="https://tracker.example.com/click?redirect=https%3A%2F%2Fexample.com%2Funsubscribe">Unsubscribe</a>`)
+	if len(actions) == 0 {
+		t.Fatalf("expected unsubscribe action")
+	}
+	if actions[0].URL != "https://example.com/unsubscribe" {
+		t.Fatalf("expected cleaned unsubscribe url, got %q", actions[0].URL)
+	}
+}
+
+func TestExtractActionsKeepsOrdinaryURLsUnchanged(t *testing.T) {
+	meta := schema.MessageMeta{
+		ListUnsubscribe: []string{
+			"https://example.com/unsubscribe",
+		},
+	}
+
+	actions := extractActions(meta, "")
+	if len(actions) == 0 {
+		t.Fatalf("expected unsubscribe action")
+	}
+	if actions[0].URL != "https://example.com/unsubscribe" {
+		t.Fatalf("expected ordinary unsubscribe url to stay unchanged, got %q", actions[0].URL)
+	}
+}
+
+func TestParseKeepsNonWrapperTargetURLsUnchanged(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Target link\r\nMessage-ID: <tracked-2@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><p><a href=\"https://example.com/login?target=https%3A%2F%2Fexample.com%2Fapp\">Continue</a></p></body></html>")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(got.Content.BodyMD, "https://example.com/login?target=https%3A%2F%2Fexample.com%2Fapp") {
+		t.Fatalf("expected non-wrapper target url to remain unchanged, got %q", got.Content.BodyMD)
+	}
+}
+
+func TestExtractActionsKeepsNonWrapperRedirectParamURLsUnchanged(t *testing.T) {
+	meta := schema.MessageMeta{
+		ListUnsubscribe: []string{
+			"https://example.com/preferences?redirect_uri=https%3A%2F%2Fexample.com%2Funsubscribe",
+		},
+	}
+
+	actions := extractActions(meta, "")
+	if len(actions) == 0 {
+		t.Fatalf("expected unsubscribe action")
+	}
+	if actions[0].URL != "https://example.com/preferences?redirect_uri=https%3A%2F%2Fexample.com%2Funsubscribe" {
+		t.Fatalf("expected non-wrapper redirect-param url to stay unchanged, got %q", actions[0].URL)
+	}
+}
+
+func TestParseKeepsImageSrcWrapperURLUnchanged(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Image link\r\nMessage-ID: <tracked-3@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><img alt=\"Chart\" src=\"https://tracker.example.com/click?redirect=https%3A%2F%2Fcdn.example.com%2Fchart.png\" /></body></html>")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(got.Content.BodyMD, "https://tracker.example.com/click?redirect=https%3A%2F%2Fcdn.example.com%2Fchart.png") {
+		t.Fatalf("expected image src to remain unchanged, got %q", got.Content.BodyMD)
+	}
+}
+
 func assertJSONMatchesGolden(t *testing.T, got any, want []byte) {
 	t.Helper()
 

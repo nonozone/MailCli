@@ -1,6 +1,8 @@
 package parser
 
 import (
+	"net/url"
+	"path"
 	"regexp"
 	"strings"
 
@@ -15,6 +17,7 @@ func extractActions(meta schema.MessageMeta, htmlBody string) []schema.Action {
 
 	for _, value := range meta.ListUnsubscribe {
 		for _, url := range extractURLs(value) {
+			url = cleanURL(url)
 			if _, ok := seen[url]; ok {
 				continue
 			}
@@ -28,6 +31,7 @@ func extractActions(meta schema.MessageMeta, htmlBody string) []schema.Action {
 	}
 
 	for _, url := range extractURLs(htmlBody) {
+		url = cleanURL(url)
 		if _, ok := seen[url]; ok {
 			continue
 		}
@@ -67,4 +71,53 @@ func extractURLs(value string) []string {
 		return nil
 	}
 	return matches
+}
+
+func cleanURL(value string) string {
+	parsed, err := url.Parse(strings.TrimSpace(value))
+	if err != nil || parsed == nil {
+		return value
+	}
+	if !looksLikeRedirectWrapper(parsed) {
+		return value
+	}
+
+	for _, key := range []string{"url", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
+		candidate := strings.TrimSpace(parsed.Query().Get(key))
+		if candidate == "" {
+			continue
+		}
+
+		target, err := url.Parse(candidate)
+		if err != nil || target == nil {
+			continue
+		}
+		if target.Scheme != "http" && target.Scheme != "https" {
+			continue
+		}
+		if target.Host == "" {
+			continue
+		}
+		return target.String()
+	}
+
+	return value
+}
+
+func looksLikeRedirectWrapper(parsed *url.URL) bool {
+	if parsed == nil {
+		return false
+	}
+
+	host := strings.ToLower(parsed.Hostname())
+	fullPath := strings.ToLower(path.Clean(parsed.Path))
+	combined := host + " " + fullPath
+
+	for _, token := range []string{"click", "track", "redirect", "redir", "out", "away", "link", "lnk"} {
+		if strings.Contains(combined, token) {
+			return true
+		}
+	}
+
+	return false
 }
