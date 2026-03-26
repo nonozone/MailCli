@@ -10,6 +10,7 @@ MailCLI 是一个开源的 AI Native 邮件接口项目。
 
 - 阅读 [README.zh-CN.md](README.zh-CN.md)
 - 阅读 [Agent 协作流程](docs/zh-CN/agent-workflows.md)
+- 如果你想加 provider，请先阅读 [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)
 - 修改公开契约前，先阅读对应 spec
 - 涉及重大行为、schema 或架构调整时，建议先开 issue 讨论
 
@@ -54,6 +55,10 @@ python3 -m py_compile examples/python/*.py examples/providers/*.py
 - `SendResult`
 - 命令输出结构
 - driver 扩展边界
+
+如果你要贡献 driver，也建议先看：
+
+- [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 
 ## 语言与文档
 

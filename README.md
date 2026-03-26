@@ -294,6 +294,8 @@ Apache-2.0
 - [Agent Decision Spec](docs/en/spec/agent-decisions.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
 - [Agent Provider Contract](docs/en/spec/agent-provider.md)
+- [Driver Extension Spec](docs/en/spec/driver-extension.md)
+- [Adding a Driver](docs/en/contributing/drivers.md)
 - [Config Spec](docs/en/spec/config.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)

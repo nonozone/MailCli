@@ -295,6 +295,8 @@ Apache-2.0
 - [Agent Decision 规范](docs/zh-CN/spec/agent-decisions.md)
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
 - [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)
+- [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)
+- [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 - [配置规范](docs/zh-CN/spec/config.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md)

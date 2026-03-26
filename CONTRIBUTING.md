@@ -10,6 +10,7 @@ The goal is not to become a traditional terminal mail client. The goal is to bui
 
 - Read [README.md](README.md)
 - Read [Agent Workflows](docs/en/agent-workflows.md)
+- Read [Driver Extension Spec](docs/en/spec/driver-extension.md) if you want to add a provider
 - Read the relevant spec before changing a public contract
 - Open an issue first for major behavior, schema, or architecture changes
 
@@ -56,6 +57,10 @@ Open an issue before changing:
 - `SendResult`
 - command output shapes
 - driver extension boundaries
+
+Driver contributors should also read:
+
+- [Adding a Driver](docs/en/contributing/drivers.md)
 
 ## Language And Docs
 
