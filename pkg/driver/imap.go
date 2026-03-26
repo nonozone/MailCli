@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"io"
 	netmail "net/mail"
 	"net/smtp"
+	"strconv"
 	"strings"
 
 	"github.com/emersion/go-imap"
@@ -15,13 +17,14 @@ import (
 )
 
 type imapDriver struct {
-	host     string
-	port     int
-	username string
-	password string
-	useTLS   bool
-	mailbox  string
-	smtp     smtpConfig
+	host        string
+	port        int
+	username    string
+	password    string
+	useTLS      bool
+	mailbox     string
+	smtp        smtpConfig
+	connectFunc func() (imapSession, error)
 }
 
 type smtpConfig struct {
@@ -30,6 +33,28 @@ type smtpConfig struct {
 	username string
 	password string
 	useTLS   bool
+}
+
+type imapSession interface {
+	Select(name string, readOnly bool) (*imap.MailboxStatus, error)
+	Search(criteria *imap.SearchCriteria) ([]uint32, error)
+	Fetch(seqset *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
+	UidFetch(seqset *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
+	Logout() error
+}
+
+type fetchTargetKind int
+
+const (
+	fetchTargetSequence fetchTargetKind = iota + 1
+	fetchTargetUID
+	fetchTargetMessageID
+)
+
+type fetchTarget struct {
+	kind        fetchTargetKind
+	value       uint32
+	headerValue string
 }
 
 var smtpSendFunc = sendSMTP
@@ -44,7 +69,7 @@ func newIMAPDriver(account config.AccountConfig) (Driver, error) {
 		mailbox = "INBOX"
 	}
 
-	return &imapDriver{
+	driver := &imapDriver{
 		host:     account.Host,
 		port:     account.Port,
 		username: account.Username,
@@ -58,11 +83,13 @@ func newIMAPDriver(account config.AccountConfig) (Driver, error) {
 			password: firstNonEmptyTrim(account.SMTPPassword, account.Password),
 			useTLS:   account.SMTPTLS || account.SMTPPort == 465,
 		},
-	}, nil
+	}
+	driver.connectFunc = driver.connect
+	return driver, nil
 }
 
 func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]schema.MessageMetaSummary, error) {
-	client, err := d.connect()
+	client, err := d.connectFunc()
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +157,40 @@ func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]sche
 }
 
 func (d *imapDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
-	return nil, fmt.Errorf("imap fetch raw not implemented")
+	client, err := d.connectFunc()
+	if err != nil {
+		return nil, err
+	}
+	defer client.Logout()
+
+	if _, err := client.Select(d.mailbox, true); err != nil {
+		return nil, err
+	}
+
+	target, err := resolveFetchTarget(id)
+	if err != nil {
+		return nil, err
+	}
+
+	switch target.kind {
+	case fetchTargetUID:
+		return fetchMessageBody(ctx, client, true, target.value, id)
+	case fetchTargetSequence:
+		return fetchMessageBody(ctx, client, false, target.value, id)
+	case fetchTargetMessageID:
+		criteria := imap.NewSearchCriteria()
+		criteria.Header.Add("Message-Id", target.headerValue)
+		matches, err := client.Search(criteria)
+		if err != nil {
+			return nil, err
+		}
+		if len(matches) == 0 {
+			return nil, fmt.Errorf("message not found: %s", id)
+		}
+		return fetchMessageBody(ctx, client, false, matches[0], id)
+	default:
+		return nil, fmt.Errorf("unsupported fetch target: %s", id)
+	}
 }
 
 func (d *imapDriver) SendRaw(ctx context.Context, raw []byte) error {
@@ -146,7 +206,7 @@ func (d *imapDriver) SendRaw(ctx context.Context, raw []byte) error {
 	return smtpSendFunc(d.smtp, from, recipients, raw)
 }
 
-func (d *imapDriver) connect() (*imapclient.Client, error) {
+func (d *imapDriver) connect() (imapSession, error) {
 	addr := fmt.Sprintf("%s:%d", d.host, d.port)
 
 	var (
@@ -173,6 +233,90 @@ func (d *imapDriver) connect() (*imapclient.Client, error) {
 	return c, nil
 }
 
+func resolveFetchTarget(id string) (fetchTarget, error) {
+	trimmed := strings.TrimSpace(id)
+	if trimmed == "" {
+		return fetchTarget{}, fmt.Errorf("message id is required")
+	}
+
+	for _, prefix := range []string{"imap:uid:", "uid:"} {
+		if strings.HasPrefix(strings.ToLower(trimmed), prefix) {
+			value, err := parsePositiveUint32(trimmed[len(prefix):])
+			if err != nil {
+				return fetchTarget{}, fmt.Errorf("invalid uid: %s", id)
+			}
+			return fetchTarget{kind: fetchTargetUID, value: value}, nil
+		}
+	}
+
+	if isDigits(trimmed) {
+		value, err := parsePositiveUint32(trimmed)
+		if err != nil {
+			return fetchTarget{}, fmt.Errorf("invalid sequence number: %s", id)
+		}
+		return fetchTarget{kind: fetchTargetSequence, value: value}, nil
+	}
+
+	return fetchTarget{
+		kind:        fetchTargetMessageID,
+		headerValue: normalizeMessageID(trimmed),
+	}, nil
+}
+
+func fetchMessageBody(ctx context.Context, client imapSession, useUID bool, value uint32, id string) ([]byte, error) {
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(value)
+
+	section, err := imap.ParseBodySectionName("BODY.PEEK[]")
+	if err != nil {
+		return nil, err
+	}
+
+	items := []imap.FetchItem{imap.FetchItem("BODY.PEEK[]")}
+	messages := make(chan *imap.Message, 1)
+	done := make(chan error, 1)
+
+	go func() {
+		if useUID {
+			done <- client.UidFetch(seqset, items, messages)
+			return
+		}
+		done <- client.Fetch(seqset, items, messages)
+	}()
+
+	var raw []byte
+	for msg := range messages {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+
+		if msg == nil {
+			continue
+		}
+
+		body := msg.GetBody(section)
+		if body == nil {
+			continue
+		}
+
+		data, err := io.ReadAll(body)
+		if err != nil {
+			return nil, err
+		}
+		raw = append([]byte(nil), data...)
+	}
+
+	if err := <-done; err != nil {
+		return nil, err
+	}
+	if raw == nil {
+		return nil, fmt.Errorf("raw body not found for message: %s", id)
+	}
+	return raw, nil
+}
+
 func safeEnvelopeSubject(msg *imap.Message) string {
 	if msg == nil || msg.Envelope == nil {
 		return ""
@@ -191,6 +335,31 @@ func firstNonEmptyTrim(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func normalizeMessageID(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if strings.HasPrefix(trimmed, "<") && strings.HasSuffix(trimmed, ">") {
+		return trimmed
+	}
+	return "<" + strings.Trim(trimmed, "<>") + ">"
+}
+
+func isDigits(value string) bool {
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return value != ""
+}
+
+func parsePositiveUint32(value string) (uint32, error) {
+	parsed, err := strconv.ParseUint(strings.TrimSpace(value), 10, 32)
+	if err != nil || parsed == 0 {
+		return 0, fmt.Errorf("invalid positive integer: %s", value)
+	}
+	return uint32(parsed), nil
 }
 
 func extractEnvelope(raw []byte) (string, []string, error) {
