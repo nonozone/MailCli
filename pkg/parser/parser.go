@@ -47,7 +47,7 @@ func Parse(raw []byte) (*schema.StandardMessage, error) {
 		ID:         firstNonEmpty(meta.MessageID, meta.InReplyTo),
 		Meta:       meta,
 		Content:    content,
-		Actions:    extractActions(meta, htmlBody),
+		Actions:    extractActions(meta, htmlBody, extractReportAbuseTargets(env)...),
 		TokenUsage: estimateTokenUsage(bodyMD),
 	}
 	if msg.ID == "" {
@@ -64,11 +64,11 @@ func Parse(raw []byte) (*schema.StandardMessage, error) {
 }
 
 var (
-	statusCodeRegex    = regexp.MustCompile(`\b([245]\d{2})\b`)
-	failedRecipientRe  = regexp.MustCompile(`(?im)^Failed recipient:\s*(.+)$`)
-	diagnosticCodeRe   = regexp.MustCompile(`(?im)^.*?([245]\d{2}.*)$`)
-	originalMessageRe  = regexp.MustCompile(`(?im)^Original-Message-ID:\s*(.+)$`)
-	originalSubjectRe  = regexp.MustCompile(`(?im)^Original-Subject:\s*(.+)$`)
+	statusCodeRegex   = regexp.MustCompile(`\b([245]\d{2})\b`)
+	failedRecipientRe = regexp.MustCompile(`(?im)^Failed recipient:\s*(.+)$`)
+	diagnosticCodeRe  = regexp.MustCompile(`(?im)^.*?([245]\d{2}.*)$`)
+	originalMessageRe = regexp.MustCompile(`(?im)^Original-Message-ID:\s*(.+)$`)
+	originalSubjectRe = regexp.MustCompile(`(?im)^Original-Subject:\s*(.+)$`)
 )
 
 func extractBounceContext(input string) *schema.ErrorContext {

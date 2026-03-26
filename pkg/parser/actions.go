@@ -12,7 +12,7 @@ import (
 
 var urlRegex = regexp.MustCompile(`https?://[^\s>"]+`)
 
-func extractActions(meta schema.MessageMeta, htmlBody string) []schema.Action {
+func extractActions(meta schema.MessageMeta, htmlBody string, abuseTargets ...string) []schema.Action {
 	seen := map[string]struct{}{}
 	var actions []schema.Action
 
@@ -25,6 +25,15 @@ func extractActions(meta schema.MessageMeta, htmlBody string) []schema.Action {
 				URL:   url,
 			})
 		}
+	}
+
+	for _, target := range abuseTargets {
+		target = normalizeAbuseTarget(target)
+		appendAction(&actions, seen, schema.Action{
+			Type:  "report_abuse",
+			Label: "Report abuse",
+			URL:   target,
+		})
 	}
 
 	for _, action := range extractAnchorActions(htmlBody) {
@@ -129,9 +138,9 @@ func classifyAction(label, href string) string {
 	switch {
 	case strings.Contains(lowerLabel, "unsubscribe") || strings.Contains(lowerHref, "unsubscribe"):
 		return "unsubscribe"
-	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser"):
+	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser") || strings.Contains(lowerLabel, "read in browser") || strings.Contains(lowerHref, "view-online"):
 		return "view_online"
-	case strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email"):
+	case strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email"):
 		return "confirm_subscription"
 	case strings.Contains(lowerLabel, "report abuse") || strings.HasPrefix(lowerHref, "mailto:abuse@") || strings.Contains(lowerHref, "report-abuse"):
 		return "report_abuse"
@@ -174,6 +183,20 @@ func appendAction(actions *[]schema.Action, seen map[string]struct{}, action sch
 	}
 	seen[key] = struct{}{}
 	*actions = append(*actions, action)
+}
+
+func normalizeAbuseTarget(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return ""
+	}
+	if strings.HasPrefix(strings.ToLower(trimmed), "mailto:") || strings.HasPrefix(strings.ToLower(trimmed), "http://") || strings.HasPrefix(strings.ToLower(trimmed), "https://") {
+		return trimmed
+	}
+	if strings.Contains(trimmed, "@") && !strings.Contains(trimmed, " ") {
+		return "mailto:" + trimmed
+	}
+	return ""
 }
 
 func looksLikeRedirectWrapper(parsed *url.URL) bool {

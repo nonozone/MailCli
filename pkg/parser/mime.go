@@ -85,3 +85,20 @@ func parseReferences(header string) []string {
 	}
 	return out
 }
+
+func extractReportAbuseTargets(env *enmime.Envelope) []string {
+	if env == nil {
+		return nil
+	}
+
+	var targets []string
+	for _, header := range []string{"X-Report-Abuse-To", "Report-Abuse", "X-Complaints-To"} {
+		for _, value := range splitHeaderLinks(env.GetHeader(header)) {
+			if strings.TrimSpace(value) != "" {
+				targets = append(targets, value)
+			}
+		}
+	}
+
+	return targets
+}

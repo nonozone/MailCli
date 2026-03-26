@@ -370,6 +370,9 @@ func TestExtractActionsClassifiesViewOnlineLink(t *testing.T) {
 	if action.URL != "https://example.com/view" {
 		t.Fatalf("expected view_online url, got %q", action.URL)
 	}
+	if action.Label != "View online" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
 }
 
 func TestExtractActionsClassifiesConfirmSubscriptionLink(t *testing.T) {
@@ -381,6 +384,9 @@ func TestExtractActionsClassifiesConfirmSubscriptionLink(t *testing.T) {
 	if action.URL != "https://example.com/confirm" {
 		t.Fatalf("expected confirm_subscription url, got %q", action.URL)
 	}
+	if action.Label != "Confirm subscription" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
 }
 
 func TestExtractActionsClassifiesReportAbuseLink(t *testing.T) {
@@ -391,6 +397,9 @@ func TestExtractActionsClassifiesReportAbuseLink(t *testing.T) {
 	}
 	if action.URL != "mailto:abuse@example.com" {
 		t.Fatalf("expected report_abuse url, got %q", action.URL)
+	}
+	if action.Label != "Report abuse" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
 	}
 }
 
@@ -405,6 +414,58 @@ func TestExtractActionsDeduplicatesHTMLActions(t *testing.T) {
 	}
 	if count != 1 {
 		t.Fatalf("expected one deduplicated view_online action, got %d", count)
+	}
+}
+
+func TestExtractActionsClassifiesViewOnlineFromHrefPattern(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/view-online/abc">Read in browser</a>`)
+	action := findAction(actions, "view_online")
+	if action == nil {
+		t.Fatalf("expected href-driven view_online action, got %+v", actions)
+	}
+}
+
+func TestExtractActionsClassifiesConfirmSubscriptionFromHrefPattern(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/confirm-subscription/token">Click here</a>`)
+	action := findAction(actions, "confirm_subscription")
+	if action == nil {
+		t.Fatalf("expected href-driven confirm_subscription action, got %+v", actions)
+	}
+}
+
+func TestParseExtractsReportAbuseActionFromHeaders(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Abuse header\r\nMessage-ID: <abuse-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nX-Report-Abuse-To: abuse@example.com\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nHello")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	action := findAction(got.Actions, "report_abuse")
+	if action == nil {
+		t.Fatalf("expected report_abuse action from headers, got %+v", got.Actions)
+	}
+	if action.URL != "mailto:abuse@example.com" {
+		t.Fatalf("expected mailto abuse action, got %q", action.URL)
+	}
+}
+
+func TestParseDeduplicatesReportAbuseAcrossHeadersAndHTML(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Abuse header\r\nMessage-ID: <abuse-2@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nX-Report-Abuse-To: abuse@example.com\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><a href=\"mailto:abuse@example.com\">Report abuse</a></body></html>")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	count := 0
+	for _, action := range got.Actions {
+		if action.Type == "report_abuse" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected one deduplicated report_abuse action, got %+v", got.Actions)
 	}
 }
 
