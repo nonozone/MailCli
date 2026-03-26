@@ -23,6 +23,18 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 通过 SMTP 为 IMAP 风格账户发信
 - 通过稳定 JSON 契约与 Python / shell agent 工作流协作
 
+在 `v0.1 RC` 阶段，已经足够作为稳定集成边界的部分：
+
+- `mailcli parse`
+- `mailcli list`
+- `mailcli get`
+- `mailcli send`
+- `mailcli reply`
+- `StandardMessage`
+- `DraftMessage`
+- `ReplyDraft`
+- `SendResult`
+
 仍在持续完善的部分：
 
 - HTML 清洗与 URL 归一化策略
@@ -39,6 +51,13 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 账单 / 支付邮件
 - 安全重置邮件
 - 附件入口邮件
+
+应视为持续演进中的 heuristic 区域：
+
+- action 提取覆盖率和分类细节
+- 常见 OTP 之外的验证码提取
+- 异常 HTML 模板下的正文选择与清洗
+- token 估算
 
 ## 核心愿景
 
@@ -234,7 +253,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - [x] 建立 `parse`、`list`、`get`、`send`、`reply` 的命令骨架
 - [x] 增加本地 MIME composer
 - [ ] 强化 HTML 降噪、主体区域提取和 URL 清洗
-- [ ] 扩大样本集，覆盖 newsletter、交易邮件、告警和边界场景
+- [x] 扩大样本集，覆盖 newsletter、交易邮件、告警和边界场景
 
 ### Phase 2: The Hands
 
@@ -253,7 +272,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ### Phase 4: The Ecosystem
 
 - [ ] 支持更多 provider
-- [ ] 增加更完整的生态集成与 driver 扩展文档
+- [x] 增加更完整的生态集成与 driver 扩展文档
 - [ ] 稳定 RFC 驱动的扩展点
 
 ## 示例
@@ -308,6 +327,7 @@ Apache-2.0
 - [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)
 - [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 - [配置规范](docs/zh-CN/spec/config.md)
+- [v0.1 RC 发布说明](docs/zh-CN/release/v0.1-rc.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md)
 - [贡献指南](CONTRIBUTING.zh-CN.md)

@@ -23,6 +23,18 @@ Working today:
 - send through SMTP-backed IMAP-style accounts
 - integrate with Python or shell agent workflows through stable JSON contracts
 
+Stable enough to build against for `v0.1 RC`:
+
+- `mailcli parse`
+- `mailcli list`
+- `mailcli get`
+- `mailcli send`
+- `mailcli reply`
+- `StandardMessage`
+- `DraftMessage`
+- `ReplyDraft`
+- `SendResult`
+
 Still evolving:
 
 - HTML cleanup and URL normalization heuristics
@@ -39,6 +51,13 @@ Current parser fixture coverage now includes:
 - invoice/payment mail
 - security reset mail
 - attachment-entry mail
+
+Heuristic areas to treat as evolving:
+
+- action extraction coverage and classification
+- verification-code extraction beyond common OTP layouts
+- HTML body selection and cleanup for unusual templates
+- token estimates
 
 ## Vision
 
@@ -234,7 +253,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - [x] Support `parse`, `list`, `get`, `send`, and `reply` command skeletons
 - [x] Add local MIME composer for outbound drafts and replies
 - [ ] Improve HTML noise filtering with stronger body extraction and URL cleaning
-- [ ] Expand fixture corpus for newsletters, transactional mail, alerts, and edge cases
+- [x] Expand fixture corpus for newsletters, transactional mail, alerts, and edge cases
 
 ### Phase 2: The Hands
 
@@ -253,7 +272,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ### Phase 4: The Ecosystem
 
 - [ ] Add more providers beyond IMAP/SMTP
-- [ ] Document ecosystem integrations and driver extension patterns
+- [x] Document ecosystem integrations and driver extension patterns
 - [ ] Stabilize RFC-driven extension points for contributors
 
 ## Examples
@@ -307,6 +326,7 @@ Apache-2.0
 - [Driver Extension Spec](docs/en/spec/driver-extension.md)
 - [Adding a Driver](docs/en/contributing/drivers.md)
 - [Config Spec](docs/en/spec/config.md)
+- [v0.1 RC Release Notes](docs/en/release/v0.1-rc.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
 - [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)
 - [Contribution Guide](CONTRIBUTING.md)
