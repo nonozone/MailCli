@@ -1,0 +1,18 @@
+From: Reports Bot <reports@example.com>
+To: nono@example.com
+Subject: Quarterly report attached
+Message-ID: <attachment-123@example.com>
+Date: Thu, 26 Mar 2026 13:20:00 +0800
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<html>
+  <body>
+    <main>
+      <h2>Your quarterly report is ready</h2>
+      <p>The latest quarterly report is available for review.</p>
+      <p><a href="https://files.example.com/attachment/quarterly-report">View attachment</a></p>
+      <p><a href="https://files.example.com/attachment/quarterly-report?download=1">Download attachment</a></p>
+    </main>
+  </body>
+</html>

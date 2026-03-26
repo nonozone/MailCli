@@ -1,0 +1,18 @@
+From: Security Center <security@example.com>
+To: nono@example.com
+Subject: Reset your password
+Message-ID: <security-reset-123@example.com>
+Date: Thu, 26 Mar 2026 13:10:00 +0800
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<html>
+  <body>
+    <main>
+      <h2>Reset your password</h2>
+      <p>We received a request to reset your password.</p>
+      <p><a href="https://security.example.com/reset?token=abc123">Reset password</a></p>
+      <p><a href="https://security.example.com/verify?session=xyz789">Verify sign-in</a></p>
+    </main>
+  </body>
+</html>

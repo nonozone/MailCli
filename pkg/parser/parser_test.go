@@ -37,6 +37,18 @@ func TestParseVerificationEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/verification.eml", "../../testdata/golden/verification.json")
 }
 
+func TestParseInvoiceEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/invoice.eml", "../../testdata/golden/invoice.json")
+}
+
+func TestParseSecurityResetEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset.eml", "../../testdata/golden/security_reset.json")
+}
+
+func TestParseAttachmentNoticeEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice.eml", "../../testdata/golden/attachment_notice.json")
+}
+
 func assertFixtureMatchesGolden(t *testing.T, fixturePath, goldenPath string) {
 	t.Helper()
 

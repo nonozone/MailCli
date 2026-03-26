@@ -1,0 +1,37 @@
+{
+  "id": "<security-reset-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Security Center",
+      "address": "security@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Reset your password",
+    "date": "2026-03-26T05:10:00Z",
+    "message_id": "<security-reset-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## Reset your password\n\nWe received a request to reset your password.\n\n[Reset password](https://security.example.com/reset?token=abc123)\n\n[Verify sign-in](https://security.example.com/verify?session=xyz789)",
+    "snippet": "## Reset your password We received a request to reset your password. [Reset password](https://security.example.com/reset?token=abc123) [Verify sign-in](https://..."
+  },
+  "actions": [
+    {
+      "type": "reset_password",
+      "label": "Reset password",
+      "url": "https://security.example.com/reset?token=abc123"
+    },
+    {
+      "type": "verify_sign_in",
+      "label": "Verify sign-in",
+      "url": "https://security.example.com/verify?session=xyz789"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 16
+  }
+}

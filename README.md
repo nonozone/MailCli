@@ -30,6 +30,16 @@ Still evolving:
 - richer outbound HTML rendering and attachment ergonomics
 - broader provider coverage and extension guidance
 
+Current parser fixture coverage now includes:
+
+- plaintext mail
+- newsletter/promo mail
+- delivery failure mail
+- verification mail
+- invoice/payment mail
+- security reset mail
+- attachment-entry mail
+
 ## Vision
 
 In the AI era, email should not be treated as a pile of HTML and transport headers.
