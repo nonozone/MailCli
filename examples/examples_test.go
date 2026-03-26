@@ -196,6 +196,40 @@ print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
 	}
 }
 
+func TestAgentInboxAssistantWorksWithTemplateExternalProvider(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+		"--from-address", "support@nono.im",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("template provider failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["provider"] != "external" {
+		t.Fatalf("expected external provider metadata, got %#v", analysis["provider"])
+	}
+	if analysis["decision"] != "review" {
+		t.Fatalf("expected template provider to default to review, got %#v", analysis["decision"])
+	}
+}
+
 func requirePython(t *testing.T) string {
 	t.Helper()
 

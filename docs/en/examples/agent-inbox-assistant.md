@@ -100,3 +100,4 @@ It should return a JSON object like:
 Contract reference:
 
 - [Agent Provider Contract](../spec/agent-provider.md)
+- Template provider: `examples/providers/template_external_provider.py`

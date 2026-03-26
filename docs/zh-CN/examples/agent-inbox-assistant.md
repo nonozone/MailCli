@@ -98,3 +98,4 @@ python3 examples/python/agent_inbox_assistant.py \
 契约参考：
 
 - [Agent Provider 契约](../spec/agent-provider.md)
+- 模板 provider：`examples/providers/template_external_provider.py`

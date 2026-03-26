@@ -214,6 +214,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - Python reply dry-run example: `examples/python/reply_dry_run.py`
 - Python inbox agent example: `examples/python/agent_inbox_assistant.py`
   Supports a built-in rule provider or an external command provider.
+- External provider template: `examples/providers/template_external_provider.py`
 - Shell parse example: `examples/shell/parse_email.sh`
 - Shell reply dry-run example: `examples/shell/reply_dry_run.sh`
 
