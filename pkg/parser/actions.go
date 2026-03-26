@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/yourname/mailcli/pkg/schema"
 )
 
@@ -18,11 +19,7 @@ func extractActions(meta schema.MessageMeta, htmlBody string) []schema.Action {
 	for _, value := range meta.ListUnsubscribe {
 		for _, url := range extractURLs(value) {
 			url = cleanURL(url)
-			if _, ok := seen[url]; ok {
-				continue
-			}
-			seen[url] = struct{}{}
-			actions = append(actions, schema.Action{
+			appendAction(&actions, seen, schema.Action{
 				Type:  "unsubscribe",
 				Label: "Unsubscribe",
 				URL:   url,
@@ -30,20 +27,8 @@ func extractActions(meta schema.MessageMeta, htmlBody string) []schema.Action {
 		}
 	}
 
-	for _, url := range extractURLs(htmlBody) {
-		url = cleanURL(url)
-		if _, ok := seen[url]; ok {
-			continue
-		}
-		if !strings.Contains(strings.ToLower(url), "unsubscribe") {
-			continue
-		}
-		seen[url] = struct{}{}
-		actions = append(actions, schema.Action{
-			Type:  "unsubscribe",
-			Label: "Unsubscribe",
-			URL:   url,
-		})
+	for _, action := range extractAnchorActions(htmlBody) {
+		appendAction(&actions, seen, action)
 	}
 
 	return actions
@@ -102,6 +87,93 @@ func cleanURL(value string) string {
 	}
 
 	return value
+}
+
+func extractAnchorActions(htmlBody string) []schema.Action {
+	if strings.TrimSpace(htmlBody) == "" {
+		return nil
+	}
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(htmlBody))
+	if err != nil {
+		return nil
+	}
+
+	var actions []schema.Action
+	doc.Find("a[href]").Each(func(i int, s *goquery.Selection) {
+		href, ok := s.Attr("href")
+		if !ok {
+			return
+		}
+
+		label := normalizeActionLabel(s.Text())
+		actionType := classifyAction(label, href)
+		if actionType == "" {
+			return
+		}
+
+		actions = append(actions, schema.Action{
+			Type:  actionType,
+			Label: actionLabel(actionType, label),
+			URL:   cleanURL(strings.TrimSpace(href)),
+		})
+	})
+
+	return actions
+}
+
+func classifyAction(label, href string) string {
+	lowerLabel := strings.ToLower(label)
+	lowerHref := strings.ToLower(strings.TrimSpace(href))
+
+	switch {
+	case strings.Contains(lowerLabel, "unsubscribe") || strings.Contains(lowerHref, "unsubscribe"):
+		return "unsubscribe"
+	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser"):
+		return "view_online"
+	case strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email"):
+		return "confirm_subscription"
+	case strings.Contains(lowerLabel, "report abuse") || strings.HasPrefix(lowerHref, "mailto:abuse@") || strings.Contains(lowerHref, "report-abuse"):
+		return "report_abuse"
+	default:
+		return ""
+	}
+}
+
+func actionLabel(actionType, label string) string {
+	if label != "" {
+		return label
+	}
+
+	switch actionType {
+	case "unsubscribe":
+		return "Unsubscribe"
+	case "view_online":
+		return "View online"
+	case "confirm_subscription":
+		return "Confirm subscription"
+	case "report_abuse":
+		return "Report abuse"
+	default:
+		return ""
+	}
+}
+
+func normalizeActionLabel(value string) string {
+	return strings.Join(strings.Fields(strings.TrimSpace(value)), " ")
+}
+
+func appendAction(actions *[]schema.Action, seen map[string]struct{}, action schema.Action) {
+	if strings.TrimSpace(action.Type) == "" || strings.TrimSpace(action.URL) == "" {
+		return
+	}
+
+	key := action.Type + "\x00" + action.URL
+	if _, ok := seen[key]; ok {
+		return
+	}
+	seen[key] = struct{}{}
+	*actions = append(*actions, action)
 }
 
 func looksLikeRedirectWrapper(parsed *url.URL) bool {

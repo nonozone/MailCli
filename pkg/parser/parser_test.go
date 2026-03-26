@@ -361,6 +361,53 @@ func TestExtractActionsKeepsNonWrapperRedirectParamURLsUnchanged(t *testing.T) {
 	}
 }
 
+func TestExtractActionsClassifiesViewOnlineLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/view">View online</a>`)
+	action := findAction(actions, "view_online")
+	if action == nil {
+		t.Fatalf("expected view_online action, got %+v", actions)
+	}
+	if action.URL != "https://example.com/view" {
+		t.Fatalf("expected view_online url, got %q", action.URL)
+	}
+}
+
+func TestExtractActionsClassifiesConfirmSubscriptionLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/confirm">Confirm subscription</a>`)
+	action := findAction(actions, "confirm_subscription")
+	if action == nil {
+		t.Fatalf("expected confirm_subscription action, got %+v", actions)
+	}
+	if action.URL != "https://example.com/confirm" {
+		t.Fatalf("expected confirm_subscription url, got %q", action.URL)
+	}
+}
+
+func TestExtractActionsClassifiesReportAbuseLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="mailto:abuse@example.com">Report abuse</a>`)
+	action := findAction(actions, "report_abuse")
+	if action == nil {
+		t.Fatalf("expected report_abuse action, got %+v", actions)
+	}
+	if action.URL != "mailto:abuse@example.com" {
+		t.Fatalf("expected report_abuse url, got %q", action.URL)
+	}
+}
+
+func TestExtractActionsDeduplicatesHTMLActions(t *testing.T) {
+	html := `<a href="https://example.com/view">View online</a><a href="https://example.com/view">View online</a>`
+	actions := extractActions(schema.MessageMeta{}, html)
+	count := 0
+	for _, action := range actions {
+		if action.Type == "view_online" {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("expected one deduplicated view_online action, got %d", count)
+	}
+}
+
 func TestParseKeepsImageSrcWrapperURLUnchanged(t *testing.T) {
 	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Image link\r\nMessage-ID: <tracked-3@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><img alt=\"Chart\" src=\"https://tracker.example.com/click?redirect=https%3A%2F%2Fcdn.example.com%2Fchart.png\" /></body></html>")
 
@@ -372,6 +419,15 @@ func TestParseKeepsImageSrcWrapperURLUnchanged(t *testing.T) {
 	if !strings.Contains(got.Content.BodyMD, "https://tracker.example.com/click?redirect=https%3A%2F%2Fcdn.example.com%2Fchart.png") {
 		t.Fatalf("expected image src to remain unchanged, got %q", got.Content.BodyMD)
 	}
+}
+
+func findAction(actions []schema.Action, actionType string) *schema.Action {
+	for i := range actions {
+		if actions[i].Type == actionType {
+			return &actions[i]
+		}
+	}
+	return nil
 }
 
 func assertJSONMatchesGolden(t *testing.T, got any, want []byte) {
