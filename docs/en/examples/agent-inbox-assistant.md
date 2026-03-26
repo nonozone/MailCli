@@ -101,3 +101,4 @@ Contract reference:
 
 - [Agent Provider Contract](../spec/agent-provider.md)
 - Template provider: `examples/providers/template_external_provider.py`
+- Optional OpenAI provider example: [OpenAI External Provider](openai-external-provider.md)

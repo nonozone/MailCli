@@ -230,6 +230,98 @@ func TestAgentInboxAssistantWorksWithTemplateExternalProvider(t *testing.T) {
 	}
 }
 
+func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/providers/openai_external_provider.py"),
+	)
+	cmd.Stdin = strings.NewReader(`{"message":{"content":{"snippet":"hello"}},"source":{"mode":"email","value":"x"},"wants_reply":false}`)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected missing key to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "OPENAI_API_KEY is required") {
+		t.Fatalf("expected missing key error, got %s", string(output))
+	}
+}
+
+func TestOpenAIExternalProviderUsesResponsesAPIShape(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+
+	stubDir := t.TempDir()
+	requestPath := filepath.Join(stubDir, "request.json")
+	stubModule := `import json
+import os
+
+class _Response:
+    def __init__(self, output_text):
+        self.output_text = output_text
+
+class _Responses:
+    def create(self, **kwargs):
+        with open(os.environ["OPENAI_STUB_REQUEST_PATH"], "w", encoding="utf-8") as fh:
+            json.dump(kwargs, fh)
+        return _Response(json.dumps({
+            "decision": "review",
+            "summary": "stubbed openai provider"
+        }))
+
+class OpenAI:
+    def __init__(self):
+        self.responses = _Responses()
+`
+	stubModulePath := filepath.Join(stubDir, "openai.py")
+	if err := os.WriteFile(stubModulePath, []byte(stubModule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/providers/openai_external_provider.py"),
+	)
+	cmd.Stdin = strings.NewReader(`{"message":{"content":{"snippet":"hello"}},"source":{"mode":"email","value":"x"},"wants_reply":false}`)
+	cmd.Env = append(os.Environ(),
+		"OPENAI_API_KEY=test-key",
+		"OPENAI_MODEL=gpt-5-mini",
+		"PYTHONPATH="+stubDir,
+		"OPENAI_STUB_REQUEST_PATH="+requestPath,
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("openai provider failed: %v\n%s", err, string(output))
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(output, &result); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+	if result["decision"] != "review" {
+		t.Fatalf("expected stubbed decision, got %#v", result["decision"])
+	}
+
+	requestBytes, err := os.ReadFile(requestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var request map[string]any
+	if err := json.Unmarshal(requestBytes, &request); err != nil {
+		t.Fatalf("expected request json: %v", err)
+	}
+	if request["model"] != "gpt-5-mini" {
+		t.Fatalf("expected OPENAI_MODEL to be used, got %#v", request["model"])
+	}
+	text := mustMap(t, request["text"])
+	format := mustMap(t, text["format"])
+	if format["type"] != "json_schema" {
+		t.Fatalf("expected structured output request, got %#v", format["type"])
+	}
+}
+
 func requirePython(t *testing.T) string {
 	t.Helper()
 

@@ -99,3 +99,4 @@ python3 examples/python/agent_inbox_assistant.py \
 
 - [Agent Provider 契约](../spec/agent-provider.md)
 - 模板 provider：`examples/providers/template_external_provider.py`
+- 可选 OpenAI provider 示例：[OpenAI External Provider](openai-external-provider.md)

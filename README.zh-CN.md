@@ -215,6 +215,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - Python inbox agent 示例：`examples/python/agent_inbox_assistant.py`
   支持内置规则 provider，也支持外部命令 provider。
 - External provider 模板：`examples/providers/template_external_provider.py`
+- 可选 OpenAI provider 示例：`examples/providers/openai_external_provider.py`
 - Shell 解析示例：`examples/shell/parse_email.sh`
 - Shell 回复 dry-run 示例：`examples/shell/reply_dry_run.sh`
 
@@ -253,3 +254,4 @@ Apache-2.0
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
 - [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
+- [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md)

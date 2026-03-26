@@ -215,6 +215,7 @@ python3 examples/python/agent_inbox_assistant.py \
 - Python inbox agent example: `examples/python/agent_inbox_assistant.py`
   Supports a built-in rule provider or an external command provider.
 - External provider template: `examples/providers/template_external_provider.py`
+- Optional OpenAI provider example: `examples/providers/openai_external_provider.py`
 - Shell parse example: `examples/shell/parse_email.sh`
 - Shell reply dry-run example: `examples/shell/reply_dry_run.sh`
 
@@ -252,4 +253,5 @@ Apache-2.0
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
 - [Agent Provider Contract](docs/en/spec/agent-provider.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
+- [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)
 - [中文文档](README.zh-CN.md)
