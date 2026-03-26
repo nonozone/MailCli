@@ -28,6 +28,7 @@ MailCLI is an independent, open-source toolkit that turns raw email into AI-cons
 
 - `mailcli parse --format json|yaml|table <file|->`
 - `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>]`
+- `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli send --dry-run <draft.json>`
 - `mailcli reply --dry-run <reply.json>`
 
