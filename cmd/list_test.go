@@ -14,10 +14,12 @@ import (
 )
 
 type fakeDriver struct {
-	items []schema.MessageMetaSummary
+	items      []schema.MessageMetaSummary
+	lastQuery  schema.SearchQuery
 }
 
 func (f fakeDriver) List(ctx context.Context, query schema.SearchQuery) ([]schema.MessageMetaSummary, error) {
+	f.lastQuery = query
 	return f.items, nil
 }
 
@@ -26,6 +28,24 @@ func (f fakeDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
 }
 
 func (f fakeDriver) SendRaw(ctx context.Context, raw []byte) error {
+	return nil
+}
+
+type captureListDriver struct {
+	items     []schema.MessageMetaSummary
+	lastQuery schema.SearchQuery
+}
+
+func (f *captureListDriver) List(ctx context.Context, query schema.SearchQuery) ([]schema.MessageMetaSummary, error) {
+	f.lastQuery = query
+	return f.items, nil
+}
+
+func (f *captureListDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
+	return nil, nil
+}
+
+func (f *captureListDriver) SendRaw(ctx context.Context, raw []byte) error {
 	return nil
 }
 
@@ -142,5 +162,49 @@ func TestListCommandSupportsTableFormat(t *testing.T) {
 
 	if !strings.Contains(out.String(), "SUBJECT") {
 		t.Fatalf("expected table output")
+	}
+}
+
+func TestListCommandPassesMailboxAndLimitToDriver(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	err := os.WriteFile(configPath, []byte("current_account: local\naccounts:\n  - name: local\n    driver: fake\n"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	loadConfigFunc = config.Load
+	fake := &captureListDriver{
+		items: []schema.MessageMetaSummary{
+			{ID: "1", Subject: "Hello"},
+		},
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"list", "--config", configPath, "--mailbox", "Archive", "--limit", "5"})
+
+	err = cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected list command to succeed: %v", err)
+	}
+
+	if fake.lastQuery.Mailbox != "Archive" {
+		t.Fatalf("expected mailbox to be propagated, got %q", fake.lastQuery.Mailbox)
+	}
+	if fake.lastQuery.Limit != 5 {
+		t.Fatalf("expected limit to be propagated, got %d", fake.lastQuery.Limit)
 	}
 }

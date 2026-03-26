@@ -5,6 +5,7 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/emersion/go-imap"
 	"github.com/nonozone/MailCli/internal/config"
@@ -178,6 +179,14 @@ func TestIMAPDriverListUsesSessionFetch(t *testing.T) {
 				Envelope: &imap.Envelope{
 					Subject:   "Hello",
 					MessageId: "<id-1@example.com>",
+					Date:      time.Date(2026, 3, 26, 12, 0, 0, 0, time.UTC),
+					From: []*imap.Address{
+						{
+							PersonalName: "Example Sender",
+							MailboxName:  "sender",
+							HostName:     "example.com",
+						},
+					},
 				},
 			},
 		},
@@ -197,6 +206,12 @@ func TestIMAPDriverListUsesSessionFetch(t *testing.T) {
 	}
 	if len(items) != 1 || items[0].ID != "<id-1@example.com>" || items[0].Subject != "Hello" {
 		t.Fatalf("expected list to use fetched envelope metadata, got %+v", items)
+	}
+	if items[0].From != "Example Sender <sender@example.com>" {
+		t.Fatalf("expected list to include sender summary, got %+v", items[0])
+	}
+	if items[0].Date != "2026-03-26T12:00:00Z" {
+		t.Fatalf("expected list to include normalized date, got %+v", items[0])
 	}
 }
 

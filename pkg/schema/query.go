@@ -8,5 +8,7 @@ type SearchQuery struct {
 
 type MessageMetaSummary struct {
 	ID      string `json:"id,omitempty" yaml:"id,omitempty"`
+	From    string `json:"from,omitempty" yaml:"from,omitempty"`
 	Subject string `json:"subject,omitempty" yaml:"subject,omitempty"`
+	Date    string `json:"date,omitempty" yaml:"date,omitempty"`
 }

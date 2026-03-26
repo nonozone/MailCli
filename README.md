@@ -75,7 +75,7 @@ MailCLI solves that by providing a stable boundary:
 ### Read path
 
 - `mailcli parse --format json|yaml|table <file|->`
-- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--format json|table]`
+- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 
 ### Write path

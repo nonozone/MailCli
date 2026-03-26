@@ -16,6 +16,8 @@ func newListCmd() *cobra.Command {
 		configPath string
 		account    string
 		format     string
+		mailbox    string
+		limit      int
 	)
 
 	cmd := &cobra.Command{
@@ -41,7 +43,10 @@ func newListCmd() *cobra.Command {
 				return err
 			}
 
-			items, err := drv.List(cmd.Context(), schema.SearchQuery{})
+			items, err := drv.List(cmd.Context(), schema.SearchQuery{
+				Mailbox: mailbox,
+				Limit:   limit,
+			})
 			if err != nil {
 				return err
 			}
@@ -52,6 +57,8 @@ func newListCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
 	cmd.Flags().StringVar(&account, "account", "", "account name override")
+	cmd.Flags().StringVar(&mailbox, "mailbox", "", "mailbox override")
+	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to list")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }
@@ -64,10 +71,10 @@ func writeMessageList(out io.Writer, items []schema.MessageMetaSummary, format s
 		return encoder.Encode(items)
 	case "table":
 		table := tablewriter.NewWriter(out)
-		table.SetHeader([]string{"ID", "Subject"})
+		table.SetHeader([]string{"ID", "From", "Subject", "Date"})
 		rows := make([][]string, 0, len(items))
 		for _, item := range items {
-			rows = append(rows, []string{item.ID, item.Subject})
+			rows = append(rows, []string{item.ID, item.From, item.Subject, item.Date})
 		}
 		table.AppendBulk(rows)
 		table.Render()

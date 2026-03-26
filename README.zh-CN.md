@@ -75,7 +75,7 @@ MailCLI 提供的是一个稳定边界：
 ### 读路径
 
 - `mailcli parse --format json|yaml|table <file|->`
-- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--format json|table]`
+- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 
 ### 写路径

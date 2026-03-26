@@ -139,7 +139,9 @@ func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]sche
 		}
 
 		summary := schema.MessageMetaSummary{
+			From:    safeEnvelopeFrom(msg),
 			Subject: safeEnvelopeSubject(msg),
+			Date:    safeEnvelopeDate(msg),
 		}
 		if msg.Envelope != nil && stringsTrim(msg.Envelope.MessageId) != "" {
 			summary.ID = msg.Envelope.MessageId
@@ -322,6 +324,29 @@ func safeEnvelopeSubject(msg *imap.Message) string {
 		return ""
 	}
 	return msg.Envelope.Subject
+}
+
+func safeEnvelopeFrom(msg *imap.Message) string {
+	if msg == nil || msg.Envelope == nil || len(msg.Envelope.From) == 0 || msg.Envelope.From[0] == nil {
+		return ""
+	}
+
+	from := msg.Envelope.From[0]
+	address := strings.Trim(strings.Join([]string{from.MailboxName, from.HostName}, "@"), "@")
+	if from.PersonalName == "" {
+		return address
+	}
+	if address == "" {
+		return from.PersonalName
+	}
+	return fmt.Sprintf("%s <%s>", from.PersonalName, address)
+}
+
+func safeEnvelopeDate(msg *imap.Message) string {
+	if msg == nil || msg.Envelope == nil || msg.Envelope.Date.IsZero() {
+		return ""
+	}
+	return msg.Envelope.Date.UTC().Format("2006-01-02T15:04:05Z")
 }
 
 func stringsTrim(value string) string {
