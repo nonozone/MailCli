@@ -170,6 +170,32 @@ print(json.dumps({"summary": "missing decision"}))
 	}
 }
 
+func TestAgentInboxAssistantRejectsUnknownExternalDecision(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	providerPath := writeTempFile(t, "provider_unknown.py", `import json
+print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected unknown decision to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider decision must be one of") {
+		t.Fatalf("expected decision enum error, got %s", string(output))
+	}
+}
+
 func requirePython(t *testing.T) string {
 	t.Helper()
 

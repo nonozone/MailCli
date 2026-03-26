@@ -78,6 +78,10 @@ Reply-capable output:
 
 - `decision`: non-empty string
 
+The value must be one of the stable decisions defined in:
+
+- [Agent Decision Spec](agent-decisions.md)
+
 ## Optional Fields
 
 - `summary`: short text summary
@@ -93,13 +97,8 @@ The example currently validates:
 
 If validation fails, the example exits with a contract error instead of producing partial output.
 
-## Recommended Decisions
+## Decision Vocabulary
 
-Common decision values used by the example:
+The example now validates decisions against the shared stable decision set:
 
-- `capture_code`
-- `review`
-- `draft_reply`
-- `escalate_delivery_error`
-
-These values are conventions, not yet a repository-wide hard standard.
+- [Agent Decision Spec](agent-decisions.md)

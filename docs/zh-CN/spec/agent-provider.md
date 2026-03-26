@@ -78,6 +78,10 @@ provider 必须向 stdout 输出一个 JSON 对象。
 
 - `decision`：非空字符串
 
+它的值必须属于下列稳定 decision 规范中的集合：
+
+- [Agent Decision 规范](agent-decisions.md)
+
 ## 可选字段
 
 - `summary`：简短分析摘要
@@ -93,13 +97,8 @@ provider 必须向 stdout 输出一个 JSON 对象。
 
 如果校验失败，示例会直接退出并报告契约错误，而不是产出部分结果。
 
-## 建议的 decision 值
+## Decision 词汇表
 
-示例当前常见的 decision 值有：
+示例现在会按照共享的稳定 decision 集合来校验：
 
-- `capture_code`
-- `review`
-- `draft_reply`
-- `escalate_delivery_error`
-
-这些值目前是示例约定，还不是整个仓库的强制标准。
+- [Agent Decision 规范](agent-decisions.md)

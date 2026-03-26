@@ -248,6 +248,7 @@ Apache-2.0
 
 - [English documentation](README.md)
 - [Agent 协作流程](docs/zh-CN/agent-workflows.md)
+- [Agent Decision 规范](docs/zh-CN/spec/agent-decisions.md)
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
 - [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)

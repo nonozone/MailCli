@@ -247,6 +247,7 @@ Apache-2.0
 ## Related
 
 - [Agent Workflows](docs/en/agent-workflows.md)
+- [Agent Decision Spec](docs/en/spec/agent-decisions.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
 - [Agent Provider Contract](docs/en/spec/agent-provider.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
