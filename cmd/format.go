@@ -24,10 +24,10 @@ func writeMessage(out io.Writer, msg *schema.StandardMessage, format string) err
 	}
 }
 
-func writeJSON(out io.Writer, msg *schema.StandardMessage) error {
+func writeJSON(out io.Writer, v any) error {
 	encoder := json.NewEncoder(out)
 	encoder.SetIndent("", "  ")
-	return encoder.Encode(msg)
+	return encoder.Encode(v)
 }
 
 func writeYAML(out io.Writer, msg *schema.StandardMessage) error {

@@ -121,4 +121,6 @@ This keeps the contract language-agnostic and works well for agents, shell scrip
 
 The repository already contains a local MIME composer in `pkg/composer` for `DraftMessage` and `ReplyDraft`.
 
-Transport commands such as `mailcli send` and `mailcli reply` are still future work.
+`mailcli send` is now partially wired for driver-backed transport.
+
+`mailcli reply` currently supports dry-run MIME generation only.
