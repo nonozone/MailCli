@@ -142,6 +142,10 @@ func classifyAction(label, href string) string {
 		return "download_attachment"
 	case looksLikeViewAttachment(lowerLabel, lowerHref):
 		return "view_attachment"
+	case looksLikePayInvoice(lowerLabel, lowerHref):
+		return "pay_invoice"
+	case looksLikeViewInvoice(lowerLabel, lowerHref):
+		return "view_invoice"
 	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser") || strings.Contains(lowerLabel, "read in browser") || strings.Contains(lowerHref, "view-online"):
 		return "view_online"
 	case strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email"):
@@ -161,6 +165,10 @@ func actionLabel(actionType, label string) string {
 	switch actionType {
 	case "unsubscribe":
 		return "Unsubscribe"
+	case "pay_invoice":
+		return "Pay invoice"
+	case "view_invoice":
+		return "View invoice"
 	case "download_attachment":
 		return "Download attachment"
 	case "view_attachment":
@@ -247,4 +255,24 @@ func looksLikeViewAttachment(label, href string) bool {
 	}
 
 	return false
+}
+
+func looksLikePayInvoice(label, href string) bool {
+	if strings.Contains(label, "pay invoice") || strings.Contains(label, "pay bill") {
+		return true
+	}
+
+	return hasInvoicePath(href) && strings.Contains(href, "/pay")
+}
+
+func looksLikeViewInvoice(label, href string) bool {
+	if strings.Contains(label, "view invoice") || strings.Contains(label, "open invoice") || strings.Contains(label, "see invoice") {
+		return true
+	}
+
+	return false
+}
+
+func hasInvoicePath(href string) bool {
+	return strings.Contains(href, "/invoice/") || strings.Contains(href, "/invoices/")
 }

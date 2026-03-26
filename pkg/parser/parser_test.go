@@ -483,6 +483,81 @@ func TestExtractActionsDeduplicatesAttachmentActions(t *testing.T) {
 	}
 }
 
+func TestExtractActionsClassifiesPayInvoiceLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://billing.example.com/invoices/123/pay">Pay invoice</a>`)
+	action := findAction(actions, "pay_invoice")
+	if action == nil {
+		t.Fatalf("expected pay_invoice action, got %+v", actions)
+	}
+	if action.URL != "https://billing.example.com/invoices/123/pay" {
+		t.Fatalf("expected pay_invoice url, got %q", action.URL)
+	}
+	if action.Label != "Pay invoice" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesViewInvoiceLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://billing.example.com/invoices/123">View invoice</a>`)
+	action := findAction(actions, "view_invoice")
+	if action == nil {
+		t.Fatalf("expected view_invoice action, got %+v", actions)
+	}
+	if action.URL != "https://billing.example.com/invoices/123" {
+		t.Fatalf("expected view_invoice url, got %q", action.URL)
+	}
+	if action.Label != "View invoice" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDeduplicatesInvoiceActions(t *testing.T) {
+	html := `<a href="https://billing.example.com/invoices/123/pay">Pay invoice</a><a href="https://billing.example.com/invoices/123/pay">Pay invoice</a><a href="https://billing.example.com/invoices/123">View invoice</a><a href="https://billing.example.com/invoices/123">View invoice</a>`
+	actions := extractActions(schema.MessageMeta{}, html)
+
+	payCount := 0
+	viewCount := 0
+	for _, action := range actions {
+		switch action.Type {
+		case "pay_invoice":
+			payCount++
+		case "view_invoice":
+			viewCount++
+		}
+	}
+	if payCount != 1 {
+		t.Fatalf("expected one deduplicated pay_invoice action, got %d", payCount)
+	}
+	if viewCount != 1 {
+		t.Fatalf("expected one deduplicated view_invoice action, got %d", viewCount)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericPayNowLinkAsInvoice(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://checkout.example.com/pay">Pay now</a>`)
+	if action := findAction(actions, "pay_invoice"); action != nil {
+		t.Fatalf("expected generic pay now link to avoid pay_invoice classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericInvoiceSettingsLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://billing.example.com/invoice/settings">Open</a>`)
+	if action := findAction(actions, "view_invoice"); action != nil {
+		t.Fatalf("expected generic invoice settings link to avoid view_invoice classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsPrefersDownloadAttachmentOverViewInvoice(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://billing.example.com/invoices/123.pdf">Download invoice</a>`)
+	if action := findAction(actions, "view_invoice"); action != nil {
+		t.Fatalf("expected download invoice link to avoid view_invoice classification, got %+v", actions)
+	}
+	action := findAction(actions, "download_attachment")
+	if action == nil {
+		t.Fatalf("expected download invoice link to classify as download_attachment, got %+v", actions)
+	}
+}
+
 func TestParseExtractsReportAbuseActionFromHeaders(t *testing.T) {
 	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Abuse header\r\nMessage-ID: <abuse-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nX-Report-Abuse-To: abuse@example.com\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nHello")
 
