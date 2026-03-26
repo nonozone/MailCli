@@ -73,6 +73,23 @@ func (s *FileStore) All() ([]IndexedMessage, error) {
 	return append([]IndexedMessage(nil), data.Messages...), nil
 }
 
+func (s *FileStore) Has(account, id string) (bool, error) {
+	data, err := s.load()
+	if err != nil {
+		return false, err
+	}
+
+	account = strings.TrimSpace(account)
+	id = strings.TrimSpace(id)
+	for _, item := range data.Messages {
+		if item.Account == account && item.ID == id {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 func (s *FileStore) Upsert(message IndexedMessage) error {
 	data, err := s.load()
 	if err != nil {

@@ -260,6 +260,8 @@ mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
 ```
 
+By default, `sync` skips messages that are already indexed for the same account and message id. Use `--refresh` when you want to re-fetch and overwrite local records.
+
 ### Search the local index
 
 ```bash

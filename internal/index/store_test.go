@@ -98,3 +98,32 @@ func TestFileStoreReturnsErrorForInvalidJSON(t *testing.T) {
 		t.Fatalf("expected invalid index json to return an error")
 	}
 }
+
+func TestFileStoreHasUsesAccountAndID(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+	record := IndexedMessage{
+		Account: "demo",
+		ID:      "stub:invoice",
+		Message: schema.StandardMessage{ID: "stub:invoice"},
+	}
+
+	if err := store.Upsert(record); err != nil {
+		t.Fatalf("expected upsert to succeed: %v", err)
+	}
+
+	has, err := store.Has("demo", "stub:invoice")
+	if err != nil {
+		t.Fatalf("expected has to succeed: %v", err)
+	}
+	if !has {
+		t.Fatalf("expected stored message to be found")
+	}
+
+	missing, err := store.Has("demo", "missing")
+	if err != nil {
+		t.Fatalf("expected missing has check to succeed: %v", err)
+	}
+	if missing {
+		t.Fatalf("expected missing message to be absent")
+	}
+}

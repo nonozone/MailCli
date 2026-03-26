@@ -16,7 +16,8 @@ import (
 type syncResult struct {
 	Account      string `json:"account,omitempty"`
 	Mailbox      string `json:"mailbox,omitempty"`
-	IndexedCount int    `json:"indexed_count,omitempty"`
+	IndexedCount int    `json:"indexed_count"`
+	SkippedCount int    `json:"skipped_count"`
 	IndexPath    string `json:"index_path,omitempty"`
 }
 
@@ -28,6 +29,7 @@ func newSyncCmd() *cobra.Command {
 		indexPath  string
 		format     string
 		limit      int
+		refresh    bool
 	)
 
 	cmd := &cobra.Command{
@@ -63,7 +65,19 @@ func newSyncCmd() *cobra.Command {
 
 			store := mailindex.NewFileStore(indexPath)
 			indexedCount := 0
+			skippedCount := 0
 			for _, item := range items {
+				if !refresh {
+					has, err := store.Has(selectedAccount.Name, item.ID)
+					if err != nil {
+						return err
+					}
+					if has {
+						skippedCount++
+						continue
+					}
+				}
+
 				raw, err := drv.FetchRaw(cmd.Context(), item.ID)
 				if err != nil {
 					return err
@@ -89,6 +103,7 @@ func newSyncCmd() *cobra.Command {
 				Account:      selectedAccount.Name,
 				Mailbox:      queryMailbox,
 				IndexedCount: indexedCount,
+				SkippedCount: skippedCount,
 				IndexPath:    store.Path(),
 			}, format)
 		},
@@ -99,6 +114,7 @@ func newSyncCmd() *cobra.Command {
 	cmd.Flags().StringVar(&mailbox, "mailbox", "", "mailbox override")
 	cmd.Flags().StringVar(&indexPath, "index", "", "local index file path")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to sync")
+	cmd.Flags().BoolVar(&refresh, "refresh", false, "re-fetch and reindex messages even if they already exist locally")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }
@@ -144,6 +160,7 @@ func writeSyncResult(out io.Writer, result syncResult, format string) error {
 			{"Account", result.Account},
 			{"Mailbox", result.Mailbox},
 			{"IndexedCount", fmt.Sprintf("%d", result.IndexedCount)},
+			{"SkippedCount", fmt.Sprintf("%d", result.SkippedCount)},
 			{"IndexPath", result.IndexPath},
 		})
 		table.Render()

@@ -110,6 +110,11 @@ mailcli sync --config ~/.config/mailcli/config.yaml --limit 20
 mailcli search invoice
 ```
 
+`mailcli sync` now behaves incrementally by default:
+
+- existing indexed records are skipped
+- `--refresh` forces a re-fetch and overwrite
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

@@ -38,3 +38,62 @@ func TestSyncAndSearchCommandsUseLocalIndex(t *testing.T) {
 		t.Fatalf("expected search output to include indexed invoice mail, got %s", searchOut.String())
 	}
 }
+
+func TestSyncCommandSkipsExistingMessagesByDefault(t *testing.T) {
+	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+
+	first := NewRootCmd()
+	var firstOut bytes.Buffer
+	first.SetOut(&firstOut)
+	first.SetErr(&firstOut)
+	first.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "2"})
+	if err := first.Execute(); err != nil {
+		t.Fatalf("expected first sync to succeed: %v", err)
+	}
+
+	second := NewRootCmd()
+	var secondOut bytes.Buffer
+	second.SetOut(&secondOut)
+	second.SetErr(&secondOut)
+	second.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "2"})
+	if err := second.Execute(); err != nil {
+		t.Fatalf("expected second sync to succeed: %v", err)
+	}
+
+	if !strings.Contains(secondOut.String(), `"indexed_count": 0`) {
+		t.Fatalf("expected second sync to skip reindexing, got %s", secondOut.String())
+	}
+	if !strings.Contains(secondOut.String(), `"skipped_count": 2`) {
+		t.Fatalf("expected second sync to report skipped messages, got %s", secondOut.String())
+	}
+}
+
+func TestSyncCommandRefreshesExistingMessagesWhenRequested(t *testing.T) {
+	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+
+	first := NewRootCmd()
+	first.SetOut(&bytes.Buffer{})
+	first.SetErr(&bytes.Buffer{})
+	first.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "2"})
+	if err := first.Execute(); err != nil {
+		t.Fatalf("expected first sync to succeed: %v", err)
+	}
+
+	refresh := NewRootCmd()
+	var refreshOut bytes.Buffer
+	refresh.SetOut(&refreshOut)
+	refresh.SetErr(&refreshOut)
+	refresh.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "2", "--refresh"})
+	if err := refresh.Execute(); err != nil {
+		t.Fatalf("expected refresh sync to succeed: %v", err)
+	}
+
+	if !strings.Contains(refreshOut.String(), `"indexed_count": 2`) {
+		t.Fatalf("expected refresh sync to reindex messages, got %s", refreshOut.String())
+	}
+	if !strings.Contains(refreshOut.String(), `"skipped_count": 0`) {
+		t.Fatalf("expected refresh sync to avoid skip counts, got %s", refreshOut.String())
+	}
+}

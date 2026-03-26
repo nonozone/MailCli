@@ -260,6 +260,8 @@ mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
 ```
 
+`sync` 默认会跳过同一 account 下已经索引过的消息。如果你希望重新抓取并覆盖本地记录，可以显式加上 `--refresh`。
+
 ### 检索本地索引
 
 ```bash

@@ -63,6 +63,16 @@ Current local search is case-insensitive substring matching over a combined text
 
 This is not full-text search yet. It is a deterministic baseline intended for agent workflows and future storage evolution.
 
+## Sync Semantics
+
+Current `mailcli sync` behavior is incremental by default:
+
+- list recent messages from the selected account
+- skip any message whose `(account, id)` pair already exists in the local index
+- fetch, parse, and upsert only missing messages
+
+Use `--refresh` to force a re-fetch and overwrite existing indexed records.
+
 ## Non-Goals For This Stage
 
 - no SQLite requirement yet

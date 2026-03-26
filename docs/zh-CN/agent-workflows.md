@@ -110,6 +110,11 @@ mailcli sync --config ~/.config/mailcli/config.yaml --limit 20
 mailcli search invoice
 ```
 
+`mailcli sync` 现在默认按增量方式工作：
+
+- 已存在的本地索引记录会被跳过
+- 使用 `--refresh` 可以强制重新抓取并覆盖
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。
