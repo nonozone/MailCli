@@ -2,49 +2,119 @@ English | [中文](README.zh-CN.md)
 
 # MailCLI
 
-MailCLI is an independent, open-source toolkit that turns raw email into AI-consumable context without tying itself to any provider-specific API.
+**AI-Native Email Interface: turning messy MIME into clean, structured context for agents.**
 
-## Positioning
+MailCLI is an open-source command-line toolkit built for **AI agents**, **LLM workflows**, and **automation developers**.
 
-- AI agent developers and automation builders consume the same normalized JSON, Markdown, actions, and thread metadata.
-- The parser-first approach keeps the project focused on data quality rather than reimplementing a user-facing client.
-- The project remains provider agnostic so that ecosystem contributors can plug in IMAP, API, or OhRelay drivers later.
+Traditional mail tools are designed for humans reading inboxes. MailCLI is designed for systems that need to **read**, **understand**, **reply to**, and **send** email through stable machine-friendly contracts.
 
-## Non-goals
+Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and composable workflows.
 
-- Not a traditional terminal mail client or UI replacement.
-- Not a vehicle for embedding business integrations into the repository.
-- Not aiming to support every provider-specific toggle in the core schema right now.
-- Not a general-purpose sending/rules/GUI platform in the initial release.
+## Vision
 
-## Parser-first MVP
+In the AI era, email should not be treated as a pile of HTML and transport headers.
 
-- `mailcli parse <file>` and `cat <file> | mailcli parse -` both accept raw `.eml` input.
-- Output includes normalized headers, Markdown content, actions (e.g., unsubscribe), thread context, and token estimates as defined in the schema.
-- Golden tests based on representative Mercury, bounce, and plaintext samples validate parser behavior before publishing.
-- The CLI stays minimal: parse command plus future hooks for output formatting and account context.
+It should behave like a structured API resource.
 
-## Current Commands
+MailCLI exists to make email as easy for agents to consume and produce as a JSON document.
+
+## Key Features
+
+- **AI-first parser**
+  Convert noisy raw email into normalized JSON and Markdown suitable for agent reasoning.
+- **Protocol/content separation**
+  Drivers handle transport, parsers handle content, composers handle outbound MIME.
+- **Action extraction**
+  Extract unsubscribe links, bounce/error context, and thread-related metadata.
+- **Developer-friendly CLI**
+  Support `json`, `yaml`, and `table` output formats, stdin pipelines, and scriptable commands.
+- **Bidirectional workflow**
+  Read mail with `list/get/parse`, then produce `DraftMessage` and `ReplyDraft` flows for outbound delivery.
+- **Provider-agnostic architecture**
+  Designed to support IMAP, SMTP, APIs, and future ecosystem integrations without redefining the core model.
+
+## Why MailCLI Exists
+
+Raw email is a poor interface for agents:
+
+- MIME trees are noisy
+- HTML templates are token-expensive
+- reply threading is easy to break
+- provider APIs differ too much
+
+MailCLI solves that by providing a stable boundary:
+
+- inbound email becomes `StandardMessage`
+- outbound intent becomes `DraftMessage` or `ReplyDraft`
+- transport stays behind drivers
+
+## Current Capabilities
+
+### Read path
 
 - `mailcli parse --format json|yaml|table <file|->`
-- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>]`
+- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--format json|table]`
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
+
+### Write path
+
 - `mailcli send --dry-run <draft.json>`
+- `mailcli send --config ~/.config/mailcli/config.yaml <draft.json>`
 - `mailcli reply --dry-run <reply.json>`
-  `reply_to_id` is also supported and will resolve thread headers via the configured driver.
+- `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
 
-## Current Outbound Status
+### Reply support
 
-- `pkg/composer` can already compile `DraftMessage` and `ReplyDraft` into raw MIME locally.
-- `mailcli send` can also hand MIME to the configured driver when an account is available.
-- `mailcli reply` can now also hand MIME to the configured driver when an account is available.
+- `reply_to_message_id` is supported
+- `reply_to_id` is supported
+- when `reply_to_id` is used, MailCLI can fetch the original message and derive:
+  - `In-Reply-To`
+  - `References`
+  - default reply subject
 
-## Examples
+## Architecture
 
-- Python parse example: `examples/python/parse_email.py`
-- Python reply dry-run example: `examples/python/reply_dry_run.py`
-- Shell parse example: `examples/shell/parse_email.sh`
-- Shell reply dry-run example: `examples/shell/reply_dry_run.sh`
+MailCLI follows a layered architecture so contributors can work on clear boundaries:
+
+1. **Driver Layer**
+   Fetch raw messages and send raw bytes.
+2. **Parser Engine**
+   Decode MIME, normalize charsets, clean HTML, convert to Markdown, and extract actions.
+3. **Composer**
+   Compile `DraftMessage` and `ReplyDraft` into standards-compliant outbound MIME.
+4. **CLI Core**
+   Handle account selection, command routing, output formatting, and workflow orchestration.
+
+Core rule:
+
+**protocol belongs to drivers, content belongs to parsers, composition belongs to composers, orchestration belongs to the CLI core**
+
+## Agent Collaboration Model
+
+MailCLI is not just a parser. It is the bridge between agents and email systems.
+
+### Read loop
+
+```text
+Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMessage -> Agent
+```
+
+### Reply loop
+
+```text
+Agent -> ReplyDraft -> mailcli reply -> Composer -> Raw MIME -> Driver -> Provider
+```
+
+### New outbound message loop
+
+```text
+Agent -> DraftMessage -> mailcli send -> Composer -> Raw MIME -> Driver -> Provider
+```
+
+Detailed workflow docs:
+
+- [Agent Workflows](docs/en/agent-workflows.md)
+- [Outbound Message Spec](docs/en/spec/outbound-message.md)
 
 ## Minimal Config Example
 
@@ -65,15 +135,105 @@ accounts:
     smtp_password: app-password-or-token
 ```
 
-## Architecture
+## Quick Start
 
-- `Cmd` layer manages Cobra commands, stdin/file handling, and formatter wiring.
-- `Driver` interfaces provide transport (fetch/send) without touching content semantics.
-- `Parser` handles MIME traversal, charset normalization, HTML cleanup, Markdown conversion, action extraction, and schema output.
-- Future send/reply flows will use intent-level schemas such as `DraftMessage` and `ReplyDraft`, while `mailcli` compiles them into real MIME messages with thread headers.
+### Parse a local email
 
-## Links
+```bash
+cat test.eml | mailcli parse --format json -
+```
 
-- [中文文档](README.zh-CN.md)
+### List messages from a configured account
+
+```bash
+mailcli list --config ~/.config/mailcli/config.yaml --format table
+```
+
+### Fetch and parse a message by id
+
+```bash
+mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
+```
+
+### Dry-run an outbound draft
+
+```bash
+mailcli send --dry-run draft.json
+```
+
+### Dry-run a reply
+
+```bash
+mailcli reply --dry-run reply.json
+```
+
+## Roadmap
+
+### Phase 1: The Brain
+
+- [x] Define `StandardMessage`, `DraftMessage`, `ReplyDraft`, and `SendResult`
+- [x] Build parser-first MVP with representative fixtures and golden tests
+- [x] Support `parse`, `list`, `get`, `send`, and `reply` command skeletons
+- [x] Add local MIME composer for outbound drafts and replies
+- [ ] Improve HTML noise filtering with stronger body extraction and URL cleaning
+- [ ] Expand fixture corpus for newsletters, transactional mail, alerts, and edge cases
+
+### Phase 2: The Hands
+
+- [x] Add config-backed account selection
+- [x] Add baseline IMAP read path
+- [x] Add SMTP-backed send path for IMAP-style accounts
+- [ ] Implement full `FetchRaw` for IMAP drivers
+- [ ] Improve transport error mapping into stable result codes
+
+### Phase 3: The Memory
+
+- [ ] Add local indexing and mailbox cache
+- [ ] Add search and thread navigation
+- [ ] Add structured metadata for larger local agent workflows
+
+### Phase 4: The Ecosystem
+
+- [ ] Add more providers beyond IMAP/SMTP
+- [ ] Document ecosystem integrations and driver extension patterns
+- [ ] Stabilize RFC-driven extension points for contributors
+
+## Examples
+
+- Python parse example: `examples/python/parse_email.py`
+- Python reply dry-run example: `examples/python/reply_dry_run.py`
+- Shell parse example: `examples/shell/parse_email.sh`
+- Shell reply dry-run example: `examples/shell/reply_dry_run.sh`
+
+## Contributing
+
+MailCLI is still early, but the direction is intentional.
+
+We want contributors in these areas:
+
+1. **Parser quality**
+   Better MIME handling, HTML cleanup, charset handling, and Markdown fidelity.
+2. **Semantic contracts**
+   Better shared specs for agent-facing email workflows.
+3. **Drivers**
+   More providers, safer transport behavior, and better compatibility layers.
+4. **Agent tooling**
+   Better examples, prompt patterns, and workflow integrations.
+
+Major changes should be discussed first.
+
+The project is community-open, but it is still directionally curated to stay focused on:
+
+- AI-native workflows
+- clean separation of concerns
+- stable machine-facing contracts
+
+## License
+
+Apache-2.0
+
+## Related
+
 - [Agent Workflows](docs/en/agent-workflows.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
+- [中文文档](README.zh-CN.md)
