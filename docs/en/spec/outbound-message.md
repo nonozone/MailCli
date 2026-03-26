@@ -116,3 +116,9 @@ cat reply.json | mailcli reply -
 ```
 
 This keeps the contract language-agnostic and works well for agents, shell scripts, Python, and Node.js.
+
+## Current Status
+
+The repository already contains a local MIME composer in `pkg/composer` for `DraftMessage` and `ReplyDraft`.
+
+Transport commands such as `mailcli send` and `mailcli reply` are still future work.

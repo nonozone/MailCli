@@ -116,3 +116,9 @@ cat reply.json | mailcli reply -
 ```
 
 这样接口保持语言无关，适合 agent、shell、Python 和 Node.js 调用。
+
+## 当前状态
+
+仓库中已经有 `pkg/composer`，可以在本地把 `DraftMessage` 和 `ReplyDraft` 编译成 MIME。
+
+但 `mailcli send` 和 `mailcli reply` 这两个传输命令还属于后续工作。
