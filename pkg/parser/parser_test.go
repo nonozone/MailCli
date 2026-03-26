@@ -558,6 +558,48 @@ func TestExtractActionsPrefersDownloadAttachmentOverViewInvoice(t *testing.T) {
 	}
 }
 
+func TestExtractActionsClassifiesResetPasswordLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/reset-password/token-123">Reset password</a>`)
+	action := findAction(actions, "reset_password")
+	if action == nil {
+		t.Fatalf("expected reset_password action, got %+v", actions)
+	}
+	if action.URL != "https://accounts.example.com/reset-password/token-123" {
+		t.Fatalf("expected reset_password url, got %q", action.URL)
+	}
+	if action.Label != "Reset password" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesVerifySignInLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/verify-sign-in/session-456">Verify sign-in</a>`)
+	action := findAction(actions, "verify_sign_in")
+	if action == nil {
+		t.Fatalf("expected verify_sign_in action, got %+v", actions)
+	}
+	if action.URL != "https://accounts.example.com/verify-sign-in/session-456" {
+		t.Fatalf("expected verify_sign_in url, got %q", action.URL)
+	}
+	if action.Label != "Verify sign-in" {
+		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericSignInLinkAsVerifySignIn(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/sign-in">Sign in</a>`)
+	if action := findAction(actions, "verify_sign_in"); action != nil {
+		t.Fatalf("expected generic sign in link to avoid verify_sign_in classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericAccountResetLinkAsResetPassword(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/reset-preferences">Reset account settings</a>`)
+	if action := findAction(actions, "reset_password"); action != nil {
+		t.Fatalf("expected generic reset link to avoid reset_password classification, got %+v", actions)
+	}
+}
+
 func TestParseExtractsReportAbuseActionFromHeaders(t *testing.T) {
 	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Abuse header\r\nMessage-ID: <abuse-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nX-Report-Abuse-To: abuse@example.com\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nHello")
 

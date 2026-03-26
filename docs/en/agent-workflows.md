@@ -64,7 +64,7 @@ Typical agent-usable fields from this step include:
 
 - clean Markdown body
 - normalized headers and thread metadata
-- extracted actions such as `unsubscribe`, `view_online`, `confirm_subscription`, `report_abuse`, `view_attachment`, `download_attachment`, `view_invoice`, and `pay_invoice`
+- extracted actions such as `unsubscribe`, `view_online`, `confirm_subscription`, `report_abuse`, `view_attachment`, `download_attachment`, `view_invoice`, `pay_invoice`, `reset_password`, and `verify_sign_in`
 
 ### Example
 

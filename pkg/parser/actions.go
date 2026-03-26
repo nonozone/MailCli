@@ -138,6 +138,10 @@ func classifyAction(label, href string) string {
 	switch {
 	case strings.Contains(lowerLabel, "unsubscribe") || strings.Contains(lowerHref, "unsubscribe"):
 		return "unsubscribe"
+	case looksLikeResetPassword(lowerLabel, lowerHref):
+		return "reset_password"
+	case looksLikeVerifySignIn(lowerLabel, lowerHref):
+		return "verify_sign_in"
 	case looksLikeDownloadAttachment(lowerLabel, lowerHref):
 		return "download_attachment"
 	case looksLikeViewAttachment(lowerLabel, lowerHref):
@@ -165,6 +169,10 @@ func actionLabel(actionType, label string) string {
 	switch actionType {
 	case "unsubscribe":
 		return "Unsubscribe"
+	case "reset_password":
+		return "Reset password"
+	case "verify_sign_in":
+		return "Verify sign-in"
 	case "pay_invoice":
 		return "Pay invoice"
 	case "view_invoice":
@@ -255,6 +263,22 @@ func looksLikeViewAttachment(label, href string) bool {
 	}
 
 	return false
+}
+
+func looksLikeResetPassword(label, href string) bool {
+	if strings.Contains(label, "reset password") || strings.Contains(label, "change password") {
+		return true
+	}
+
+	return strings.Contains(href, "/reset-password") || strings.Contains(href, "/password-reset")
+}
+
+func looksLikeVerifySignIn(label, href string) bool {
+	if strings.Contains(label, "verify sign-in") || strings.Contains(label, "verify signin") || strings.Contains(label, "approve sign-in") || strings.Contains(label, "approve login") {
+		return true
+	}
+
+	return strings.Contains(href, "/verify-sign-in") || strings.Contains(href, "/verify-login") || strings.Contains(href, "/approve-login")
 }
 
 func looksLikePayInvoice(label, href string) bool {
