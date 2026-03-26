@@ -31,6 +31,7 @@ MailCLI is an independent, open-source toolkit that turns raw email into AI-cons
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli send --dry-run <draft.json>`
 - `mailcli reply --dry-run <reply.json>`
+  `reply_to_id` is also supported and will resolve thread headers via the configured driver.
 
 ## Current Outbound Status
 

@@ -63,6 +63,12 @@ Alternative reply target:
 }
 ```
 
+When `reply_to_id` is used, `mailcli` may fetch the original message through the configured driver and derive:
+
+- `reply_to_message_id`
+- `references`
+- default reply subject
+
 ### `SendResult`
 
 Returned after a send or reply operation.

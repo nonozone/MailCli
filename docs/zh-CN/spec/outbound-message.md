@@ -63,6 +63,12 @@
 }
 ```
 
+当使用 `reply_to_id` 时，`mailcli` 可以通过配置好的 driver 抓取原邮件，并自动推导出：
+
+- `reply_to_message_id`
+- `references`
+- 默认回复主题
+
 ### `SendResult`
 
 用于返回发送或回复的执行结果。

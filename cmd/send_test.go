@@ -168,6 +168,76 @@ func TestReplyCommandUsesConfiguredDriver(t *testing.T) {
 	}
 }
 
+func TestReplyCommandResolvesReplyToIDViaFetch(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n")
+	loadConfigFunc = config.Load
+
+	fake := &fakeSendDriver{}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return &struct {
+			*fakeSendDriver
+		}{fake}, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "from": {"address": "support@nono.im"},
+  "to": [{"address": "user@example.com"}],
+  "body_text": "Thanks for the email.",
+  "reply_to_id": "imap:uid:123"
+}`)
+
+	drv := &replyResolveDriver{
+		fakeSendDriver: fake,
+		raw: []byte("From: sender@example.com\r\nTo: support@nono.im\r\nSubject: Original subject\r\nMessage-ID: <orig-123@example.com>\r\nReferences: <older-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nOriginal body"),
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return drv, nil
+	}
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "--config", configPath, replyPath})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected reply command to succeed: %v", err)
+	}
+
+	raw := string(drv.lastRaw)
+	if !strings.Contains(raw, "In-Reply-To: <orig-123@example.com>") {
+		t.Fatalf("expected reply_to_id to resolve original message id")
+	}
+	if !strings.Contains(raw, "References: <older-1@example.com> <orig-123@example.com>") {
+		t.Fatalf("expected references to include original thread")
+	}
+	if !strings.Contains(raw, "Subject: Re: Original subject") {
+		t.Fatalf("expected subject to derive from original message")
+	}
+}
+
+type replyResolveDriver struct {
+	*fakeSendDriver
+	raw []byte
+}
+
+func (d *replyResolveDriver) List(ctx context.Context, query schema.SearchQuery) ([]schema.MessageMetaSummary, error) {
+	return nil, nil
+}
+
+func (d *replyResolveDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
+	return d.raw, nil
+}
+
 func writeTempFile(t *testing.T, name, content string) string {
 	t.Helper()
 

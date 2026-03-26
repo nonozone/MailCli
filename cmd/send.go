@@ -1,11 +1,15 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/yourname/mailcli/internal/config"
 	"github.com/yourname/mailcli/pkg/composer"
+	"github.com/yourname/mailcli/pkg/driver"
+	"github.com/yourname/mailcli/pkg/parser"
 	"github.com/yourname/mailcli/pkg/schema"
 )
 
@@ -92,6 +96,26 @@ func newReplyCmd() *cobra.Command {
 				return err
 			}
 
+			var (
+				selectedAccount config.AccountConfig
+				drv             driver.Driver
+			)
+			if strings.TrimSpace(draft.ReplyToID) != "" || !dryRun {
+				selectedAccount, err = resolveSelectedAccount(configPath, account, draft.Account)
+				if err != nil {
+					return err
+				}
+
+				drv, err = driverFactoryFunc(selectedAccount)
+				if err != nil {
+					return err
+				}
+			}
+
+			if err := enrichReplyDraft(cmd.Context(), drv, &draft); err != nil {
+				return err
+			}
+
 			mime, err := composer.ComposeReply(draft)
 			if err != nil {
 				return err
@@ -99,16 +123,6 @@ func newReplyCmd() *cobra.Command {
 
 			if dryRun {
 				_, err = cmd.OutOrStdout().Write(mime)
-				return err
-			}
-
-			selectedAccount, err := resolveSelectedAccount(configPath, account, draft.Account)
-			if err != nil {
-				return err
-			}
-
-			drv, err := driverFactoryFunc(selectedAccount)
-			if err != nil {
 				return err
 			}
 
@@ -147,4 +161,37 @@ func resolveSelectedAccount(configPath, cliAccount, draftAccount string) (config
 	}
 
 	return cfg.ResolveAccount(target)
+}
+
+func enrichReplyDraft(ctx context.Context, drv driver.Driver, draft *schema.ReplyDraft) error {
+	if draft == nil || strings.TrimSpace(draft.ReplyToID) == "" {
+		return nil
+	}
+	if strings.TrimSpace(draft.ReplyToMessageID) != "" && len(draft.References) > 0 && strings.TrimSpace(draft.Subject) != "" {
+		return nil
+	}
+
+	raw, err := drv.FetchRaw(ctx, draft.ReplyToID)
+	if err != nil {
+		return err
+	}
+
+	msg, err := parser.Parse(raw)
+	if err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(draft.ReplyToMessageID) == "" {
+		draft.ReplyToMessageID = msg.Meta.MessageID
+	}
+
+	if len(draft.References) == 0 {
+		draft.References = append(append([]string{}, msg.Meta.References...), msg.Meta.MessageID)
+	}
+
+	if strings.TrimSpace(draft.Subject) == "" {
+		draft.Subject = msg.Meta.Subject
+	}
+
+	return nil
 }
