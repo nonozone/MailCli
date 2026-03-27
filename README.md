@@ -249,6 +249,15 @@ Recommended usage:
 
 ## Quick Start
 
+### Recommended Paths
+
+- Single-message agent path:
+  Start with `mailcli parse` or `mailcli get`, then see [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md).
+- Thread-aware agent path:
+  Start with `mailcli sync`, `mailcli threads`, and `mailcli thread`, then see [Agent Thread Example](docs/en/examples/agent-thread-assistant.md).
+- Model-backed analysis path:
+  Keep MailCLI as the boundary and delegate reasoning to an external subprocess provider, then see [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md) and [Examples Index](docs/en/examples/README.md).
+
 ### Parse a local email
 
 ```bash
@@ -354,6 +363,10 @@ python3 examples/python/agent_thread_assistant.py \
   --from-address support@nono.im \
   --reply-text "Thanks for your email."
 ```
+
+More runnable entry points:
+
+- [Examples Index](docs/en/examples/README.md)
 
 ## Roadmap
 

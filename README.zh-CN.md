@@ -249,6 +249,15 @@ accounts:
 
 ## 快速开始
 
+### 推荐路径
+
+- 单封邮件 agent 路径：
+  从 `mailcli parse` 或 `mailcli get` 开始，再看 [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)。
+- thread 感知 agent 路径：
+  从 `mailcli sync`、`mailcli threads` 和 `mailcli thread` 开始，再看 [Agent Thread 示例](docs/zh-CN/examples/agent-thread-assistant.md)。
+- 模型驱动分析路径：
+  保持 MailCLI 作为稳定边界，把推理委托给外部子进程 provider，再看 [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md) 和 [Examples 索引](docs/zh-CN/examples/README.md)。
+
 ### 解析本地邮件
 
 ```bash
@@ -354,6 +363,10 @@ python3 examples/python/agent_thread_assistant.py \
   --from-address support@nono.im \
   --reply-text "Thanks for your email."
 ```
+
+更多可运行入口：
+
+- [Examples 索引](docs/zh-CN/examples/README.md)
 
 ## 路线图
 
