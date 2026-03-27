@@ -93,6 +93,243 @@ func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
 	}
 }
 
+func TestAgentThreadAssistantBuildsReplyDryRunFromLocalThread(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
+	indexPath := filepath.Join(t.TempDir(), "index.json")
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--config", configPath,
+		"--account", "demo",
+		"--index", indexPath,
+		"--query", "invoice",
+		"--from-address", "support@nono.im",
+		"--reply-text", "Thanks for your email.",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent example failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	syncResult := mustMap(t, report["sync"])
+	if syncResult["indexed_count"] != float64(2) {
+		t.Fatalf("expected sync to index two stub messages, got %#v", syncResult["indexed_count"])
+	}
+
+	selection := mustMap(t, report["selection"])
+	if selection["thread_id"] != "<stub-invoice@example.com>" {
+		t.Fatalf("expected invoice thread to be selected, got %#v", selection["thread_id"])
+	}
+
+	reply := mustMap(t, report["reply"])
+	draft := mustMap(t, reply["draft"])
+	if draft["reply_to_id"] != "stub:invoice" {
+		t.Fatalf("expected reply_to_id to target latest local message, got %#v", draft["reply_to_id"])
+	}
+
+	to := mustSlice(t, draft["to"])
+	firstTo := mustMap(t, to[0])
+	if firstTo["address"] != "billing@example.com" {
+		t.Fatalf("expected reply target to use latest sender, got %#v", firstTo["address"])
+	}
+
+	mime, ok := reply["mime"].(string)
+	if !ok {
+		t.Fatalf("expected reply mime string, got %#v", reply["mime"])
+	}
+	if !strings.Contains(mime, "In-Reply-To: <stub-invoice@example.com>") {
+		t.Fatalf("expected reply mime to contain In-Reply-To header, got %q", mime)
+	}
+}
+
+func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--from-address", "support@nono.im",
+		"--reply-text", "Thanks for your email.",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent local-only example failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	reply := mustMap(t, report["reply"])
+	draft := mustMap(t, reply["draft"])
+	if draft["reply_to_message_id"] != "<root@example.com>" {
+		t.Fatalf("expected local-only draft to use reply_to_message_id, got %#v", draft["reply_to_message_id"])
+	}
+	if _, ok := draft["reply_to_id"]; ok {
+		t.Fatalf("expected local-only draft to avoid reply_to_id, got %#v", draft["reply_to_id"])
+	}
+
+	mime, ok := reply["mime"].(string)
+	if !ok {
+		t.Fatalf("expected reply mime string, got %#v", reply["mime"])
+	}
+	if !strings.Contains(mime, "In-Reply-To: <root@example.com>") {
+		t.Fatalf("expected local-only reply mime to contain In-Reply-To header, got %q", mime)
+	}
+	references := mustSlice(t, draft["references"])
+	if len(references) != 1 || references[0] != "<root@example.com>" {
+		t.Fatalf("expected local-only draft to carry references, got %#v", references)
+	}
+	if draft["subject"] != "Project update" {
+		t.Fatalf("expected local-only draft to carry subject, got %#v", draft["subject"])
+	}
+}
+
+func TestAgentThreadAssistantReloadsLatestMessageWhenThreadLimitTruncates(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Older Sender",
+            "address": "older@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    },
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-reply",
+      "indexed_at": "2026-03-27T09:00:00Z",
+      "message": {
+        "id": "msg-reply",
+        "meta": {
+          "subject": "Re: Project update",
+          "date": "2026-03-27T09:00:00Z",
+          "message_id": "<reply@example.com>",
+          "in_reply_to": "<root@example.com>",
+          "references": [
+            "<root@example.com>"
+          ],
+          "from": {
+            "name": "Latest Sender",
+            "address": "latest@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Latest update",
+          "body_md": "Latest update"
+        }
+      }
+    }
+  ]
+}`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--thread-message-limit", "1",
+		"--from-address", "support@nono.im",
+		"--reply-text", "Thanks for your email.",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent truncation example failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	latestMessage := mustMap(t, report["latest_message"])
+	if latestMessage["id"] != "msg-reply" {
+		t.Fatalf("expected latest message to be reloaded, got %#v", latestMessage["id"])
+	}
+
+	reply := mustMap(t, report["reply"])
+	draft := mustMap(t, reply["draft"])
+	if draft["reply_to_message_id"] != "<reply@example.com>" {
+		t.Fatalf("expected reply target to use latest message id, got %#v", draft["reply_to_message_id"])
+	}
+	references := mustSlice(t, draft["references"])
+	if len(references) != 2 || references[0] != "<root@example.com>" || references[1] != "<reply@example.com>" {
+		t.Fatalf("expected reply references to include the full chain, got %#v", references)
+	}
+
+	to := mustSlice(t, draft["to"])
+	firstTo := mustMap(t, to[0])
+	if firstTo["address"] != "latest@example.com" {
+		t.Fatalf("expected reply target to use latest sender, got %#v", firstTo["address"])
+	}
+}
+
 func TestAgentInboxAssistantUsesExternalProvider(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)

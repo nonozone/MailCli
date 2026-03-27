@@ -158,6 +158,10 @@ agent 现在也可以直接在本地 thread 层做过滤：
 - `mailcli threads --category verification`
 - `mailcli threads --action verify_sign_in`
 
+参考示例：
+
+- [Agent Thread Assistant](examples/agent-thread-assistant.md)
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。

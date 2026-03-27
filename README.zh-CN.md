@@ -342,6 +342,19 @@ python3 examples/python/agent_inbox_assistant.py \
   --email testdata/emails/verification.eml
 ```
 
+### 运行 thread agent 示例
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config ~/.config/mailcli/config.yaml \
+  --account work \
+  --index /tmp/mailcli-index.json \
+  --query invoice \
+  --from-address support@nono.im \
+  --reply-text "Thanks for your email."
+```
+
 ## 路线图
 
 ### Phase 1: The Brain
@@ -380,6 +393,8 @@ python3 examples/python/agent_inbox_assistant.py \
 - Python 回复 dry-run 示例：`examples/python/reply_dry_run.py`
 - Python inbox agent 示例：`examples/python/agent_inbox_assistant.py`
   支持内置规则 provider，也支持外部命令 provider。
+- Python thread agent 示例：`examples/python/agent_thread_assistant.py`
+  演示本地同步、thread 选择和回复 dry-run 生成。
 - External provider 模板：`examples/providers/template_external_provider.py`
 - 可选 OpenAI provider 示例：`examples/providers/openai_external_provider.py`
 - Shell 解析示例：`examples/shell/parse_email.sh`
@@ -428,5 +443,6 @@ Apache-2.0
 - [配置规范](docs/zh-CN/spec/config.md)
 - [v0.1 RC 发布说明](docs/zh-CN/release/v0.1-rc.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
+- [Agent Thread 示例](docs/zh-CN/examples/agent-thread-assistant.md)
 - [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md)
 - [贡献指南](CONTRIBUTING.zh-CN.md)

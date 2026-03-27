@@ -158,6 +158,10 @@ Agents can now filter local threads directly with:
 - `mailcli threads --category verification`
 - `mailcli threads --action verify_sign_in`
 
+Reference example:
+
+- [Agent Thread Assistant](examples/agent-thread-assistant.md)
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

@@ -342,6 +342,19 @@ python3 examples/python/agent_inbox_assistant.py \
   --email testdata/emails/verification.eml
 ```
 
+### Run the thread agent example
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config ~/.config/mailcli/config.yaml \
+  --account work \
+  --index /tmp/mailcli-index.json \
+  --query invoice \
+  --from-address support@nono.im \
+  --reply-text "Thanks for your email."
+```
+
 ## Roadmap
 
 ### Phase 1: The Brain
@@ -380,6 +393,8 @@ python3 examples/python/agent_inbox_assistant.py \
 - Python reply dry-run example: `examples/python/reply_dry_run.py`
 - Python inbox agent example: `examples/python/agent_inbox_assistant.py`
   Supports a built-in rule provider or an external command provider.
+- Python thread agent example: `examples/python/agent_thread_assistant.py`
+  Demonstrates local sync, thread selection, and reply dry-run generation.
 - External provider template: `examples/providers/template_external_provider.py`
 - Optional OpenAI provider example: `examples/providers/openai_external_provider.py`
 - Shell parse example: `examples/shell/parse_email.sh`
@@ -427,6 +442,7 @@ Apache-2.0
 - [Config Spec](docs/en/spec/config.md)
 - [v0.1 RC Release Notes](docs/en/release/v0.1-rc.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
+- [Agent Thread Example](docs/en/examples/agent-thread-assistant.md)
 - [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)
 - [Contribution Guide](CONTRIBUTING.md)
 - [中文文档](README.zh-CN.md)
