@@ -88,6 +88,7 @@ Driver 应优先返回：
 MailCLI 现在在下面这个文件里提供了一套共享 driver 合同测试：
 
 - `pkg/driver/conformance_test.go`
+- [Driver 合规清单](driver-compliance.md)
 
 新增 driver 时，建议先用这套测试证明每个 driver 都应保持的最低行为：
 

@@ -9,6 +9,7 @@ This guide explains how contributors should add a new MailCLI driver.
 Read:
 
 - [Driver Extension Spec](../spec/driver-extension.md)
+- [Driver Compliance Checklist](../spec/driver-compliance.md)
 - [Config Spec](../spec/config.md)
 - `pkg/driver/driver.go`
 - `pkg/driver/conformance_test.go`
@@ -68,5 +69,6 @@ If you add a driver, update:
 - user-facing config guidance
 - any relevant README examples
 - driver-specific limitations
+- the compliance checklist if the shared acceptance bar changes
 
 The goal is that another contributor can understand how your driver works without reading all of its internals.

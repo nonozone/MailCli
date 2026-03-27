@@ -88,6 +88,7 @@ Other provider-specific errors may still bubble up, but stable typed errors are 
 MailCLI now includes a shared driver contract suite in:
 
 - `pkg/driver/conformance_test.go`
+- [Driver Compliance Checklist](driver-compliance.md)
 
 Contributors adding a driver should use that suite to prove the baseline behaviors that every driver is expected to preserve:
 

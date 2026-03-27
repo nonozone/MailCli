@@ -9,6 +9,7 @@
 先阅读：
 
 - [Driver 扩展规范](../spec/driver-extension.md)
+- [Driver 合规清单](../spec/driver-compliance.md)
 - [配置规范](../spec/config.md)
 - `pkg/driver/driver.go`
 - `pkg/driver/conformance_test.go`
@@ -68,5 +69,6 @@
 - 面向用户的配置说明
 - 相关 README 示例
 - driver 自身的限制说明
+- 如果共享验收门槛发生变化，也要同步更新 compliance checklist
 
 目标是让另一个贡献者不用读完内部实现，也能知道这个 driver 怎么用、边界在哪里。
