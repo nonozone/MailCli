@@ -9,6 +9,7 @@
 目标是把当前 RC 打磨成一个稳定、易贡献、真正服务于 agent 开发者的开源项目。
 
 如果你需要可直接复制到 GitHub 的 issue 草案，见 [GitHub Backlog 草案](github-backlog.md)。
+如果你需要更现实的维护者主导开发顺序，见 [内部主导开发顺序](internal-priority.md)。
 
 ## 优先级顺序
 

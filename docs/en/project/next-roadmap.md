@@ -9,6 +9,7 @@ The goal is not to add random surface area.
 The goal is to turn the current RC into a stable, contributor-friendly open-source project for agent developers.
 
 For copy-ready GitHub issue drafts, see [GitHub Backlog Drafts](github-backlog.md).
+For the realistic maintainer-led sequence, see [Internal Development Priority](internal-priority.md).
 
 ## Priority Order
 
