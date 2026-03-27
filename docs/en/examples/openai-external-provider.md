@@ -41,6 +41,20 @@ python3 examples/python/agent_inbox_assistant.py \
   --provider-arg examples/providers/openai_external_provider.py
 ```
 
+The same provider can also be used with the thread-aware example:
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --index /tmp/mailcli-index.json \
+  --skip-sync \
+  --thread-id "<root@example.com>" \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg examples/providers/openai_external_provider.py
+```
+
 ## What It Does
 
 1. Reads the MailCLI provider payload from stdin
@@ -74,3 +88,4 @@ Related references:
 - [Agent Provider Contract](../spec/agent-provider.md)
 - [Agent Decision Spec](../spec/agent-decisions.md)
 - [Agent Inbox Example](agent-inbox-assistant.md)
+- [Agent Thread Example](agent-thread-assistant.md)

@@ -4,6 +4,13 @@ import subprocess
 import sys
 from typing import Any
 
+ALLOWED_DECISIONS = {
+    "review",
+    "capture_code",
+    "draft_reply",
+    "escalate_delivery_error",
+}
+
 
 def main() -> int:
     args = parse_args()
@@ -19,7 +26,7 @@ def main() -> int:
         raise SystemExit("selected thread did not return any local messages")
 
     thread_messages, latest_message = ensure_latest_message(selection, thread_messages, args)
-    analysis = analyze_thread(selection, thread_messages, wants_reply=bool(args.reply_text))
+    analysis = analyze_with_provider(selection, thread_summaries, thread_messages, latest_message, args)
 
     report: dict[str, Any] = {
         "tool": "mailcli-thread-agent-example",
@@ -33,13 +40,14 @@ def main() -> int:
     if sync_result is not None:
         report["sync"] = sync_result
 
-    if args.reply_text:
+    reply_text = args.reply_text or analysis.get("reply_text")
+    if reply_text:
         if not args.from_address:
             print("--from-address is required when --reply-text is used", file=sys.stderr)
             return 2
 
         draft = build_reply_draft(selection, latest_message, args)
-        draft["body_text"] = args.reply_text
+        draft["body_text"] = reply_text
         mime = compile_reply_dry_run(draft, args)
         report["reply"] = {
             "mode": "dry_run",
@@ -71,10 +79,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reply-text", help="optional reply body text to compile with mailcli reply --dry-run")
     parser.add_argument("--from-address", help="from address to use for reply dry-run")
     parser.add_argument("--from-name", help="optional from display name for reply dry-run")
+    parser.add_argument("--agent-provider", choices=["builtin", "external"], default="builtin", help="analysis provider")
+    parser.add_argument("--provider-command", help="external provider command")
+    parser.add_argument("--provider-arg", action="append", default=[], help="repeatable argument for the external provider command")
 
     args = parser.parse_args()
     if not args.skip_sync and not args.config:
         parser.error("--config is required unless --skip-sync is used")
+    if args.agent_provider == "external" and not args.provider_command:
+        parser.error("--provider-command is required when --agent-provider external is used")
     return args
 
 
@@ -232,6 +245,46 @@ def analyze_thread(selection: dict[str, Any], thread_messages: list[dict[str, An
         "decision": "review",
         "summary": content.get("snippet") or content.get("body_md") or selection.get("last_message_preview") or "",
     }
+
+
+def analyze_with_provider(
+    selection: dict[str, Any],
+    thread_summaries: list[dict[str, Any]],
+    thread_messages: list[dict[str, Any]],
+    latest_message: dict[str, Any],
+    args: argparse.Namespace,
+) -> dict[str, Any]:
+    if args.agent_provider == "external":
+        payload = {
+            "source": build_source(args),
+            "selection": selection,
+            "thread_summaries": thread_summaries,
+            "thread_messages": thread_messages,
+            "latest_message": latest_message,
+            "wants_reply": bool(args.reply_text),
+        }
+        output = run_mailcli(
+            [args.provider_command, *args.provider_arg],
+            stdin=json.dumps(payload),
+        )
+        analysis = json.loads(output)
+        if not isinstance(analysis, dict):
+            raise SystemExit("external provider must return a JSON object")
+        decision = analysis.get("decision")
+        if not isinstance(decision, str) or not decision.strip():
+            raise SystemExit("external provider response must include a non-empty decision")
+        if decision not in ALLOWED_DECISIONS:
+            allowed = ", ".join(sorted(ALLOWED_DECISIONS))
+            raise SystemExit(f"external provider decision must be one of: {allowed}")
+        reply_text = analysis.get("reply_text")
+        if reply_text is not None and not isinstance(reply_text, str):
+            raise SystemExit("external provider reply_text must be a string when present")
+        analysis.setdefault("provider", "external")
+        return analysis
+
+    analysis = analyze_thread(selection, thread_messages, wants_reply=bool(args.reply_text))
+    analysis.setdefault("provider", "builtin")
+    return analysis
 
 
 def build_reply_draft(selection: dict[str, Any], latest_message: dict[str, Any], args: argparse.Namespace) -> dict[str, Any]:

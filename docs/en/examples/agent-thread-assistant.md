@@ -50,6 +50,42 @@ python3 examples/python/agent_thread_assistant.py \
   --reply-text "Thanks for your email."
 ```
 
+## External Provider Mode
+
+You can also delegate the thread analysis step to your own script or agent runtime:
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --index /tmp/mailcli-index.json \
+  --skip-sync \
+  --thread-id "<root@example.com>" \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg ./my_provider.py
+```
+
+The external provider receives a JSON payload that includes:
+
+- `selection`
+- `thread_summaries`
+- `thread_messages`
+- `latest_message`
+- `wants_reply`
+
+If it returns:
+
+```json
+{
+  "decision": "draft_reply",
+  "summary": "Short analysis",
+  "reply_text": "Thanks for your email."
+}
+```
+
+the example will compile a reply dry-run automatically.
+
 ## Reply Draft Strategy
 
 When `--config` is present, the example prefers `reply_to_id` using the latest local message id. That lets `mailcli reply` re-fetch the original raw message and derive:
@@ -88,4 +124,5 @@ Related docs:
 
 - [Agent Workflows](../agent-workflows.md)
 - [Outbound Message Spec](../spec/outbound-message.md)
+- [Agent Provider Contract](../spec/agent-provider.md)
 - [Agent Inbox Assistant](agent-inbox-assistant.md)

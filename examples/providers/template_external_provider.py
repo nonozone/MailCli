@@ -12,7 +12,11 @@ def main() -> int:
 
 
 def analyze(payload: dict[str, Any]) -> dict[str, Any]:
-    message = payload.get("message", {})
+    message = payload.get("message") or {}
+    if not message:
+        latest = payload.get("latest_message") or {}
+        if isinstance(latest, dict):
+            message = latest.get("message") or {}
     content = message.get("content", {})
     codes = message.get("codes") or []
     error_context = message.get("error_context")

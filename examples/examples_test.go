@@ -330,6 +330,349 @@ func TestAgentThreadAssistantReloadsLatestMessageWhenThreadLimitTruncates(t *tes
 	}
 }
 
+func TestAgentThreadAssistantUsesExternalProvider(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+	payloadPath := filepath.Join(t.TempDir(), "thread_payload.json")
+	providerPath := writeTempFile(t, "thread_provider.py", `import json
+import os
+import sys
+
+payload = json.load(sys.stdin)
+with open(os.environ["THREAD_PROVIDER_PAYLOAD_PATH"], "w", encoding="utf-8") as fh:
+    json.dump(payload, fh)
+latest = payload["latest_message"]["message"]
+print(json.dumps({
+  "decision": "draft_reply",
+  "summary": latest["content"]["snippet"],
+  "reply_text": "Handled by thread provider."
+}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--from-address", "support@nono.im",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	cmd.Env = append(os.Environ(), "THREAD_PROVIDER_PAYLOAD_PATH="+payloadPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent external provider failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["decision"] != "draft_reply" {
+		t.Fatalf("expected external provider to request draft_reply, got %#v", analysis["decision"])
+	}
+	if analysis["provider"] != "external" {
+		t.Fatalf("expected external provider metadata, got %#v", analysis["provider"])
+	}
+
+	reply := mustMap(t, report["reply"])
+	draft := mustMap(t, reply["draft"])
+	if draft["body_text"] != "Handled by thread provider." {
+		t.Fatalf("expected provider reply text, got %#v", draft["body_text"])
+	}
+
+	payloadBytes, err := os.ReadFile(payloadPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		t.Fatalf("expected payload json: %v", err)
+	}
+	selectionPayload := mustMap(t, payload["selection"])
+	if selectionPayload["thread_id"] != "<root@example.com>" {
+		t.Fatalf("expected selection thread id in payload, got %#v", selectionPayload["thread_id"])
+	}
+	if payload["wants_reply"] != false {
+		t.Fatalf("expected wants_reply false without explicit reply text, got %#v", payload["wants_reply"])
+	}
+	summaries := mustSlice(t, payload["thread_summaries"])
+	if len(summaries) != 1 {
+		t.Fatalf("expected one thread summary in payload, got %#v", summaries)
+	}
+	threadMessages := mustSlice(t, payload["thread_messages"])
+	if len(threadMessages) != 1 {
+		t.Fatalf("expected one thread message in payload, got %#v", threadMessages)
+	}
+}
+
+func TestAgentThreadAssistantWorksWithTemplateExternalProvider(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--from-address", "support@nono.im",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent template provider failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["provider"] != "external" {
+		t.Fatalf("expected external provider metadata, got %#v", analysis["provider"])
+	}
+	if analysis["decision"] != "review" {
+		t.Fatalf("expected template provider to default to review, got %#v", analysis["decision"])
+	}
+}
+
+func TestAgentThreadAssistantTemplateProviderSupportsReplyBranch(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--from-address", "support@nono.im",
+		"--reply-text", "Please draft a reply.",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent template provider reply branch failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["decision"] != "draft_reply" {
+		t.Fatalf("expected template provider to request draft reply, got %#v", analysis["decision"])
+	}
+}
+
+func TestAgentThreadAssistantRejectsInvalidExternalProviderResponse(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+	providerPath := writeTempFile(t, "thread_provider_invalid.py", `import json
+print(json.dumps({"summary": "missing decision"}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected invalid thread provider response to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider response must include a non-empty decision") {
+		t.Fatalf("expected contract error, got %s", string(output))
+	}
+}
+
+func TestAgentThreadAssistantRejectsUnknownExternalDecision(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+	providerPath := writeTempFile(t, "thread_provider_unknown.py", `import json
+print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected unknown thread provider decision to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider decision must be one of") {
+		t.Fatalf("expected decision enum error, got %s", string(output))
+	}
+}
+
 func TestAgentInboxAssistantUsesExternalProvider(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
@@ -556,6 +899,93 @@ class OpenAI:
 	format := mustMap(t, text["format"])
 	if format["type"] != "json_schema" {
 		t.Fatalf("expected structured output request, got %#v", format["type"])
+	}
+}
+
+func TestOpenAIExternalProviderNormalizesThreadPayload(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+
+	stubDir := t.TempDir()
+	requestPath := filepath.Join(stubDir, "request.json")
+	stubModule := `import json
+import os
+
+class _Response:
+    def __init__(self, output_text):
+        self.output_text = output_text
+
+class _Responses:
+    def create(self, **kwargs):
+        with open(os.environ["OPENAI_STUB_REQUEST_PATH"], "w", encoding="utf-8") as fh:
+            json.dump(kwargs, fh)
+        return _Response(json.dumps({
+            "decision": "review",
+            "summary": "stubbed openai provider"
+        }))
+
+class OpenAI:
+    def __init__(self):
+        self.responses = _Responses()
+`
+	stubModulePath := filepath.Join(stubDir, "openai.py")
+	if err := os.WriteFile(stubModulePath, []byte(stubModule), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/providers/openai_external_provider.py"),
+	)
+	cmd.Stdin = strings.NewReader(`{
+  "source": {"mode": "local_thread", "thread_id": "<root@example.com>"},
+  "selection": {"thread_id": "<root@example.com>", "last_message_id": "imap:uid:123"},
+  "thread_messages": [],
+  "latest_message": {
+    "id": "imap:uid:123",
+    "message": {
+      "content": {"snippet": "hello from latest"},
+      "codes": [{"value": "123456"}]
+    }
+  },
+  "wants_reply": false
+}`)
+	cmd.Env = append(os.Environ(),
+		"OPENAI_API_KEY=test-key",
+		"OPENAI_MODEL=gpt-5-mini",
+		"PYTHONPATH="+stubDir,
+		"OPENAI_STUB_REQUEST_PATH="+requestPath,
+	)
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("openai provider thread mode failed: %v\n%s", err, string(output))
+	}
+
+	requestBytes, err := os.ReadFile(requestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var request map[string]any
+	if err := json.Unmarshal(requestBytes, &request); err != nil {
+		t.Fatalf("expected request json: %v", err)
+	}
+	input := mustSlice(t, request["input"])
+	user := mustMap(t, input[1])
+	content := mustSlice(t, user["content"])
+	part := mustMap(t, content[0])
+	payloadText, ok := part["text"].(string)
+	if !ok {
+		t.Fatalf("expected payload text, got %#v", part["text"])
+	}
+	var normalized map[string]any
+	if err := json.Unmarshal([]byte(payloadText), &normalized); err != nil {
+		t.Fatalf("expected normalized payload json: %v", err)
+	}
+	message := mustMap(t, normalized["message"])
+	codes := mustSlice(t, message["codes"])
+	if len(codes) != 1 {
+		t.Fatalf("expected normalized payload to expose latest message codes, got %#v", codes)
 	}
 }
 

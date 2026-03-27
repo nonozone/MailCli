@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The Python inbox agent example supports a pluggable external provider mode.
+The Python inbox and thread agent examples support a pluggable external provider mode.
 
 This keeps the repository free of LLM SDK dependencies while still giving developers a stable handoff point for OpenAI, Claude, local models, or custom agent runtimes.
 
@@ -24,9 +24,25 @@ python3 examples/python/agent_inbox_assistant.py \
 
 The external provider is executed as a subprocess.
 
+The same contract is also used by:
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --index /tmp/mailcli-index.json \
+  --skip-sync \
+  --thread-id "<root@example.com>" \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg ./my_provider.py
+```
+
 ## Input Contract
 
-The provider receives one JSON object on stdin:
+The provider receives one JSON object on stdin.
+
+Single-message example payload:
 
 ```json
 {
@@ -50,6 +66,36 @@ Fields:
 - `source`: where the message came from
 - `message`: parsed `StandardMessage`
 - `wants_reply`: whether the caller explicitly requested a reply body
+
+Thread-aware example payload:
+
+```json
+{
+  "source": {
+    "mode": "local_thread",
+    "index": "/tmp/mailcli-index.json",
+    "thread_id": "<root@example.com>"
+  },
+  "selection": {
+    "thread_id": "<root@example.com>",
+    "last_message_id": "imap:uid:123"
+  },
+  "thread_summaries": [],
+  "thread_messages": [],
+  "latest_message": {
+    "id": "imap:uid:123",
+    "message": {}
+  },
+  "wants_reply": false
+}
+```
+
+Additional thread fields:
+
+- `selection`: chosen local thread summary
+- `thread_summaries`: ranked thread candidates returned by `mailcli threads`
+- `thread_messages`: full local thread records returned by `mailcli thread`
+- `latest_message`: the resolved latest local message that the example will treat as the reply target
 
 ## Output Contract
 

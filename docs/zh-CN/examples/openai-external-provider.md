@@ -41,6 +41,20 @@ python3 examples/python/agent_inbox_assistant.py \
   --provider-arg examples/providers/openai_external_provider.py
 ```
 
+同一个 provider 也可以直接用于 thread 场景示例：
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --index /tmp/mailcli-index.json \
+  --skip-sync \
+  --thread-id "<root@example.com>" \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg examples/providers/openai_external_provider.py
+```
+
 ## 它做了什么
 
 1. 从 stdin 读取 MailCLI provider payload
@@ -74,3 +88,4 @@ python3 examples/python/agent_inbox_assistant.py \
 - [Agent Provider 契约](../spec/agent-provider.md)
 - [Agent Decision 规范](../spec/agent-decisions.md)
 - [Agent Inbox 示例](agent-inbox-assistant.md)
+- [Agent Thread 示例](agent-thread-assistant.md)

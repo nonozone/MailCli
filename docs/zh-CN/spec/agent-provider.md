@@ -4,7 +4,7 @@
 
 ## 目的
 
-Python inbox agent 示例支持可插拔的 external provider 模式。
+Python inbox agent 和 thread agent 示例都支持可插拔的 external provider 模式。
 
 这样仓库本身可以保持零 LLM SDK 依赖，同时又为 OpenAI、Claude、本地模型或自定义 agent runtime 提供稳定的接入点。
 
@@ -24,9 +24,25 @@ python3 examples/python/agent_inbox_assistant.py \
 
 外部 provider 会以子进程方式运行。
 
+同一个契约也适用于：
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --index /tmp/mailcli-index.json \
+  --skip-sync \
+  --thread-id "<root@example.com>" \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg ./my_provider.py
+```
+
 ## 输入契约
 
-provider 会从 stdin 收到一个 JSON 对象：
+provider 会从 stdin 收到一个 JSON 对象。
+
+单封邮件示例 payload：
 
 ```json
 {
@@ -50,6 +66,36 @@ provider 会从 stdin 收到一个 JSON 对象：
 - `source`：消息来源
 - `message`：解析后的 `StandardMessage`
 - `wants_reply`：调用方是否显式请求回复正文
+
+thread 场景 payload：
+
+```json
+{
+  "source": {
+    "mode": "local_thread",
+    "index": "/tmp/mailcli-index.json",
+    "thread_id": "<root@example.com>"
+  },
+  "selection": {
+    "thread_id": "<root@example.com>",
+    "last_message_id": "imap:uid:123"
+  },
+  "thread_summaries": [],
+  "thread_messages": [],
+  "latest_message": {
+    "id": "imap:uid:123",
+    "message": {}
+  },
+  "wants_reply": false
+}
+```
+
+thread 场景额外字段：
+
+- `selection`：当前选中的本地 thread 摘要
+- `thread_summaries`：`mailcli threads` 返回的候选 thread 列表
+- `thread_messages`：`mailcli thread` 返回的完整本地 thread 记录
+- `latest_message`：示例最终解析出的最新本地消息，也是默认回复目标
 
 ## 输出契约
 

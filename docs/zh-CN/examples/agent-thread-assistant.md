@@ -50,6 +50,42 @@ python3 examples/python/agent_thread_assistant.py \
   --reply-text "Thanks for your email."
 ```
 
+## External Provider 模式
+
+你也可以把 thread 分析步骤委托给自己的脚本或 agent runtime：
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --index /tmp/mailcli-index.json \
+  --skip-sync \
+  --thread-id "<root@example.com>" \
+  --from-address support@nono.im \
+  --agent-provider external \
+  --provider-command python3 \
+  --provider-arg ./my_provider.py
+```
+
+external provider 会收到一个 JSON payload，其中包含：
+
+- `selection`
+- `thread_summaries`
+- `thread_messages`
+- `latest_message`
+- `wants_reply`
+
+如果它返回：
+
+```json
+{
+  "decision": "draft_reply",
+  "summary": "Short analysis",
+  "reply_text": "Thanks for your email."
+}
+```
+
+这个示例就会自动继续编译 reply dry-run。
+
 ## Reply Draft 策略
 
 当传入 `--config` 时，示例会优先使用最新本地消息的 id 作为 `reply_to_id`。这样 `mailcli reply` 可以重新抓取原始邮件并自动推导：
@@ -88,4 +124,5 @@ python3 examples/python/agent_thread_assistant.py \
 
 - [Agent 协作流程](../agent-workflows.md)
 - [发送侧消息规范](../spec/outbound-message.md)
+- [Agent Provider 契约](../spec/agent-provider.md)
 - [Agent Inbox 示例](agent-inbox-assistant.md)

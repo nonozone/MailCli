@@ -59,7 +59,7 @@ def main() -> int:
         print("openai package is required. Install it with: pip install openai", file=sys.stderr)
         return 2
 
-    payload = json.load(sys.stdin)
+    payload = normalize_payload(json.load(sys.stdin))
     model = os.environ.get("OPENAI_MODEL", "gpt-5-mini").strip() or "gpt-5-mini"
 
     client = OpenAI()
@@ -109,6 +109,27 @@ def main() -> int:
     json.dump(result, sys.stdout, ensure_ascii=False)
     sys.stdout.write("\n")
     return 0
+
+
+def normalize_payload(payload: Any) -> Any:
+    if not isinstance(payload, dict):
+        return payload
+
+    message = payload.get("message")
+    if isinstance(message, dict) and message:
+        return payload
+
+    latest = payload.get("latest_message")
+    if not isinstance(latest, dict):
+        return payload
+
+    latest_message = latest.get("message")
+    if not isinstance(latest_message, dict) or not latest_message:
+        return payload
+
+    normalized = dict(payload)
+    normalized["message"] = latest_message
+    return normalized
 
 
 def validate_result(result: Any) -> str | None:
