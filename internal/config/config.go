@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -70,7 +71,17 @@ func Load(path string) (Config, error) {
 		return Config{}, err
 	}
 
-	return Unmarshal(data)
+	cfg, err := Unmarshal(data)
+	if err != nil {
+		return Config{}, err
+	}
+
+	baseDir := filepath.Dir(path)
+	for i := range cfg.Accounts {
+		cfg.Accounts[i].Path = resolveConfigPath(baseDir, cfg.Accounts[i].Path)
+	}
+
+	return cfg, nil
 }
 
 func (c Config) ResolveAccount(name string) (AccountConfig, error) {
@@ -97,4 +108,12 @@ func expandSecretEnv(value string) string {
 		return ""
 	}
 	return os.ExpandEnv(value)
+}
+
+func resolveConfigPath(baseDir, value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" || filepath.IsAbs(trimmed) {
+		return trimmed
+	}
+	return filepath.Clean(filepath.Join(baseDir, trimmed))
 }

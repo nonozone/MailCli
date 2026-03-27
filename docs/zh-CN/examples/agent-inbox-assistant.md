@@ -55,6 +55,18 @@ python3 examples/python/agent_inbox_assistant.py \
   --message-id "<message-id>"
 ```
 
+## 零网络 Fixture 示例
+
+```bash
+python3 examples/python/agent_inbox_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --message-id invoice.eml
+```
+
+这个示例通过内置 `dir` driver，经由正常的 `mailcli get` 路径读取本地 `.eml` fixture。这样即使没有 IMAP 凭据，也能验证同一套 agent 边界。
+
 ## 说明
 
 - 这个示例使用规则式分析，方便开发者直接看懂来回流程。

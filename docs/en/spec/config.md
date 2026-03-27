@@ -68,7 +68,7 @@ For `v0.1 RC`, built-in driver types are:
 
 - `path`
 
-It accepts relative or absolute paths, lists `.eml` files recursively, returns relative file ids, and supports raw fetch by either relative file id or `Message-ID`.
+It accepts relative or absolute paths. Relative paths are resolved from the config file location. It lists `.eml` files recursively, returns relative file ids, and supports raw fetch by either relative file id or `Message-ID`.
 
 It does not provide outbound transport.
 

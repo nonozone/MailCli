@@ -8,6 +8,7 @@
 
 ## 从这里开始
 
+- 如果你想走最快的零网络路径，直接使用内置 `dir` driver 的 `examples/config/fixtures-dir.yaml`。
 - [Agent Inbox Assistant](agent-inbox-assistant.md)
   适合单封邮件解析、分类和 reply dry-run。
 - [Agent Thread Assistant](agent-thread-assistant.md)

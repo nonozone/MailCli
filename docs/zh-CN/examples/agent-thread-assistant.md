@@ -38,6 +38,19 @@ python3 examples/python/agent_thread_assistant.py \
   --reply-text "Thanks for your email."
 ```
 
+## 零网络 Fixture 示例
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --index /tmp/mailcli-fixtures-index.json \
+  --query invoice
+```
+
+这个示例通过内置 `dir` driver，把仓库内置的 fixture 语料跑进正常的 `sync -> threads -> thread` 工作流。
+
 ## 复用已有本地索引示例
 
 ```bash

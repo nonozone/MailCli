@@ -38,6 +38,19 @@ python3 examples/python/agent_thread_assistant.py \
   --reply-text "Thanks for your email."
 ```
 
+## Zero-Network Fixture Example
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --index /tmp/mailcli-fixtures-index.json \
+  --query invoice
+```
+
+This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus.
+
 ## Existing Local Index Example
 
 ```bash

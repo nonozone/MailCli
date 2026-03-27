@@ -57,6 +57,18 @@ python3 examples/python/agent_inbox_assistant.py \
   --message-id "<message-id>"
 ```
 
+## Zero-Network Fixture Example
+
+```bash
+python3 examples/python/agent_inbox_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --message-id invoice.eml
+```
+
+This uses the built-in `dir` driver to fetch a local `.eml` fixture through the normal `mailcli get` path, so you can exercise the same agent boundary without IMAP credentials.
+
 ## Notes
 
 - The example uses rule-based analysis so the control flow is easy to inspect.

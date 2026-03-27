@@ -1,0 +1,6 @@
+current_account: fixtures
+accounts:
+  - name: fixtures
+    driver: dir
+    path: ../../testdata/emails
+    mailbox: INBOX

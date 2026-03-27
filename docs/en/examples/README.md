@@ -8,6 +8,7 @@ Use it when you want to quickly decide which example matches your workflow.
 
 ## Start Here
 
+- For the fastest zero-network setup, use `examples/config/fixtures-dir.yaml` with the built-in `dir` driver.
 - [Agent Inbox Assistant](agent-inbox-assistant.md)
   Best for single-message parsing, classification, and reply dry-runs.
 - [Agent Thread Assistant](agent-thread-assistant.md)

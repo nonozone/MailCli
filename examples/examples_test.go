@@ -93,6 +93,38 @@ func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
 	}
 }
 
+func TestAgentInboxAssistantSupportsFixtureDirConfig(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
+		"--account", "fixtures",
+		"--message-id", "invoice.eml",
+	)
+	cmd.Dir = filepath.Join(repoRoot, "examples")
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("agent example with fixture dir config failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	message := mustMap(t, report["message"])
+	meta := mustMap(t, message["meta"])
+	if meta["subject"] != "Your April invoice is ready" {
+		t.Fatalf("expected invoice subject from dir-backed config, got %#v", meta["subject"])
+	}
+}
+
 func TestAgentThreadAssistantBuildsReplyDryRunFromLocalThread(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)

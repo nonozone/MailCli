@@ -71,6 +71,29 @@ func TestLoadReadsConfigFile(t *testing.T) {
 	}
 }
 
+func TestLoadResolvesDirDriverPathRelativeToConfigFile(t *testing.T) {
+	dir := t.TempDir()
+	fixtureDir := filepath.Join(dir, "fixtures")
+	if err := os.MkdirAll(fixtureDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	path := filepath.Join(dir, "config.yaml")
+	err := os.WriteFile(path, []byte("current_account: fixtures\naccounts:\n  - name: fixtures\n    driver: dir\n    path: ./fixtures\n"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := Load(path)
+	if err != nil {
+		t.Fatalf("expected load to succeed: %v", err)
+	}
+
+	if got := cfg.Accounts[0].Path; got != fixtureDir {
+		t.Fatalf("expected dir path to resolve relative to config file, got %q want %q", got, fixtureDir)
+	}
+}
+
 func TestResolveAccountUsesOverrideBeforeCurrent(t *testing.T) {
 	cfg := Config{
 		CurrentAccount: "default",
