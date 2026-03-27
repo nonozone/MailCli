@@ -1,4 +1,4 @@
-English | [中文](README.zh-CN.md)
+[中文文档](README.zh-CN.md) | English
 
 # MailCLI
 
@@ -15,6 +15,24 @@ It is trying to be the stable boundary between agents and email systems:
 - mailbox and transport details stay behind drivers and CLI contracts
 
 Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and machine-facing workflows.
+
+## In 10 Seconds
+
+```bash
+# 1. read one message as structured context
+mailcli parse --format json test.eml
+
+# 2. work with local memory and threads
+mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
+mailcli threads
+
+# 3. let the agent produce a reply draft, then compile it
+mailcli reply --dry-run reply.json
+```
+
+```text
+Raw Email -> MailCLI -> StandardMessage / Thread Context -> Agent -> ReplyDraft -> MailCLI -> MIME
+```
 
 ## Project Status
 
