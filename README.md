@@ -94,6 +94,10 @@ Heuristic areas to treat as evolving:
 - HTML body selection and cleanup for unusual templates
 - token estimates
 
+Detailed next-step planning:
+
+- [Next Development Roadmap](docs/en/project/next-roadmap.md)
+
 ## Vision
 
 In the AI era, email should not be treated as a pile of HTML and transport headers.
@@ -414,8 +418,9 @@ More runnable entry points:
 
 ### Phase 3: The Memory
 
-- [ ] Add local indexing and mailbox cache
-- [ ] Add search and thread navigation
+- [x] Add local indexing/search baseline
+- [x] Add local thread navigation
+- [ ] Improve mailbox cache visibility and refresh semantics
 - [ ] Add structured metadata for larger local agent workflows
 
 ### Phase 4: The Ecosystem

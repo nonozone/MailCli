@@ -70,6 +70,8 @@ Driver 不应该负责：
 
 这些边界在 `v1.0` 前仍可能演进，但修改前应先讨论，因为它会影响所有 provider 实现。
 
+如果提案会修改这条边界，请优先使用 `RFC contract change` issue 模板，而不是普通 feature request。
+
 ## 错误处理建议
 
 Driver 应优先返回：

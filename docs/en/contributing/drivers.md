@@ -21,6 +21,8 @@ Open an issue first if your driver requires changes to:
 - `SearchQuery`
 - `MessageMetaSummary`
 
+If the change would affect a shared contract, open the `RFC contract change` issue template instead of a normal feature request.
+
 ## Minimum Implementation Steps
 
 1. Add a new driver implementation under `pkg/driver/`

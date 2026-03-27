@@ -94,6 +94,10 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 异常 HTML 模板下的正文选择与清洗
 - token 估算
 
+下一阶段详细规划：
+
+- [下一阶段开发路线](docs/zh-CN/project/next-roadmap.md)
+
 ## 核心愿景
 
 在 AI 时代，邮件不应该再只是 HTML 模板和传输头的堆叠。
@@ -414,8 +418,9 @@ python3 examples/python/agent_thread_assistant.py \
 
 ### Phase 3: The Memory
 
-- [ ] 增加本地索引和缓存
-- [ ] 增加搜索与线程导航
+- [x] 增加本地索引 / 搜索基线
+- [x] 增加本地线程导航
+- [ ] 提升 mailbox cache 可见性和 refresh 语义
 - [ ] 增加更适合本地 agent 工作流的结构化元数据
 
 ### Phase 4: The Ecosystem

@@ -70,6 +70,8 @@ The stable driver boundary for now is:
 
 This boundary may evolve before `v1.0`, but changes should be discussed first because they affect every provider implementation.
 
+If a proposal changes this boundary, use the `RFC contract change` issue template instead of a normal feature request.
+
 ## Error Guidance
 
 Drivers should prefer returning:

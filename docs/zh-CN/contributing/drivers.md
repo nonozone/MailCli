@@ -21,6 +21,8 @@
 - `SearchQuery`
 - `MessageMetaSummary`
 
+如果变更会影响共享契约，请优先使用 `RFC contract change` issue 模板，而不是普通 feature request。
+
 ## 最小实现步骤
 
 1. 在 `pkg/driver/` 下增加新的 driver 实现
