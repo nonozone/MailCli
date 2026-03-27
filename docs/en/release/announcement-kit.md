@@ -42,9 +42,16 @@ MailCLI is an open-source email interface built for agents.
 
 Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI gives AI systems a stable machine-facing boundary for reading, understanding, replying to, and sending email.
 
+Fastest way to try it:
+
+- build `mailcli`
+- point it at `examples/config/fixtures-dir.yaml`
+- run the local `sync -> threads -> thread` loop without IMAP setup
+
 Highlights in the current RC:
 
 - Parse raw email into `StandardMessage` JSON and Markdown
+- Start from a zero-network local workflow through the built-in `dir` driver
 - Read inboxes through baseline IMAP support with `list` and `get`
 - Sync recent messages into a local index
 - Search local messages without re-fetching remote mail
@@ -55,6 +62,7 @@ Highlights in the current RC:
 - Compile outbound drafts and replies through `DraftMessage` and `ReplyDraft`
 - Support external provider workflows for both single-message and thread-aware agent examples
 - Ship Python, shell, template-provider, and optional OpenAI-provider examples
+- Ship a full local round-trip demo and ready-to-run fixture config for first-time users
 
 Stable contracts for integrators:
 
@@ -75,6 +83,7 @@ Stable contracts for integrators:
 Recommended docs:
 
 - `README.md`
+- `docs/en/examples/local-thread-demo.md`
 - `docs/en/agent-workflows.md`
 - `docs/en/examples/README.md`
 - `docs/en/spec/agent-provider.md`
@@ -86,6 +95,8 @@ MailCLI is now usable as an open-source email interface for agents.
 
 It parses email into structured JSON, supports local thread-aware retrieval and triage, and lets agents draft replies through stable CLI contracts instead of hand-written MIME.
 
+You can now start with a zero-network local fixture workflow before configuring IMAP.
+
 Repo: `github.com/nonozone/MailCli`
 
 ## X / Twitter Version
@@ -93,6 +104,8 @@ Repo: `github.com/nonozone/MailCli`
 MailCLI is an open-source email interface for agents.
 
 It turns raw MIME into structured JSON + Markdown, supports local thread-aware retrieval, and lets agents produce reply/send drafts through stable CLI contracts.
+
+You can try it without IMAP first through the built-in `dir` driver and repository fixtures.
 
 Not a mail client for humans. A mail boundary for AI systems.
 
@@ -105,6 +118,7 @@ The goal is not to build another terminal mail client. The goal is to give AI sy
 Current scope includes:
 
 - parsing raw email into structured JSON and Markdown
+- zero-network local thread workflows through the built-in `dir` driver
 - baseline IMAP read path
 - SMTP-backed send path
 - local sync, search, thread summaries, and full thread retrieval

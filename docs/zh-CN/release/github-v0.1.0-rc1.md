@@ -5,6 +5,7 @@
 ## 亮点
 
 - 将原始邮件解析成 `StandardMessage` JSON 和 Markdown
+- 通过内置 `dir` driver 和仓库 fixture，零网络即可开始体验本地工作流
 - 通过基础 IMAP driver 提供 `list` / `get` 收件箱读取能力
 - 将近期邮件同步到本地索引，并在不重复远端抓取的前提下本地检索
 - 提供紧凑 thread 摘要和完整本地 thread，便于 agent 分拣
@@ -18,6 +19,7 @@
   - `ReplyDraft`
   - `SendResult`
 - 提供 Python / shell 示例，以及 external provider 契约和可选 OpenAI provider 示例
+- 提供仓库内可直接运行的 fixture 配置和完整本地 thread demo
 
 ## 这个 RC 已包含
 
@@ -33,6 +35,7 @@
 - 基于序号、UID 和 `Message-ID` 的 IMAP 原始邮件抓取
 - 稳定的出站结果码，例如 `auth_failed`、`message_not_found`、`transport_not_configured`
 - 面向密码字段的环境变量秘密注入
+- 面向本地 `.eml` 目录的内置 `dir` driver
 - driver 扩展说明与贡献文档
 - 已扩充的 parser 样本集，覆盖：
   - 纯文本邮件
@@ -75,9 +78,18 @@
 - `go build ./cmd/mailcli`
 - `python3 -m py_compile examples/python/*.py examples/providers/*.py`
 
+## 最快首次体验
+
+```bash
+go build -o mailcli ./cmd/mailcli
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+```
+
 ## 文档
 
 - 发布说明：`docs/zh-CN/release/v0.1-rc.md`
+- 本地 thread demo：`docs/zh-CN/examples/local-thread-demo.md`
 - Agent 协作流程：`docs/zh-CN/agent-workflows.md`
 - 发送侧规范：`docs/zh-CN/spec/outbound-message.md`
 - Driver 扩展规范：`docs/zh-CN/spec/driver-extension.md`
