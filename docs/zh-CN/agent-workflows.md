@@ -161,6 +161,7 @@ agent 现在也可以直接在本地 thread 层做过滤：
 参考示例：
 
 - [Agent Thread Assistant](examples/agent-thread-assistant.md)
+- [Local Thread Demo](examples/local-thread-demo.md)
 
 ## 回复路径
 

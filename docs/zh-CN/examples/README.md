@@ -13,6 +13,8 @@
   适合单封邮件解析、分类和 reply dry-run。
 - [Agent Thread Assistant](agent-thread-assistant.md)
   适合本地索引、thread 选择、thread 上下文和回复工作流。
+- [Local Thread Demo](local-thread-demo.md)
+  适合直接理解本地 thread 链路里的 JSON 和 MIME 边界。
 - [OpenAI External Provider](openai-external-provider.md)
   适合把 OpenAI 驱动的分析器接到任一 agent 示例上。
 

@@ -13,6 +13,8 @@ Use it when you want to quickly decide which example matches your workflow.
   Best for single-message parsing, classification, and reply dry-runs.
 - [Agent Thread Assistant](agent-thread-assistant.md)
   Best for local index, thread selection, thread context, and reply workflows.
+- [Local Thread Demo](local-thread-demo.md)
+  Best for understanding the exact JSON and MIME boundaries of the local thread loop.
 - [OpenAI External Provider](openai-external-provider.md)
   Best for plugging an OpenAI-backed analyzer into either agent example.
 

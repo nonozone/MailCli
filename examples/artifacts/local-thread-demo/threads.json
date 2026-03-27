@@ -1,0 +1,29 @@
+[
+  {
+    "account": "fixtures",
+    "mailbox": "INBOX",
+    "thread_id": "<invoice-123@example.com>",
+    "subject": "Your April invoice is ready",
+    "latest_date": "2026-03-26T05:00:00Z",
+    "last_message_id": "invoice.eml",
+    "last_message_from": "Billing Team <billing@example.com>",
+    "last_message_preview": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi...",
+    "action_types": [
+      "pay_invoice",
+      "view_invoice"
+    ],
+    "has_codes": false,
+    "code_count": 0,
+    "action_count": 2,
+    "message_count": 1,
+    "participant_count": 2,
+    "participants": [
+      "Billing Team <billing@example.com>",
+      "nono@example.com"
+    ],
+    "message_ids": [
+      "invoice.eml"
+    ],
+    "score": 85
+  }
+]

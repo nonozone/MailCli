@@ -1,0 +1,193 @@
+{
+  "tool": "mailcli-thread-agent-example",
+  "source": {
+    "mode": "local_thread",
+    "config": "examples/config/fixtures-dir.yaml",
+    "account": "fixtures",
+    "mailbox": null,
+    "index": "/tmp/mailcli-fixtures-index.json",
+    "query": "invoice",
+    "thread_id": null,
+    "skip_sync": false
+  },
+  "selection": {
+    "account": "fixtures",
+    "mailbox": "INBOX",
+    "thread_id": "<invoice-123@example.com>",
+    "subject": "Your April invoice is ready",
+    "latest_date": "2026-03-26T05:00:00Z",
+    "last_message_id": "invoice.eml",
+    "last_message_from": "Billing Team <billing@example.com>",
+    "last_message_preview": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi...",
+    "action_types": [
+      "pay_invoice",
+      "view_invoice"
+    ],
+    "has_codes": false,
+    "code_count": 0,
+    "action_count": 2,
+    "message_count": 1,
+    "participant_count": 2,
+    "participants": [
+      "Billing Team <billing@example.com>",
+      "nono@example.com"
+    ],
+    "message_ids": [
+      "invoice.eml"
+    ],
+    "score": 85,
+    "selection_strategy": "top_thread"
+  },
+  "thread_summaries": [
+    {
+      "account": "fixtures",
+      "mailbox": "INBOX",
+      "thread_id": "<invoice-123@example.com>",
+      "subject": "Your April invoice is ready",
+      "latest_date": "2026-03-26T05:00:00Z",
+      "last_message_id": "invoice.eml",
+      "last_message_from": "Billing Team <billing@example.com>",
+      "last_message_preview": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi...",
+      "action_types": [
+        "pay_invoice",
+        "view_invoice"
+      ],
+      "has_codes": false,
+      "code_count": 0,
+      "action_count": 2,
+      "message_count": 1,
+      "participant_count": 2,
+      "participants": [
+        "Billing Team <billing@example.com>",
+        "nono@example.com"
+      ],
+      "message_ids": [
+        "invoice.eml"
+      ],
+      "score": 85
+    }
+  ],
+  "thread_messages": [
+    {
+      "account": "fixtures",
+      "mailbox": "INBOX",
+      "id": "invoice.eml",
+      "indexed_at": "2026-03-27T15:11:13Z",
+      "thread_id": "<invoice-123@example.com>",
+      "message": {
+        "id": "<invoice-123@example.com>",
+        "meta": {
+          "from": {
+            "name": "Billing Team",
+            "address": "billing@example.com"
+          },
+          "to": [
+            {
+              "address": "nono@example.com"
+            }
+          ],
+          "subject": "Your April invoice is ready",
+          "date": "2026-03-26T05:00:00Z",
+          "message_id": "<invoice-123@example.com>"
+        },
+        "content": {
+          "format": "markdown",
+          "body_md": "## Your invoice is ready\n\nInvoice #123 is now available in your billing portal.\n\n[View invoice](https://billing.example.com/invoices/123)\n\n[Pay invoice](https://billing.example.com/pay/123)",
+          "snippet": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi..."
+        },
+        "actions": [
+          {
+            "type": "view_invoice",
+            "label": "View invoice",
+            "url": "https://billing.example.com/invoices/123"
+          },
+          {
+            "type": "pay_invoice",
+            "label": "Pay invoice",
+            "url": "https://billing.example.com/pay/123"
+          }
+        ],
+        "token_usage": {
+          "estimated_input_tokens": 18
+        }
+      }
+    }
+  ],
+  "latest_message": {
+    "account": "fixtures",
+    "mailbox": "INBOX",
+    "id": "invoice.eml",
+    "indexed_at": "2026-03-27T15:11:13Z",
+    "thread_id": "<invoice-123@example.com>",
+    "message": {
+      "id": "<invoice-123@example.com>",
+      "meta": {
+        "from": {
+          "name": "Billing Team",
+          "address": "billing@example.com"
+        },
+        "to": [
+          {
+            "address": "nono@example.com"
+          }
+        ],
+        "subject": "Your April invoice is ready",
+        "date": "2026-03-26T05:00:00Z",
+        "message_id": "<invoice-123@example.com>"
+      },
+      "content": {
+        "format": "markdown",
+        "body_md": "## Your invoice is ready\n\nInvoice #123 is now available in your billing portal.\n\n[View invoice](https://billing.example.com/invoices/123)\n\n[Pay invoice](https://billing.example.com/pay/123)",
+        "snippet": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi..."
+      },
+      "actions": [
+        {
+          "type": "view_invoice",
+          "label": "View invoice",
+          "url": "https://billing.example.com/invoices/123"
+        },
+        {
+          "type": "pay_invoice",
+          "label": "Pay invoice",
+          "url": "https://billing.example.com/pay/123"
+        }
+      ],
+      "token_usage": {
+        "estimated_input_tokens": 18
+      }
+    }
+  },
+  "analysis": {
+    "decision": "draft_reply",
+    "summary": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi...",
+    "provider": "builtin"
+  },
+  "sync": {
+    "account": "fixtures",
+    "mailbox": "INBOX",
+    "listed_count": 11,
+    "fetched_count": 11,
+    "indexed_count": 11,
+    "skipped_count": 0,
+    "refreshed_count": 0,
+    "index_path": "/tmp/mailcli-fixtures-index.json"
+  },
+  "reply": {
+    "mode": "dry_run",
+    "draft": {
+      "from": {
+        "address": "support@nono.im"
+      },
+      "to": [
+        {
+          "address": "billing@example.com",
+          "name": "Billing Team"
+        }
+      ],
+      "body_text": "Thanks, we have received the invoice notification.",
+      "account": "fixtures",
+      "reply_to_id": "invoice.eml"
+    },
+    "mime": "From: support@nono.im\nTo: Billing Team <billing@example.com>\nSubject: Re: Your April invoice is ready\nMessage-ID: <generated@mailcli.local>\nIn-Reply-To: <invoice-123@example.com>\nReferences: <invoice-123@example.com>\nDate: Fri, 27 Mar 2026 15:11:13 +0000\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nThanks, we have received the invoice notification."
+  }
+}

@@ -137,6 +137,7 @@ external provider 会收到一个 JSON payload，其中包含：
 相关文档：
 
 - [Examples 索引](README.md)
+- [Local Thread Demo](local-thread-demo.md)
 - [Agent 协作流程](../agent-workflows.md)
 - [发送侧消息规范](../spec/outbound-message.md)
 - [Agent Provider 契约](../spec/agent-provider.md)

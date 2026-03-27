@@ -1,0 +1,46 @@
+[
+  {
+    "account": "fixtures",
+    "mailbox": "INBOX",
+    "id": "invoice.eml",
+    "indexed_at": "2026-03-27T15:11:13Z",
+    "thread_id": "<invoice-123@example.com>",
+    "message": {
+      "id": "<invoice-123@example.com>",
+      "meta": {
+        "from": {
+          "name": "Billing Team",
+          "address": "billing@example.com"
+        },
+        "to": [
+          {
+            "address": "nono@example.com"
+          }
+        ],
+        "subject": "Your April invoice is ready",
+        "date": "2026-03-26T05:00:00Z",
+        "message_id": "<invoice-123@example.com>"
+      },
+      "content": {
+        "format": "markdown",
+        "body_md": "## Your invoice is ready\n\nInvoice #123 is now available in your billing portal.\n\n[View invoice](https://billing.example.com/invoices/123)\n\n[Pay invoice](https://billing.example.com/pay/123)",
+        "snippet": "## Your invoice is ready Invoice #123 is now available in your billing portal. [View invoice](https://billing.example.com/invoices/123) [Pay invoice](https://bi..."
+      },
+      "actions": [
+        {
+          "type": "view_invoice",
+          "label": "View invoice",
+          "url": "https://billing.example.com/invoices/123"
+        },
+        {
+          "type": "pay_invoice",
+          "label": "Pay invoice",
+          "url": "https://billing.example.com/pay/123"
+        }
+      ],
+      "token_usage": {
+        "estimated_input_tokens": 18
+      }
+    }
+  }
+]

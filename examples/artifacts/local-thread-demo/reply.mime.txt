@@ -1,0 +1,11 @@
+From: support@nono.im
+To: Billing Team <billing@example.com>
+Subject: Re: Your April invoice is ready
+Message-ID: <generated@mailcli.local>
+In-Reply-To: <invoice-123@example.com>
+References: <invoice-123@example.com>
+Date: Fri, 27 Mar 2026 15:11:13 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+
+Thanks, we have received the invoice notification.

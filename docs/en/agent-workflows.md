@@ -161,6 +161,7 @@ Agents can now filter local threads directly with:
 Reference example:
 
 - [Agent Thread Assistant](examples/agent-thread-assistant.md)
+- [Local Thread Demo](examples/local-thread-demo.md)
 
 ## The Reply Path
 

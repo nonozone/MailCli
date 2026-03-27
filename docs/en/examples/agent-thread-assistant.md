@@ -137,6 +137,7 @@ This thread example is for the more realistic agent case where the model needs l
 Related docs:
 
 - [Examples Index](README.md)
+- [Local Thread Demo](local-thread-demo.md)
 - [Agent Workflows](../agent-workflows.md)
 - [Outbound Message Spec](../spec/outbound-message.md)
 - [Agent Provider Contract](../spec/agent-provider.md)
