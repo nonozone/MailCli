@@ -58,6 +58,7 @@ python3 -m py_compile examples/python/*.py examples/providers/*.py
 
 如果你要贡献 driver，也建议先看：
 
+- [Parser 贡献指南](docs/zh-CN/contributing/parser.md)，如果你要改共享 parser 行为
 - [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 
 ## 语言与文档

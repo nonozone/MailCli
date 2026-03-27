@@ -6,9 +6,12 @@ First release candidate for MailCLI as an open, AI-native email interface.
 
 - Parse raw email into `StandardMessage` JSON and Markdown
 - Read inboxes through the baseline IMAP driver with `list` and `get`
+- Sync recent mail into a local index and search it without re-fetching remote messages
+- Inspect compact thread summaries and full local threads for agent triage
 - Send new outbound drafts and replies through SMTP-backed IMAP-style accounts
 - Support `reply_to_message_id` and `reply_to_id` reply flows
 - Compile outbound MIME with `multipart/alternative` and attachment packaging
+- Expose clearer sync/index state and richer thread triage fields for local memory workflows
 - Expose stable machine-facing contracts for agents:
   - `StandardMessage`
   - `DraftMessage`
@@ -21,6 +24,10 @@ First release candidate for MailCLI as an open, AI-native email interface.
 - `mailcli parse`
 - `mailcli list`
 - `mailcli get`
+- `mailcli sync`
+- `mailcli search`
+- `mailcli threads`
+- `mailcli thread`
 - `mailcli send`
 - `mailcli reply`
 - IMAP raw fetch by sequence number, UID, and `Message-ID`
@@ -41,7 +48,7 @@ First release candidate for MailCLI as an open, AI-native email interface.
 - HTML cleanup and URL normalization heuristics
 - action extraction coverage
 - verification-code extraction outside common layouts
-- richer search and local indexing
+- richer search semantics and future storage backends
 - additional providers beyond the baseline IMAP/SMTP path
 
 ## Recommended Stable Boundary For Integrators
@@ -51,6 +58,10 @@ For this RC, the intended stable boundary is:
 - `mailcli parse`
 - `mailcli list`
 - `mailcli get`
+- `mailcli sync`
+- `mailcli search`
+- `mailcli threads`
+- `mailcli thread`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -70,3 +81,5 @@ For this RC, the intended stable boundary is:
 - Agent workflows: `docs/en/agent-workflows.md`
 - Outbound spec: `docs/en/spec/outbound-message.md`
 - Driver extension spec: `docs/en/spec/driver-extension.md`
+- Local index spec: `docs/en/spec/local-index.md`
+- Parser contributor guide: `docs/en/contributing/parser.md`

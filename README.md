@@ -58,6 +58,7 @@ Stable enough to build against for `v0.1 RC`:
 - `mailcli sync`
 - `mailcli search`
 - `mailcli threads`
+- `mailcli thread`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -312,6 +313,8 @@ mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
 
 By default, `sync` skips messages that are already indexed for the same account and message id. Use `--refresh` when you want to re-fetch and overwrite local records.
 
+Current sync output also exposes `listed_count`, `fetched_count`, `indexed_count`, `skipped_count`, `refreshed_count`, and `index_path` so an agent can reason about cache state without reading the index file.
+
 ### Search the local index
 
 ```bash
@@ -337,7 +340,7 @@ mailcli threads invoice
 
 Thread summaries now include the latest message preview and sender, so agents can often choose the right conversation before loading the full thread.
 
-They also aggregate deterministic triage signals from indexed messages, including thread-level `labels`, `categories`, `action_types`, and `has_codes`.
+They also aggregate deterministic triage signals from indexed messages, including thread-level `labels`, `categories`, `action_types`, `has_codes`, `code_count`, `action_count`, and `participant_count`.
 
 You can filter threads directly:
 
@@ -404,7 +407,7 @@ More runnable entry points:
 - [x] Build parser-first MVP with representative fixtures and golden tests
 - [x] Support `parse`, `list`, `get`, `send`, and `reply` command skeletons
 - [x] Add local MIME composer for outbound drafts and replies
-- [ ] Improve HTML noise filtering with stronger body extraction and URL cleaning
+- [x] Improve HTML noise filtering with stronger body extraction and URL cleaning
 - [x] Expand fixture corpus for newsletters, transactional mail, alerts, and edge cases
 
 ### Phase 2: The Hands
@@ -420,13 +423,14 @@ More runnable entry points:
 
 - [x] Add local indexing/search baseline
 - [x] Add local thread navigation
-- [ ] Improve mailbox cache visibility and refresh semantics
-- [ ] Add structured metadata for larger local agent workflows
+- [x] Improve mailbox cache visibility and refresh semantics
+- [x] Add structured metadata for larger local agent workflows
 
 ### Phase 4: The Ecosystem
 
 - [ ] Add more providers beyond IMAP/SMTP
 - [x] Document ecosystem integrations and driver extension patterns
+- [x] Document parser contribution workflow and heuristic boundaries
 - [ ] Stabilize RFC-driven extension points for contributors
 
 ## Examples
@@ -462,6 +466,8 @@ Major changes should be discussed first.
 Start here:
 
 - [Contribution Guide](CONTRIBUTING.md)
+- [Parser Contributor Guide](docs/en/contributing/parser.md)
+- [Adding a Driver](docs/en/contributing/drivers.md)
 
 The project is community-open, but it is still directionally curated to stay focused on:
 
@@ -480,8 +486,11 @@ Apache-2.0
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
 - [Agent Provider Contract](docs/en/spec/agent-provider.md)
 - [Driver Extension Spec](docs/en/spec/driver-extension.md)
+- [Parser Contributor Guide](docs/en/contributing/parser.md)
 - [Adding a Driver](docs/en/contributing/drivers.md)
 - [Config Spec](docs/en/spec/config.md)
+- [Next Development Roadmap](docs/en/project/next-roadmap.md)
+- [Internal Development Priority](docs/en/project/internal-priority.md)
 - [v0.1 RC Release Notes](docs/en/release/v0.1-rc.md)
 - [Announcement Kit](docs/en/release/announcement-kit.md)
 - [Examples Index](docs/en/examples/README.md)

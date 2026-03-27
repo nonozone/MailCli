@@ -60,6 +60,7 @@ Open an issue before changing:
 
 Driver contributors should also read:
 
+- [Parser Contributor Guide](docs/en/contributing/parser.md) if you want to improve shared parsing behavior
 - [Adding a Driver](docs/en/contributing/drivers.md)
 
 ## Language And Docs

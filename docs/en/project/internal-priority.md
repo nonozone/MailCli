@@ -14,6 +14,18 @@ So the goal is not to maximize issue count.
 
 The goal is to pick the smallest set of work that moves MailCLI from "good RC demo" toward "something agents can reliably build against."
 
+## Completed Baseline Sequence
+
+The original maintainer-led "core five" hardening sequence is now complete on `main`:
+
+1. CLI JSON snapshot tests
+2. stronger HTML body extraction
+3. cleaner tracked URL normalization
+4. clearer local sync/index state
+5. richer thread summary triage signals
+
+That means the next maintainer phase should move from boundary hardening toward corpus strength, contributor leverage, and shared quality bars.
+
 ## Working Assumption
 
 For the next stage, treat MailCLI as:
@@ -23,91 +35,90 @@ For the next stage, treat MailCLI as:
 - maintainer-led in local memory model
 - community-assisted in docs, fixtures, examples, and smaller contributor-surface tasks
 
-## The Core Five
+## The Next Maintainer Five
 
-These are the five tasks that should be treated as the main internal development sequence.
+These are the next five tasks that should be treated as the main internal development sequence.
 
-### 1. Add JSON contract snapshot tests for CLI commands
+### 1. Expand the parser fixture corpus around real failure modes
 
 Why first:
 
-- this locks down the machine-facing boundary before more output drift accumulates
-- parser and thread improvements are much safer once output shape is pinned
-- this protects agent integrations from accidental breakage
+- parser quality is now bottlenecked more by corpus coverage than by missing infrastructure
+- more fixtures will make the current heuristics safer to iterate on
+- this is the fastest way to keep improving agent usefulness without redefining contracts
 
 Why maintainers should own it:
 
-- it defines what `v0.1.x` and `v0.2` are really promising
-- it is close to schema and command contract decisions
+- fixture choice defines the real parser quality bar
+- the first wave of corpus curation should reflect maintainer taste and product priorities
 
-## 2. Strengthen HTML body extraction and noise filtering
+## 2. Add a fake-driver or conformance harness for contributor drivers
 
 Why second:
 
-- parser quality is the clearest source of product value
-- if `body_md` is weak, the rest of the workflow is much less compelling
-- this is one of the strongest differentiators for an AI-native email interface
+- driver contribution is still harder than it needs to be
+- a shared acceptance bar will lower maintainer review cost
+- this opens a safer path for outside provider contributions
 
 Why maintainers should own it:
 
-- it sets the quality bar for shared parser behavior
-- bad cleanup decisions can quietly damage a lot of downstream output
+- it defines the minimum transport contract the ecosystem will inherit
+- a weak harness would create noisy provider PRs later
 
-## 3. Improve URL normalization for agent-facing actions
+## 3. Tighten local search semantics and ranking
 
 Why third:
 
-- action quality directly affects whether agents can use extracted links reliably
-- cleaner action URLs reduce prompt noise and improve automation quality
-- it complements body extraction and makes action extraction more trustworthy
+- local memory is now a real user-facing loop
+- better ranking and filtering can reduce unnecessary full-message loads
+- this improves agent usefulness without introducing new transport surface area
 
 Why maintainers should own it:
 
-- URL cleanup is easy to overdo
-- bad normalization can destroy legitimate targets or hide useful context
+- search semantics are close to the long-term memory model
+- weak ranking choices would leak into prompts and examples quickly
 
-## 4. Surface local index and sync state more clearly
+## 4. Improve outbound ergonomics without changing the core contract
 
 Why fourth:
 
-- local memory is one of the most practical reasons to use MailCLI in agent workflows
-- current sync behavior is usable, but clearer state reporting will make it more dependable
-- once parser quality is stronger, local retrieval becomes much more valuable
+- send and reply already work, but contributor and user ergonomics can still improve
+- this keeps the project useful while larger provider work is deferred
+- it strengthens the read/write loop for agents end to end
 
 Why maintainers should own it:
 
-- this shapes how the local memory model is explained and consumed
-- it may affect future CLI output and local workflow semantics
+- send/reply ergonomics are close to stable public contracts
+- maintainers should decide where convenience ends and schema sprawl begins
 
-## 5. Enrich thread summaries for triage loops
+## 5. Add one more built-in provider only after the previous four are in shape
 
 Why fifth:
 
-- thread-aware local workflows are one of the strongest parts of the current repo state
-- compact triage signals can reduce unnecessary full-thread loads
-- this moves MailCLI closer to "agent memory interface" territory instead of just parser-plus-send
+- ecosystem breadth matters, but only once the shared layers are easier to extend safely
+- another provider will strengthen the architecture story if it does not destabilize the core
+- it is easier to review once parser, local memory, and driver guidance are stronger
 
 Why maintainers should own it:
 
-- this is close to the long-term thread and memory model
-- additive fields are easy to add, but hard to remove once people build around them
+- the second real provider will shape community expectations for extension style
+- maintainers still need to set the baseline for transport isolation and docs quality
 
 ## Recommended Sequence
 
-1. Lock CLI JSON shape with snapshot tests.
-2. Improve `body_md` quality.
-3. Improve extracted action URL quality.
-4. Make local sync/index state easier to understand.
-5. Make thread summaries more useful for triage.
+1. Expand fixture coverage for parser regressions.
+2. Build driver conformance tooling.
+3. Improve local search semantics.
+4. Improve outbound ergonomics.
+5. Add one more provider.
 
 ## What Can Wait
 
-These are useful, but should not displace the core five:
+These are useful, but should not displace the next maintainer five:
 
 - docs alignment cleanup
-- fake-driver contributor harness
 - parser contributor guide
-- more provider expansion
+- broad provider expansion
 - broader community process work
 
 They matter, but they are support work around the product core, not the main path to a stronger `v0.2`.
@@ -147,3 +158,4 @@ it is a good place to welcome outside participation earlier.
 
 - [Next Development Roadmap](next-roadmap.md)
 - [GitHub Backlog Drafts](github-backlog.md)
+- [Parser Contributor Guide](../contributing/parser.md)

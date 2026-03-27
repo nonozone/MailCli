@@ -8,6 +8,17 @@
 
 目标是把当前 RC 打磨成一个稳定、易贡献、真正服务于 agent 开发者的开源项目。
 
+## `main` 上最近已经完成的部分
+
+RC 收口阶段最关键的一批工作已经在 `main` 上完成：
+
+- 为 `parse`、`get`、`search`、`threads`、`thread` 增加 CLI JSON 快照覆盖
+- 强化 HTML 主体提取与降噪
+- 更激进但仍有边界的追踪 URL 归一化
+- 更清晰的 `sync` 索引状态输出
+- 更丰富的 thread triage 信号，如 `code_count`、`action_count`、`participant_count`
+- 为契约敏感改动增加 RFC issue 模板
+
 如果你需要可直接复制到 GitHub 的 issue 草案，见 [GitHub Backlog 草案](github-backlog.md)。
 如果你需要更现实的维护者主导开发顺序，见 [内部主导开发顺序](internal-priority.md)。
 
@@ -41,6 +52,8 @@
 
 #### Issue: 对齐 RC 文档与实际能力
 
+状态：当前 `main` 已基本完成，但后续仍需随着契约演进持续维护。
+
 - Area: docs
 - Problem: roadmap 和状态说明容易与实际命令 / schema 支持脱节
 - Scope:
@@ -51,6 +64,8 @@
 
 #### Issue: 为核心 CLI 命令增加 JSON 契约快照测试
 
+状态：当前核心命令集已完成。
+
 - Area: cmd, schema, tests
 - Problem: agent 集成高度依赖稳定输出结构
 - Scope:
@@ -60,6 +75,8 @@
 - Deliverable: 测试 + 小范围 spec / docs 更新
 
 #### Issue: 增加契约变更 RFC 模板
+
+状态：已完成。
 
 - Area: docs, governance
 - Problem: schema 和 CLI 的变更需要可预期的讨论路径
@@ -84,6 +101,8 @@
 
 #### Issue: 强化 HTML 主体提取与降噪
 
+状态：基线增强已完成，但这仍然是持续演进的 parser 产品工作。
+
 - Area: parser
 - Problem: 某些模板仍会把导航、页脚或布局噪音带进 `body_md`
 - Scope:
@@ -93,6 +112,8 @@
 - Deliverable: parser 改动 + golden tests
 
 #### Issue: 提升 agent-facing action URL 的归一化能力
+
+状态：基线增强已完成，后续更应优先补 fixture，而不是默认继续放宽规则。
 
 - Area: parser
 - Problem: 动作链接里仍可能带有 provider 追踪包装，影响 agent 理解
@@ -126,6 +147,8 @@
 
 #### Issue: 更清晰地暴露本地索引和 sync 状态
 
+状态：sync / index 可见性的基础增强已完成。
+
 - Area: cmd, internal/index, docs
 - Problem: agent 和贡献者需要更明确地知道本地缓存状态
 - Scope:
@@ -135,6 +158,8 @@
 - Deliverable: 命令输出增强 + 文档
 
 #### Issue: 为 triage 循环增强 thread 摘要
+
+状态：第一批面向 triage 的摘要增强已完成。
 
 - Area: internal/index, cmd, schema
 - Problem: agent 在常见分拣场景里仍需要加载过多完整 thread
@@ -175,6 +200,8 @@
   - 说明哪些 heuristic 是允许的，哪些地方不允许随意漂移
   - 指向最相关的 parser 包与测试文件
 - Deliverable: 新贡献文档
+
+状态：已完成，见 `docs/zh-CN/contributing/parser.md`。
 
 ## Milestone 5: Provider 扩展
 

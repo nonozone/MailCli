@@ -8,6 +8,17 @@ The goal is not to add random surface area.
 
 The goal is to turn the current RC into a stable, contributor-friendly open-source project for agent developers.
 
+## Recently Completed On `main`
+
+The original RC hardening pass already shipped several important pieces:
+
+- CLI JSON snapshot coverage for `parse`, `get`, `search`, `threads`, and `thread`
+- stronger HTML body extraction and noise filtering
+- more aggressive but bounded tracked URL normalization
+- clearer `sync` index-state output
+- richer thread triage signals such as `code_count`, `action_count`, and `participant_count`
+- an RFC issue template for contract-sensitive changes
+
 For copy-ready GitHub issue drafts, see [GitHub Backlog Drafts](github-backlog.md).
 For the realistic maintainer-led sequence, see [Internal Development Priority](internal-priority.md).
 
@@ -41,6 +52,8 @@ Goal: make the current RC easier to trust, easier to document, and safer to buil
 
 #### Issue: Align docs with actual RC capabilities
 
+Status: mostly completed on `main`, but should be kept current as contracts evolve.
+
 - Area: docs
 - Problem: roadmap and status text can drift from actual command and schema support
 - Scope:
@@ -51,6 +64,8 @@ Goal: make the current RC easier to trust, easier to document, and safer to buil
 
 #### Issue: Add JSON contract snapshot tests for CLI commands
 
+Status: completed for the current core command set.
+
 - Area: cmd, schema, tests
 - Problem: agent integrations need stable output shapes
 - Scope:
@@ -60,6 +75,8 @@ Goal: make the current RC easier to trust, easier to document, and safer to buil
 - Deliverable: tests plus small spec/doc update
 
 #### Issue: Add RFC template for contract-changing proposals
+
+Status: completed.
 
 - Area: docs, governance
 - Problem: schema and CLI changes need a predictable review path
@@ -84,6 +101,8 @@ Goal: improve the one area that most directly affects agent usefulness.
 
 #### Issue: Strengthen HTML body extraction and noise filtering
 
+Status: baseline improvement completed; keep treating this as ongoing parser product work.
+
 - Area: parser
 - Problem: some templates still leak navigation, footer, or layout noise into `body_md`
 - Scope:
@@ -93,6 +112,8 @@ Goal: improve the one area that most directly affects agent usefulness.
 - Deliverable: parser changes with golden tests
 
 #### Issue: Improve URL normalization for agent-facing actions
+
+Status: baseline improvement completed; follow-up work should focus on more fixtures, not broader rules by default.
 
 - Area: parser
 - Problem: action URLs can still contain provider tracking wrappers that reduce agent clarity
@@ -126,6 +147,8 @@ Goal: make local agent retrieval feel dependable instead of experimental.
 
 #### Issue: Surface local index and sync state more clearly
 
+Status: baseline sync/index visibility improvements completed.
+
 - Area: cmd, internal/index, docs
 - Problem: agents and contributors need more visibility into what is cached locally
 - Scope:
@@ -135,6 +158,8 @@ Goal: make local agent retrieval feel dependable instead of experimental.
 - Deliverable: command output improvements plus docs
 
 #### Issue: Enrich thread summaries for triage loops
+
+Status: first triage-focused summary expansion completed.
 
 - Area: internal/index, cmd, schema
 - Problem: agents still need too many full thread loads for common triage decisions
@@ -175,6 +200,8 @@ Goal: lower the effort required for outside developers to make useful PRs.
   - explain where heuristic behavior is acceptable and where it is not
   - link to the most relevant parser packages and tests
 - Deliverable: new contributor doc
+
+Status: completed at `docs/en/contributing/parser.md`.
 
 ## Milestone 5: Provider Expansion
 

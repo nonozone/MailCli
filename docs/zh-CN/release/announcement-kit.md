@@ -49,7 +49,9 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 - 将近期邮件同步到本地索引
 - 在不重复远端抓取的前提下检索本地消息
 - 查看本地 thread 摘要和完整本地 thread
-- 支持带有 `thread_id`、labels、categories、actions、codes 信号的 thread-aware 本地分拣
+- 支持带有 `thread_id`、labels、categories、actions、codes、participants 以及紧凑计数字段的 thread-aware 本地分拣
+- 通过 `listed_count`、`fetched_count`、`indexed_count`、`skipped_count`、`refreshed_count` 暴露更清晰的 sync / index 状态
+- 通过更强的 HTML 主体提取和追踪链接清洗提升 parser 输出质量
 - 通过 `DraftMessage` 和 `ReplyDraft` 编译新邮件与回复
 - 同时支持单封邮件和 thread 场景的 external provider 工作流
 - 提供 Python、shell、template provider 和可选 OpenAI provider 示例
@@ -62,6 +64,7 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 - `mailcli sync`
 - `mailcli search`
 - `mailcli threads`
+- `mailcli thread`
 - `mailcli reply`
 - `mailcli send`
 - `StandardMessage`
@@ -81,7 +84,7 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 
 MailCLI 现在已经可以作为一个面向 agent 的开源邮件接口来使用。
 
-它能把原始邮件解析成结构化 JSON，支持本地 thread-aware 检索，并让 agent 通过稳定 CLI 契约生成回复草稿，而不是手写 MIME。
+它能把原始邮件解析成结构化 JSON，支持本地 thread-aware 检索与分拣，并让 agent 通过稳定 CLI 契约生成回复草稿，而不是手写 MIME。
 
 仓库：`github.com/nonozone/MailCli`
 
@@ -104,7 +107,7 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 - 将原始邮件解析成结构化 JSON 和 Markdown
 - 基础 IMAP 读路径
 - SMTP 发信路径
-- 本地 sync、search 和 thread 摘要
+- 本地 sync、search、thread 摘要和完整 thread 读取
 - thread-aware 回复流程
 - 面向模型分析的 external provider handoff
 
@@ -116,6 +119,7 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 - “不是传统 mail client” 有助于减少错误预期。
 - “稳定的机器接口” 是核心价值。
 - “thread-aware 的本地工作流” 是当前仓库状态里很强的一个差异点。
+- “sync 状态可见性和 thread triage 信号” 让本地 memory 闭环更容易被 agent 稳定消费。
 - “external provider handoff” 让项目可以和不同模型栈搭配，而不把核心仓库依赖搞重。
 
 ## 推荐链接
@@ -124,3 +128,5 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 - [Agent 协作流程](../agent-workflows.md)
 - [Examples 索引](../examples/README.md)
 - [Agent Provider 契约](../spec/agent-provider.md)
+- [本地索引规范](../spec/local-index.md)
+- [Parser 贡献指南](../contributing/parser.md)

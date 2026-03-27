@@ -58,6 +58,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - `mailcli sync`
 - `mailcli search`
 - `mailcli threads`
+- `mailcli thread`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -312,6 +313,8 @@ mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
 
 `sync` 默认会跳过同一 account 下已经索引过的消息。如果你希望重新抓取并覆盖本地记录，可以显式加上 `--refresh`。
 
+当前 `sync` 输出也会显式返回 `listed_count`、`fetched_count`、`indexed_count`、`skipped_count`、`refreshed_count` 和 `index_path`，这样 agent 不用直接读取索引文件，也能理解本地缓存状态。
+
 ### 检索本地索引
 
 ```bash
@@ -337,7 +340,7 @@ mailcli threads invoice
 
 当前线程摘要已经包含最新消息的预览和发件人，所以 agent 往往可以先在 `threads` 阶段完成初筛，再决定是否读取完整线程。
 
-线程摘要现在也会聚合确定性的 triage 信号，包括 thread 级别的 `labels`、`categories`、`action_types` 和 `has_codes`。
+线程摘要现在也会聚合确定性的 triage 信号，包括 thread 级别的 `labels`、`categories`、`action_types`、`has_codes`、`code_count`、`action_count` 和 `participant_count`。
 
 现在也可以直接在 thread 层过滤：
 
@@ -404,7 +407,7 @@ python3 examples/python/agent_thread_assistant.py \
 - [x] 构建 parser-first MVP，并建立代表性 golden tests
 - [x] 建立 `parse`、`list`、`get`、`send`、`reply` 的命令骨架
 - [x] 增加本地 MIME composer
-- [ ] 强化 HTML 降噪、主体区域提取和 URL 清洗
+- [x] 强化 HTML 降噪、主体区域提取和 URL 清洗
 - [x] 扩大样本集，覆盖 newsletter、交易邮件、告警和边界场景
 
 ### Phase 2: The Hands
@@ -420,13 +423,14 @@ python3 examples/python/agent_thread_assistant.py \
 
 - [x] 增加本地索引 / 搜索基线
 - [x] 增加本地线程导航
-- [ ] 提升 mailbox cache 可见性和 refresh 语义
-- [ ] 增加更适合本地 agent 工作流的结构化元数据
+- [x] 提升 mailbox cache 可见性和 refresh 语义
+- [x] 增加更适合本地 agent 工作流的结构化元数据
 
 ### Phase 4: The Ecosystem
 
 - [ ] 支持更多 provider
 - [x] 增加更完整的生态集成与 driver 扩展文档
+- [x] 文档化 parser 贡献路径和 heuristic 边界
 - [ ] 稳定 RFC 驱动的扩展点
 
 ## 示例
@@ -462,6 +466,8 @@ MailCLI 还处在早期阶段，但方向已经明确。
 建议先看：
 
 - [贡献指南](CONTRIBUTING.zh-CN.md)
+- [Parser 贡献指南](docs/zh-CN/contributing/parser.md)
+- [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 
 项目对社区开放，但方向上会持续围绕以下目标收敛：
 
@@ -481,8 +487,11 @@ Apache-2.0
 - [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
 - [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)
 - [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)
+- [Parser 贡献指南](docs/zh-CN/contributing/parser.md)
 - [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 - [配置规范](docs/zh-CN/spec/config.md)
+- [下一阶段开发路线](docs/zh-CN/project/next-roadmap.md)
+- [内部主导开发顺序](docs/zh-CN/project/internal-priority.md)
 - [v0.1 RC 发布说明](docs/zh-CN/release/v0.1-rc.md)
 - [Announcement Kit](docs/zh-CN/release/announcement-kit.md)
 - [Examples 索引](docs/zh-CN/examples/README.md)

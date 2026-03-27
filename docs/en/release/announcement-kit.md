@@ -49,7 +49,9 @@ Highlights in the current RC:
 - Sync recent messages into a local index
 - Search local messages without re-fetching remote mail
 - Inspect local thread summaries and full local threads
-- Support thread-aware local triage with `thread_id`, labels, categories, actions, and code-related signals
+- Support thread-aware local triage with `thread_id`, labels, categories, actions, codes, participants, and compact triage counts
+- Expose clearer sync/index state through `listed_count`, `fetched_count`, `indexed_count`, `skipped_count`, and `refreshed_count`
+- Improve parser output with stronger HTML body extraction and cleaner tracked URL normalization
 - Compile outbound drafts and replies through `DraftMessage` and `ReplyDraft`
 - Support external provider workflows for both single-message and thread-aware agent examples
 - Ship Python, shell, template-provider, and optional OpenAI-provider examples
@@ -62,6 +64,7 @@ Stable contracts for integrators:
 - `mailcli sync`
 - `mailcli search`
 - `mailcli threads`
+- `mailcli thread`
 - `mailcli reply`
 - `mailcli send`
 - `StandardMessage`
@@ -81,7 +84,7 @@ Recommended docs:
 
 MailCLI is now usable as an open-source email interface for agents.
 
-It parses email into structured JSON, supports local thread-aware retrieval, and lets agents draft replies through stable CLI contracts instead of hand-written MIME.
+It parses email into structured JSON, supports local thread-aware retrieval and triage, and lets agents draft replies through stable CLI contracts instead of hand-written MIME.
 
 Repo: `github.com/nonozone/MailCli`
 
@@ -104,7 +107,7 @@ Current scope includes:
 - parsing raw email into structured JSON and Markdown
 - baseline IMAP read path
 - SMTP-backed send path
-- local sync, search, and thread summaries
+- local sync, search, thread summaries, and full thread retrieval
 - thread-aware reply workflows
 - external provider handoff for model-backed analysis
 
@@ -116,6 +119,7 @@ What I care about most is making the machine-facing contracts stable enough that
 - “Not a traditional mail client” helps reduce the wrong expectations.
 - “Stable machine-facing contracts” is the core value proposition.
 - “Thread-aware local workflows” is one of the strongest differentiators in the current repo state.
+- “Sync state and thread triage signals” make the local memory loop easier for agents to trust.
 - “External provider handoff” makes the project easy to pair with different model stacks without bloating core dependencies.
 
 ## Recommended Links
@@ -124,3 +128,5 @@ What I care about most is making the machine-facing contracts stable enough that
 - [Agent Workflows](../agent-workflows.md)
 - [Examples Index](../examples/README.md)
 - [Agent Provider Contract](../spec/agent-provider.md)
+- [Local Index Spec](../spec/local-index.md)
+- [Parser Contributor Guide](../contributing/parser.md)
