@@ -70,9 +70,17 @@ Current local search is case-insensitive substring matching over a combined text
 - body markdown
 - category
 - labels
+- action types and labels
+- extracted code labels and values
 - normalized sender
 
 This is not full-text search yet. It is a deterministic baseline intended for agent workflows and future storage evolution.
+
+MailCLI also applies light normalization when searching structured signals:
+
+- `_`, `-`, and similar separators are normalized toward spaces
+- this lets queries such as `verify sign-in`, `verify sign in`, and `verify_sign_in` converge more often
+- structured action and code hits are ranked above weaker body-only mentions
 
 Current compact search results also include a deterministic `score` field.
 

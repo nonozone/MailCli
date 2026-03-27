@@ -57,6 +57,23 @@ type searchMatch struct {
 	score int
 }
 
+var searchNormalizer = strings.NewReplacer(
+	"_", " ",
+	"-", " ",
+	"/", " ",
+	":", " ",
+	".", " ",
+	",", " ",
+	";", " ",
+	"(", " ",
+	")", " ",
+	"<", " ",
+	">", " ",
+	"\n", " ",
+	"\r", " ",
+	"\t", " ",
+)
+
 func DefaultPath() string {
 	dir, err := os.UserCacheDir()
 	if err != nil {
@@ -287,9 +304,11 @@ func searchableText(item IndexedMessage) string {
 		item.Message.Content.BodyMD,
 		item.Message.Content.Category,
 		strings.Join(item.Message.Labels, "\n"),
+		actionSearchText(item.Message.Actions),
+		codeSearchText(item.Message.Codes),
 		formatAddress(item.Message.Meta.From),
 	}
-	return strings.ToLower(strings.Join(parts, "\n"))
+	return normalizeSearchValue(strings.Join(parts, "\n"))
 }
 
 func scoreMatch(item IndexedMessage, needle string) int {
@@ -307,6 +326,8 @@ func scoreMatch(item IndexedMessage, needle string) int {
 	score += weightedContains(item.Mailbox, needle, 1)
 	score += weightedContains(item.Message.Content.Category, needle, 2)
 	score += weightedContains(strings.Join(item.Message.Labels, "\n"), needle, 2)
+	score += weightedContains(actionSearchText(item.Message.Actions), needle, 7)
+	score += weightedContains(codeSearchText(item.Message.Codes), needle, 7)
 	return score
 }
 
@@ -316,16 +337,55 @@ func weightedContains(value, needle string, weight int) int {
 	}
 
 	lower := strings.ToLower(value)
+	normalizedNeedle := normalizeSearchValue(needle)
 	if lower == "" || needle == "" {
 		return 0
 	}
 
 	count := strings.Count(lower, needle)
+	normalizedValue := normalizeSearchValue(value)
+	if normalizedValue != "" && normalizedNeedle != "" {
+		if normalizedCount := strings.Count(normalizedValue, normalizedNeedle); normalizedCount > count {
+			count = normalizedCount
+		}
+	}
 	if count == 0 {
 		return 0
 	}
 
 	return count * weight
+}
+
+func normalizeSearchValue(value string) string {
+	lower := strings.ToLower(strings.TrimSpace(value))
+	if lower == "" {
+		return ""
+	}
+	return strings.Join(strings.Fields(searchNormalizer.Replace(lower)), " ")
+}
+
+func actionSearchText(actions []schema.Action) string {
+	if len(actions) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(actions)*2)
+	for _, action := range actions {
+		parts = append(parts, action.Type, action.Label)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func codeSearchText(codes []schema.Code) string {
+	if len(codes) == 0 {
+		return ""
+	}
+
+	parts := make([]string, 0, len(codes)*3)
+	for _, code := range codes {
+		parts = append(parts, code.Type, code.Label, code.Value)
+	}
+	return strings.Join(parts, "\n")
 }
 
 func formatAddress(addr *schema.Address) string {

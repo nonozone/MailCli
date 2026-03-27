@@ -70,9 +70,17 @@ $CACHE_DIR/mailcli/index.json
 - body markdown
 - category
 - labels
+- action type 和 label
+- 提取出的 code label 和 value
 - 归一化后的发件人
 
 这还不是全文检索，只是一个确定性的基础版本，优先服务 agent 工作流以及未来存储后端的演进。
+
+MailCLI 在搜索结构化信号时还会做一层轻量归一化：
+
+- `_`、`-` 等分隔符会尽量归一到空格语义
+- 这样 `verify sign-in`、`verify sign in`、`verify_sign_in` 更容易命中同一类结果
+- 结构化 action / code 命中在排序上也会优先于正文中的弱提及
 
 当前紧凑搜索结果还会返回一个确定性的 `score` 字段。
 

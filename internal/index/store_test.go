@@ -320,3 +320,137 @@ func TestFileStoreSearchSupportsThreadFilter(t *testing.T) {
 		t.Fatalf("expected search results to expose thread id, got %q", results[0].ThreadID)
 	}
 }
+
+func TestFileStoreSearchMatchesStructuredActionSignals(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	record := IndexedMessage{
+		Account: "demo",
+		Mailbox: "INBOX",
+		ID:      "action-match",
+		Message: schema.StandardMessage{
+			ID: "action-match",
+			Meta: schema.MessageMeta{
+				Subject: "Security review",
+			},
+			Content: schema.Content{
+				Snippet: "Review the latest account activity.",
+				BodyMD:  "A new account activity was detected.",
+			},
+			Actions: []schema.Action{
+				{Type: "verify_sign_in", Label: "Verify sign-in"},
+			},
+		},
+	}
+
+	if err := store.Upsert(record); err != nil {
+		t.Fatalf("expected index write to succeed: %v", err)
+	}
+
+	results, err := store.Search(SearchQuery{Query: "verify sign-in", Limit: 10})
+	if err != nil {
+		t.Fatalf("expected structured action search to succeed: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected one structured action result, got %d", len(results))
+	}
+	if results[0].ID != "action-match" {
+		t.Fatalf("expected action-backed record, got %q", results[0].ID)
+	}
+}
+
+func TestFileStoreSearchMatchesStructuredCodeValues(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	record := IndexedMessage{
+		Account: "demo",
+		Mailbox: "INBOX",
+		ID:      "code-match",
+		Message: schema.StandardMessage{
+			ID: "code-match",
+			Meta: schema.MessageMeta{
+				Subject: "Verification request",
+			},
+			Content: schema.Content{
+				Snippet: "Use the code from your device.",
+				BodyMD:  "Use the code from your device.",
+			},
+			Codes: []schema.Code{
+				{Type: "verification_code", Value: "123456", Label: "Verification code"},
+			},
+		},
+	}
+
+	if err := store.Upsert(record); err != nil {
+		t.Fatalf("expected index write to succeed: %v", err)
+	}
+
+	results, err := store.Search(SearchQuery{Query: "123456", Limit: 10})
+	if err != nil {
+		t.Fatalf("expected structured code search to succeed: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("expected one code-backed result, got %d", len(results))
+	}
+	if results[0].ID != "code-match" {
+		t.Fatalf("expected code-backed record, got %q", results[0].ID)
+	}
+}
+
+func TestFileStoreSearchRanksStructuredSignalsAboveBodyOnlyMentions(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, record := range []IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "structured-action",
+			Message: schema.StandardMessage{
+				ID: "structured-action",
+				Meta: schema.MessageMeta{
+					Subject: "Account review",
+				},
+				Content: schema.Content{
+					Snippet: "Review the latest account activity.",
+					BodyMD:  "A new account activity was detected.",
+				},
+				Actions: []schema.Action{
+					{Type: "verify_sign_in", Label: "Verify sign-in"},
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "body-only",
+			Message: schema.StandardMessage{
+				ID: "body-only",
+				Meta: schema.MessageMeta{
+					Subject: "General update",
+				},
+				Content: schema.Content{
+					Snippet: "Please verify sign in details in the portal.",
+					BodyMD:  "Please verify sign in details in the portal.",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(record); err != nil {
+			t.Fatalf("expected index write to succeed: %v", err)
+		}
+	}
+
+	results, err := store.Search(SearchQuery{Query: "verify sign-in", Limit: 10})
+	if err != nil {
+		t.Fatalf("expected ranked structured search to succeed: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected two ranked results, got %d", len(results))
+	}
+	if results[0].ID != "structured-action" {
+		t.Fatalf("expected structured action result first, got %q", results[0].ID)
+	}
+	if results[0].Score <= results[1].Score {
+		t.Fatalf("expected structured action score to outrank body-only score, got %d <= %d", results[0].Score, results[1].Score)
+	}
+}

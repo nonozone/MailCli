@@ -376,3 +376,42 @@ func TestSearchCommandSupportsThreadFilter(t *testing.T) {
 		t.Fatalf("expected search output to expose thread id, got %s", out.String())
 	}
 }
+
+func TestSearchCommandMatchesStructuredActionSignals(t *testing.T) {
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+	store := mailindex.NewFileStore(indexPath)
+
+	if err := store.Upsert(mailindex.IndexedMessage{
+		Account: "demo",
+		Mailbox: "INBOX",
+		ID:      "action-match",
+		Message: schema.StandardMessage{
+			ID: "action-match",
+			Meta: schema.MessageMeta{
+				Subject: "Security review",
+			},
+			Content: schema.Content{
+				Snippet: "Review the latest account activity.",
+				BodyMD:  "A new account activity was detected.",
+			},
+			Actions: []schema.Action{
+				{Type: "verify_sign_in", Label: "Verify sign-in"},
+			},
+		},
+	}); err != nil {
+		t.Fatalf("expected action-backed index write to succeed: %v", err)
+	}
+
+	searchCmd := NewRootCmd()
+	var out bytes.Buffer
+	searchCmd.SetOut(&out)
+	searchCmd.SetErr(&out)
+	searchCmd.SetArgs([]string{"search", "--index", indexPath, "verify sign-in"})
+	if err := searchCmd.Execute(); err != nil {
+		t.Fatalf("expected structured action search command to succeed: %v", err)
+	}
+
+	if !strings.Contains(out.String(), `"id": "action-match"`) {
+		t.Fatalf("expected structured action search result, got %s", out.String())
+	}
+}
