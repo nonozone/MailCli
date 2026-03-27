@@ -121,6 +121,7 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--thread <thread_id>] [--limit <n>] [--full] <query>`
 - `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
+- `mailcli thread <thread_id> [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 
 ### Write path
 
@@ -299,6 +300,12 @@ mailcli threads invoice
 
 ```bash
 mailcli search --thread "<root@example.com>" update
+```
+
+### Read a full local thread
+
+```bash
+mailcli thread "<root@example.com>"
 ```
 
 ### Dry-run an outbound draft

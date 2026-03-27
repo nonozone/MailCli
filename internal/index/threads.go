@@ -26,6 +26,13 @@ type ThreadSummary struct {
 	Score        int      `json:"score"`
 }
 
+type ThreadMessageQuery struct {
+	ThreadID string
+	Account  string
+	Mailbox  string
+	Limit    int
+}
+
 type threadAccumulator struct {
 	summary       ThreadSummary
 	latestIndexed string
@@ -107,6 +114,44 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 			return results[i].LatestDate > results[j].LatestDate
 		}
 		return results[i].ThreadID < results[j].ThreadID
+	})
+
+	if query.Limit > 0 && len(results) > query.Limit {
+		results = results[:query.Limit]
+	}
+
+	return results, nil
+}
+
+func (s *FileStore) ThreadMessages(query ThreadMessageQuery) ([]IndexedMessage, error) {
+	data, err := s.load()
+	if err != nil {
+		return nil, err
+	}
+
+	threadID := normalizeMessageRef(query.ThreadID)
+	account := strings.TrimSpace(query.Account)
+	mailbox := strings.TrimSpace(query.Mailbox)
+	results := make([]IndexedMessage, 0, len(data.Messages))
+
+	for _, item := range data.Messages {
+		if threadID != "" && deriveThreadID(item) != threadID {
+			continue
+		}
+		if account != "" && item.Account != account {
+			continue
+		}
+		if mailbox != "" && !strings.EqualFold(item.Mailbox, mailbox) {
+			continue
+		}
+		results = append(results, item)
+	}
+
+	sort.SliceStable(results, func(i, j int) bool {
+		if results[i].Message.Meta.Date != results[j].Message.Meta.Date {
+			return results[i].Message.Meta.Date < results[j].Message.Meta.Date
+		}
+		return results[i].IndexedAt < results[j].IndexedAt
 	})
 
 	if query.Limit > 0 && len(results) > query.Limit {

@@ -145,7 +145,8 @@ flowchart LR
 3. MailCLI groups indexed messages using `references`, `in_reply_to`, and `message_id`
 4. Agent chooses a thread
 5. Agent can continue with `mailcli search --thread <thread_id> <query>`
-6. Agent decides whether to fetch a full message or draft a reply
+6. Agent can read the full local thread with `mailcli thread <thread_id>`
+7. Agent decides whether to fetch a full remote message or draft a reply
 
 ## The Reply Path
 

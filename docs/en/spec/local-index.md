@@ -15,6 +15,7 @@ Current commands:
 - `mailcli sync`
 - `mailcli search`
 - `mailcli threads`
+- `mailcli thread`
 
 Current search modes:
 
@@ -112,6 +113,8 @@ Thread summaries currently expose:
 - participants
 - local message ids
 - score
+
+`mailcli thread <thread_id>` returns the full indexed messages for a selected local thread, ordered by message date.
 
 ## Sync Semantics
 

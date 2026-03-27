@@ -152,3 +152,83 @@ func TestFileStoreThreadsSupportsQueryFilteringAndRanking(t *testing.T) {
 		t.Fatalf("expected first thread to have >= score, got %d < %d", threads[0].Score, threads[1].Score)
 	}
 }
+
+func TestFileStoreThreadMessagesReturnsFullMessagesForThread(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, item := range []IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "msg-root",
+			Message: schema.StandardMessage{
+				ID: "msg-root",
+				Meta: schema.MessageMeta{
+					Subject:   "Project update",
+					Date:      "2026-03-27T08:00:00Z",
+					MessageID: "<root@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "Initial update",
+					BodyMD:  "Initial update",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "msg-reply",
+			Message: schema.StandardMessage{
+				ID: "msg-reply",
+				Meta: schema.MessageMeta{
+					Subject:   "Re: Project update",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<reply@example.com>",
+					InReplyTo: "<root@example.com>",
+					References: []string{
+						"<root@example.com>",
+					},
+				},
+				Content: schema.Content{
+					Snippet: "Looks good",
+					BodyMD:  "Looks good",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "other-thread",
+			Message: schema.StandardMessage{
+				ID: "other-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Invoice",
+					Date:      "2026-03-27T10:00:00Z",
+					MessageID: "<invoice@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "Invoice ready",
+					BodyMD:  "Invoice ready",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("expected upsert to succeed: %v", err)
+		}
+	}
+
+	messages, err := store.ThreadMessages(ThreadMessageQuery{
+		ThreadID: "<root@example.com>",
+		Limit:    10,
+	})
+	if err != nil {
+		t.Fatalf("expected thread messages lookup to succeed: %v", err)
+	}
+	if len(messages) != 2 {
+		t.Fatalf("expected two thread messages, got %d", len(messages))
+	}
+	if messages[0].ID != "msg-root" || messages[1].ID != "msg-reply" {
+		t.Fatalf("expected messages ordered by date within thread, got %q then %q", messages[0].ID, messages[1].ID)
+	}
+}
