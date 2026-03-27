@@ -72,6 +72,67 @@ func TestThreadCommandReturnsFullMessagesForThread(t *testing.T) {
 	}
 }
 
+func TestThreadCommandExposesThreadIDForLegacyIndex(t *testing.T) {
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>"
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    },
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-reply",
+      "indexed_at": "2026-03-27T09:00:00Z",
+      "message": {
+        "id": "msg-reply",
+        "meta": {
+          "subject": "Re: Project update",
+          "date": "2026-03-27T09:00:00Z",
+          "message_id": "<reply@example.com>",
+          "in_reply_to": "<root@example.com>",
+          "references": [
+            "<root@example.com>"
+          ]
+        },
+        "content": {
+          "snippet": "Looks good",
+          "body_md": "Looks good"
+        }
+      }
+    }
+  ]
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"thread", "--index", indexPath, "<root@example.com>"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected thread command on legacy index to succeed: %v", err)
+	}
+
+	if !strings.Contains(out.String(), `"thread_id": "\u003croot@example.com\u003e"`) {
+		t.Fatalf("expected legacy thread output to derive thread id, got %s", out.String())
+	}
+}
+
 func TestThreadCommandSupportsAccountFilter(t *testing.T) {
 	indexPath := writeTempFile(t, "index.json", "{}\n")
 	store := mailindex.NewFileStore(indexPath)

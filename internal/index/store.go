@@ -16,6 +16,7 @@ type IndexedMessage struct {
 	Mailbox   string                 `json:"mailbox,omitempty"`
 	ID        string                 `json:"id"`
 	IndexedAt string                 `json:"indexed_at,omitempty"`
+	ThreadID  string                 `json:"thread_id,omitempty"`
 	Message   schema.StandardMessage `json:"message"`
 }
 
@@ -31,6 +32,7 @@ type SearchResult struct {
 	Account   string   `json:"account,omitempty"`
 	Mailbox   string   `json:"mailbox,omitempty"`
 	ID        string   `json:"id,omitempty"`
+	ThreadID  string   `json:"thread_id,omitempty"`
 	Subject   string   `json:"subject,omitempty"`
 	From      string   `json:"from,omitempty"`
 	Date      string   `json:"date,omitempty"`
@@ -111,6 +113,9 @@ func (s *FileStore) Upsert(message IndexedMessage) error {
 	if message.IndexedAt == "" {
 		message.IndexedAt = time.Now().UTC().Format(time.RFC3339)
 	}
+	if message.ThreadID == "" {
+		message.ThreadID = deriveThreadID(message)
+	}
 
 	updated := false
 	for i := range data.Messages {
@@ -140,6 +145,7 @@ func (s *FileStore) Search(query SearchQuery) ([]SearchResult, error) {
 			Account:   item.Account,
 			Mailbox:   item.Mailbox,
 			ID:        item.ID,
+			ThreadID:  ensureThreadID(item).ThreadID,
 			Subject:   item.Message.Meta.Subject,
 			From:      formatAddress(item.Message.Meta.From),
 			Date:      item.Message.Meta.Date,
@@ -162,10 +168,17 @@ func (s *FileStore) SearchMessages(query SearchQuery) ([]IndexedMessage, error) 
 
 	results := make([]IndexedMessage, 0, len(matches))
 	for _, match := range matches {
-		results = append(results, match.item)
+		results = append(results, ensureThreadID(match.item))
 	}
 
 	return results, nil
+}
+
+func ensureThreadID(item IndexedMessage) IndexedMessage {
+	if item.ThreadID == "" {
+		item.ThreadID = deriveThreadID(item)
+	}
+	return item
 }
 
 func (s *FileStore) findMatches(query SearchQuery) ([]searchMatch, error) {

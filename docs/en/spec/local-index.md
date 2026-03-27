@@ -89,9 +89,11 @@ Results are ordered by score first, then by recency of local indexing.
 
 - account
 - mailbox
-- thread id
+- `thread_id`
 
-When `--full` is used, the command returns full indexed records rather than the compact summary shape.
+Compact search results expose `thread_id` so an agent can move from a matched message to `mailcli thread <thread_id>` or `mailcli search --thread <thread_id> ...` without re-deriving the thread locally.
+
+When `--full` is used, the command returns full indexed records rather than the compact summary shape. Full indexed records also expose `thread_id`.
 
 ## Thread Semantics
 
@@ -121,7 +123,7 @@ Thread summaries currently expose:
 - local message ids
 - score
 
-`mailcli thread <thread_id>` returns the full indexed messages for a selected local thread, ordered by message date.
+`mailcli thread <thread_id>` returns the full indexed messages for a selected local thread, ordered by message date. Those full records also expose `thread_id`.
 
 `mailcli threads` currently supports deterministic thread-level filtering by:
 

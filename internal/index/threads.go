@@ -204,7 +204,7 @@ func (s *FileStore) ThreadMessages(query ThreadMessageQuery) ([]IndexedMessage, 
 		if mailbox != "" && !strings.EqualFold(item.Mailbox, mailbox) {
 			continue
 		}
-		results = append(results, item)
+		results = append(results, ensureThreadID(item))
 	}
 
 	sort.SliceStable(results, func(i, j int) bool {

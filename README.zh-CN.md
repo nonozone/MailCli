@@ -172,6 +172,8 @@ Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMess
 Agent -> mailcli sync -> Local Index -> mailcli search -> Indexed Message Context -> Agent
 ```
 
+当前紧凑版 `mailcli search` 结果会直接暴露 `thread_id`，agent 不需要自己重建线程归属，就可以把后续检索收敛到单个会话。
+
 ### 本地线程循环
 
 ```text

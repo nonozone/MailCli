@@ -89,9 +89,11 @@ $CACHE_DIR/mailcli/index.json
 
 - account
 - mailbox
-- thread id
+- `thread_id`
 
-当使用 `--full` 时，命令会返回完整的索引记录，而不是紧凑摘要。
+紧凑版搜索结果会直接暴露 `thread_id`，因此 agent 命中一条消息后，可以直接继续调用 `mailcli thread <thread_id>` 或 `mailcli search --thread <thread_id> ...`，无需在本地再次推导线程归属。
+
+当使用 `--full` 时，命令会返回完整的索引记录，而不是紧凑摘要。完整索引记录同样会暴露 `thread_id`。
 
 ## 线程语义
 
@@ -121,7 +123,7 @@ $CACHE_DIR/mailcli/index.json
 - 本地 message ids
 - score
 
-`mailcli thread <thread_id>` 会返回选中本地线程中的完整索引消息，并按消息时间排序。
+`mailcli thread <thread_id>` 会返回选中本地线程中的完整索引消息，并按消息时间排序。这些完整记录同样会暴露 `thread_id`。
 
 `mailcli threads` 当前支持以下确定性的 thread 级过滤：
 

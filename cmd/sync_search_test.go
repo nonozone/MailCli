@@ -125,6 +125,70 @@ func TestSearchCommandSupportsFullResults(t *testing.T) {
 	if !strings.Contains(out.String(), `"message"`) || !strings.Contains(out.String(), `"body_md": "Use code 482991 to finish signing in."`) {
 		t.Fatalf("expected full search output to include indexed message content, got %s", out.String())
 	}
+	if !strings.Contains(out.String(), `"thread_id":`) {
+		t.Fatalf("expected full search output to expose thread id, got %s", out.String())
+	}
+}
+
+func TestSearchCommandFullResultsExposeThreadIDForLegacyIndex(t *testing.T) {
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>"
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    },
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-reply",
+      "indexed_at": "2026-03-27T09:00:00Z",
+      "message": {
+        "id": "msg-reply",
+        "meta": {
+          "subject": "Re: Project update",
+          "date": "2026-03-27T09:00:00Z",
+          "message_id": "<reply@example.com>",
+          "in_reply_to": "<root@example.com>",
+          "references": [
+            "<root@example.com>"
+          ]
+        },
+        "content": {
+          "snippet": "Looks good",
+          "body_md": "Looks good"
+        }
+      }
+    }
+  ]
+}`)
+
+	searchCmd := NewRootCmd()
+	var out bytes.Buffer
+	searchCmd.SetOut(&out)
+	searchCmd.SetErr(&out)
+	searchCmd.SetArgs([]string{"search", "--index", indexPath, "--full", "project"})
+	if err := searchCmd.Execute(); err != nil {
+		t.Fatalf("expected full search on legacy index to succeed: %v", err)
+	}
+
+	if !strings.Contains(out.String(), `"thread_id": "\u003croot@example.com\u003e"`) {
+		t.Fatalf("expected legacy full search output to derive thread id, got %s", out.String())
+	}
 }
 
 func TestSearchCommandSupportsAccountAndMailboxFilters(t *testing.T) {
@@ -136,7 +200,7 @@ func TestSearchCommandSupportsAccountAndMailboxFilters(t *testing.T) {
 		Mailbox: "INBOX",
 		ID:      "msg-work",
 		Message: schema.StandardMessage{
-			ID: "msg-work",
+			ID:   "msg-work",
 			Meta: schema.MessageMeta{Subject: "Invoice from work"},
 			Content: schema.Content{
 				Snippet: "invoice work",
@@ -152,7 +216,7 @@ func TestSearchCommandSupportsAccountAndMailboxFilters(t *testing.T) {
 		Mailbox: "Archive",
 		ID:      "msg-personal",
 		Message: schema.StandardMessage{
-			ID: "msg-personal",
+			ID:   "msg-personal",
 			Meta: schema.MessageMeta{Subject: "Invoice from personal"},
 			Content: schema.Content{
 				Snippet: "invoice personal",
@@ -286,5 +350,8 @@ func TestSearchCommandSupportsThreadFilter(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"id": "msg-root"`) {
 		t.Fatalf("expected thread result to include root message, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"thread_id": "\u003croot@example.com\u003e"`) {
+		t.Fatalf("expected search output to expose thread id, got %s", out.String())
 	}
 }

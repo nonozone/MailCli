@@ -137,7 +137,7 @@ func TestFileStoreSearchSupportsAccountAndMailboxFilters(t *testing.T) {
 			Mailbox: "INBOX",
 			ID:      "msg-work",
 			Message: schema.StandardMessage{
-				ID: "msg-work",
+				ID:   "msg-work",
 				Meta: schema.MessageMeta{Subject: "Invoice from work"},
 				Content: schema.Content{
 					Snippet: "invoice work",
@@ -150,7 +150,7 @@ func TestFileStoreSearchSupportsAccountAndMailboxFilters(t *testing.T) {
 			Mailbox: "Archive",
 			ID:      "msg-personal",
 			Message: schema.StandardMessage{
-				ID: "msg-personal",
+				ID:   "msg-personal",
 				Meta: schema.MessageMeta{Subject: "Invoice from personal"},
 				Content: schema.Content{
 					Snippet: "invoice personal",
@@ -315,5 +315,8 @@ func TestFileStoreSearchSupportsThreadFilter(t *testing.T) {
 		if result.ID == "other-thread" {
 			t.Fatalf("expected other thread to be filtered out")
 		}
+	}
+	if results[0].ThreadID != "<root@example.com>" {
+		t.Fatalf("expected search results to expose thread id, got %q", results[0].ThreadID)
 	}
 }

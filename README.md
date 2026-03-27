@@ -172,6 +172,8 @@ Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMess
 Agent -> mailcli sync -> Local Index -> mailcli search -> Indexed Message Context -> Agent
 ```
 
+Compact `mailcli search` results now expose `thread_id`, so an agent can narrow subsequent retrieval to a single conversation without reconstructing thread membership itself.
+
 ### Local thread loop
 
 ```text
