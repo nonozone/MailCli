@@ -163,6 +163,15 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli reply --dry-run <reply.json>`
 - `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
 
+### Outbound Markdown baseline
+
+- headings
+- Markdown links rendered as clickable HTML anchors with readable plain-text fallbacks
+- unordered lists as `ul/li`
+- ordered lists as `ol/li`
+- blockquotes
+- simple Markdown tables
+
 ### Reply support
 
 - `reply_to_message_id` is supported

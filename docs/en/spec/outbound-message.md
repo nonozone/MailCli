@@ -143,7 +143,10 @@ Current Markdown rendering baseline now preserves:
 
 - headings
 - Markdown links as clickable HTML anchors
-- basic bullet lists as `ul/li`
+- unordered lists as `ul/li`
+- ordered lists as `ol/li`
+- blockquotes
+- simple Markdown tables
 - readable plain-text link fallbacks such as `Label: https://...`
 
 ## Command Direction

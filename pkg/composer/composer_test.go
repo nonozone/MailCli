@@ -197,3 +197,91 @@ func TestComposeDraftRendersMarkdownBulletListsIntoHTML(t *testing.T) {
 		}
 	}
 }
+
+func TestComposeDraftRendersMarkdownOrderedListsIntoHTML(t *testing.T) {
+	raw, err := ComposeDraft(schema.DraftMessage{
+		From: &schema.Address{
+			Address: "support@nono.im",
+		},
+		To: []schema.Address{
+			{Address: "user@example.com"},
+		},
+		Subject: "Checklist",
+		BodyMD:  "## Next steps\n\n1. Confirm billing email\n2. Verify sign-in settings",
+	})
+	if err != nil {
+		t.Fatalf("expected draft compose to succeed: %v", err)
+	}
+
+	mime := string(raw)
+	for _, token := range []string{
+		"<ol>",
+		"<li>Confirm billing email</li>",
+		"<li>Verify sign-in settings</li>",
+	} {
+		if !strings.Contains(mime, token) {
+			t.Fatalf("expected markdown ordered list rendering to contain %q", token)
+		}
+	}
+}
+
+func TestComposeDraftRendersMarkdownBlockquotesIntoHTML(t *testing.T) {
+	raw, err := ComposeDraft(schema.DraftMessage{
+		From: &schema.Address{
+			Address: "support@nono.im",
+		},
+		To: []schema.Address{
+			{Address: "user@example.com"},
+		},
+		Subject: "Status",
+		BodyMD:  "## Status\n\n> Billing has been verified.\n> No further action is needed.",
+	})
+	if err != nil {
+		t.Fatalf("expected draft compose to succeed: %v", err)
+	}
+
+	mime := string(raw)
+	for _, token := range []string{
+		"<blockquote>",
+		"<p>Billing has been verified.</p>",
+		"<p>No further action is needed.</p>",
+		"</blockquote>",
+	} {
+		if !strings.Contains(mime, token) {
+			t.Fatalf("expected markdown blockquote rendering to contain %q", token)
+		}
+	}
+}
+
+func TestComposeDraftRendersMarkdownTablesIntoHTML(t *testing.T) {
+	raw, err := ComposeDraft(schema.DraftMessage{
+		From: &schema.Address{
+			Address: "support@nono.im",
+		},
+		To: []schema.Address{
+			{Address: "user@example.com"},
+		},
+		Subject: "Summary",
+		BodyMD: "## Billing summary\n\n| Item | Status |\n| --- | --- |\n| Invoice #123 | Paid |\n| Plan | Pro |",
+	})
+	if err != nil {
+		t.Fatalf("expected draft compose to succeed: %v", err)
+	}
+
+	mime := string(raw)
+	for _, token := range []string{
+		"<table>",
+		"<thead>",
+		"<th>Item</th>",
+		"<th>Status</th>",
+		"<td>Invoice #123</td>",
+		"<td>Paid</td>",
+		"<td>Plan</td>",
+		"<td>Pro</td>",
+		"</table>",
+	} {
+		if !strings.Contains(mime, token) {
+			t.Fatalf("expected markdown table rendering to contain %q", token)
+		}
+	}
+}

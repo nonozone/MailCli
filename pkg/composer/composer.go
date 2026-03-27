@@ -18,6 +18,8 @@ import (
 )
 
 var markdownLinkRe = regexp.MustCompile(`\[(.*?)\]\((https?://[^)\s]+)\)`)
+var markdownOrderedListRe = regexp.MustCompile(`^\d+\.\s+`)
+var markdownTableSeparatorRe = regexp.MustCompile(`^:?-{3,}:?$`)
 
 func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {
 	headers := map[string]string{
@@ -280,32 +282,75 @@ func markdownToPlain(input string) string {
 	)
 
 	lines := strings.Split(strings.TrimSpace(input), "\n")
-	for i, line := range lines {
+	plainLines := make([]string, 0, len(lines))
+	for _, line := range lines {
 		line = strings.TrimSpace(line)
+		if line == "" {
+			plainLines = append(plainLines, "")
+			continue
+		}
+		if cells := parseMarkdownTableRow(line); len(cells) > 0 {
+			if isMarkdownTableSeparatorRow(line, len(cells)) {
+				continue
+			}
+			line = strings.Join(cells, " | ")
+		}
 		line = strings.TrimLeft(line, "#")
 		line = markdownLinkRe.ReplaceAllString(line, "$1: $2")
-		lines[i] = strings.TrimSpace(replacer.Replace(line))
+		plainLines = append(plainLines, strings.TrimSpace(replacer.Replace(line)))
 	}
 
-	return strings.TrimSpace(strings.Join(lines, "\n"))
+	return strings.TrimSpace(strings.Join(plainLines, "\n"))
 }
 
 func markdownToHTML(input string) string {
 	lines := strings.Split(strings.TrimSpace(input), "\n")
 	var blocks []string
-	inList := false
+	listType := ""
 
 	closeList := func() {
-		if inList {
-			blocks = append(blocks, "</ul>")
-			inList = false
+		if listType != "" {
+			blocks = append(blocks, "</"+listType+">")
+			listType = ""
 		}
 	}
 
-	for _, line := range lines {
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
 			closeList()
+			continue
+		}
+
+		if isMarkdownTableStart(lines, i) {
+			closeList()
+			rendered, next := renderMarkdownTable(lines, i)
+			blocks = append(blocks, rendered...)
+			i = next
+			continue
+		}
+
+		if strings.HasPrefix(trimmed, ">") {
+			closeList()
+			var quoteLines []string
+			for ; i < len(lines); i++ {
+				innerLine := strings.TrimSpace(lines[i])
+				if !strings.HasPrefix(innerLine, ">") {
+					i--
+					break
+				}
+				content := strings.TrimSpace(strings.TrimPrefix(innerLine, ">"))
+				if content == "" {
+					continue
+				}
+				quoteLines = append(quoteLines, "<p>"+renderInlineHTML(content)+"</p>")
+			}
+			if len(quoteLines) > 0 {
+				blocks = append(blocks, "<blockquote>")
+				blocks = append(blocks, quoteLines...)
+				blocks = append(blocks, "</blockquote>")
+			}
 			continue
 		}
 
@@ -320,11 +365,19 @@ func markdownToHTML(input string) string {
 			closeList()
 			blocks = append(blocks, "<h1>"+renderInlineHTML(strings.TrimSpace(strings.TrimPrefix(trimmed, "# ")))+"</h1>")
 		case strings.HasPrefix(trimmed, "- "):
-			if !inList {
+			if listType != "ul" {
+				closeList()
 				blocks = append(blocks, "<ul>")
-				inList = true
+				listType = "ul"
 			}
 			blocks = append(blocks, "<li>"+renderInlineHTML(strings.TrimSpace(strings.TrimPrefix(trimmed, "- ")))+"</li>")
+		case markdownOrderedListRe.MatchString(trimmed):
+			if listType != "ol" {
+				closeList()
+				blocks = append(blocks, "<ol>")
+				listType = "ol"
+			}
+			blocks = append(blocks, "<li>"+renderInlineHTML(strings.TrimSpace(markdownOrderedListRe.ReplaceAllString(trimmed, "")))+"</li>")
 		default:
 			closeList()
 			blocks = append(blocks, "<p>"+renderInlineHTML(trimmed)+"</p>")
@@ -337,6 +390,83 @@ func markdownToHTML(input string) string {
 	}
 
 	return strings.Join(blocks, "\n")
+}
+
+func isMarkdownTableStart(lines []string, index int) bool {
+	if index+1 >= len(lines) {
+		return false
+	}
+	header := parseMarkdownTableRow(lines[index])
+	if len(header) < 2 {
+		return false
+	}
+	return isMarkdownTableSeparatorRow(lines[index+1], len(header))
+}
+
+func renderMarkdownTable(lines []string, start int) ([]string, int) {
+	header := parseMarkdownTableRow(lines[start])
+	blocks := []string{"<table>", "<thead>", "<tr>"}
+	for _, cell := range header {
+		blocks = append(blocks, "<th>"+renderInlineHTML(cell)+"</th>")
+	}
+	blocks = append(blocks, "</tr>", "</thead>", "<tbody>")
+
+	i := start + 2
+	for ; i < len(lines); i++ {
+		cells := parseMarkdownTableRow(lines[i])
+		if len(cells) == 0 || len(cells) != len(header) || isMarkdownTableSeparatorRow(lines[i], len(cells)) {
+			i--
+			break
+		}
+		blocks = append(blocks, "<tr>")
+		for _, cell := range cells {
+			blocks = append(blocks, "<td>"+renderInlineHTML(cell)+"</td>")
+		}
+		blocks = append(blocks, "</tr>")
+	}
+
+	blocks = append(blocks, "</tbody>", "</table>")
+	return blocks, i
+}
+
+func parseMarkdownTableRow(line string) []string {
+	trimmed := strings.TrimSpace(line)
+	if !strings.Contains(trimmed, "|") || strings.HasPrefix(trimmed, ">") {
+		return nil
+	}
+
+	parts := strings.Split(trimmed, "|")
+	if len(parts) < 3 {
+		return nil
+	}
+	if strings.TrimSpace(parts[0]) == "" {
+		parts = parts[1:]
+	}
+	if len(parts) > 0 && strings.TrimSpace(parts[len(parts)-1]) == "" {
+		parts = parts[:len(parts)-1]
+	}
+	if len(parts) < 2 {
+		return nil
+	}
+
+	cells := make([]string, 0, len(parts))
+	for _, part := range parts {
+		cells = append(cells, strings.TrimSpace(part))
+	}
+	return cells
+}
+
+func isMarkdownTableSeparatorRow(line string, columns int) bool {
+	cells := parseMarkdownTableRow(line)
+	if len(cells) != columns || len(cells) == 0 {
+		return false
+	}
+	for _, cell := range cells {
+		if !markdownTableSeparatorRe.MatchString(strings.TrimSpace(cell)) {
+			return false
+		}
+	}
+	return true
 }
 
 func renderInlineHTML(input string) string {

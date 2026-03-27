@@ -163,6 +163,15 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli reply --dry-run <reply.json>`
 - `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
 
+### 出站 Markdown 基线
+
+- 标题
+- Markdown 链接会渲染成可点击的 HTML anchor，同时保留可读的纯文本回退
+- 无序列表会输出为 `ul/li`
+- 有序列表会输出为 `ol/li`
+- 引用块
+- 简单 Markdown 表格
+
 ### 回复能力
 
 - 支持 `reply_to_message_id`
