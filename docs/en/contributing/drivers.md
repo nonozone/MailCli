@@ -15,6 +15,7 @@ Read:
 - `pkg/driver/conformance_test.go`
 - `pkg/driver/factory.go`
 - `pkg/driver/stub.go`
+- `pkg/driver/dir.go`
 
 Open an issue first if your driver requires changes to:
 

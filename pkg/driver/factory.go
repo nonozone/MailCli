@@ -11,6 +11,8 @@ func NewFromAccount(account config.AccountConfig) (Driver, error) {
 	switch strings.ToLower(strings.TrimSpace(account.Driver)) {
 	case "imap":
 		return newIMAPDriver(account)
+	case "dir":
+		return newDirDriver(account)
 	case "stub":
 		return newStubDriver(account)
 	default:

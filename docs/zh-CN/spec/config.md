@@ -41,6 +41,7 @@ accounts:
 
 - `name`
 - `driver`
+- `path`
 - `host`
 - `port`
 - `username`
@@ -58,9 +59,18 @@ accounts:
 在 `v0.1 RC` 阶段，当前内置的 driver 类型有：
 
 - `imap`
+- `dir`
 - `stub`
 
 `imap` 使用上面主示例中的邮箱和 SMTP 字段。
+
+`dir` 是一个面向本地 `.eml` 目录的文件系统 driver。它要求：
+
+- `path`
+
+它支持相对路径或绝对路径，递归列出 `.eml` 文件，返回相对文件 id，并支持通过相对文件 id 或 `Message-ID` 获取原始邮件。
+
+它不提供出站发送能力。
 
 `stub` 是一个本地、确定性的开发 driver，不要求 `host`、`port`、`username` 或 `password`。
 
@@ -71,6 +81,17 @@ current_account: demo
 accounts:
   - name: demo
     driver: stub
+    mailbox: INBOX
+```
+
+本地目录示例：
+
+```yaml
+current_account: fixtures
+accounts:
+  - name: fixtures
+    driver: dir
+    path: ./testdata/emails
     mailbox: INBOX
 ```
 

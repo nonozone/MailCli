@@ -22,6 +22,7 @@ type Config struct {
 type AccountConfig struct {
 	Name         string `yaml:"name"`
 	Driver       string `yaml:"driver"`
+	Path         string `yaml:"path,omitempty"`
 	Host         string `yaml:"host,omitempty"`
 	Port         int    `yaml:"port,omitempty"`
 	Username     string `yaml:"username,omitempty"`

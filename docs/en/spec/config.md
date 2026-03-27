@@ -41,6 +41,7 @@ Per account:
 
 - `name`
 - `driver`
+- `path`
 - `host`
 - `port`
 - `username`
@@ -58,9 +59,18 @@ Per account:
 For `v0.1 RC`, built-in driver types are:
 
 - `imap`
+- `dir`
 - `stub`
 
 `imap` uses the mailbox and SMTP fields shown in the main example.
+
+`dir` is a local filesystem driver for `.eml` directories. It requires:
+
+- `path`
+
+It accepts relative or absolute paths, lists `.eml` files recursively, returns relative file ids, and supports raw fetch by either relative file id or `Message-ID`.
+
+It does not provide outbound transport.
 
 `stub` is a local deterministic development driver. It does not require host, port, username, or password.
 
@@ -71,6 +81,17 @@ current_account: demo
 accounts:
   - name: demo
     driver: stub
+    mailbox: INBOX
+```
+
+Local directory example:
+
+```yaml
+current_account: fixtures
+accounts:
+  - name: fixtures
+    driver: dir
+    path: ./testdata/emails
     mailbox: INBOX
 ```
 

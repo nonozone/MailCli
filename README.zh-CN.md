@@ -76,6 +76,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 当前内置的 driver 类型：
 
 - `imap`，用于真实邮箱接入
+- `dir`，用于本地 `.eml` 目录和零网络 agent 工作流
 - `stub`，用于本地开发、测试和 driver 扩展示例
 
 当前 parser 样本集已经覆盖：
@@ -275,6 +276,17 @@ current_account: demo
 accounts:
   - name: demo
     driver: stub
+    mailbox: INBOX
+```
+
+如果你想让 MailCLI 直接读取本地一批 `.eml` fixture 或归档邮件，可以使用内置的 `dir` driver：
+
+```yaml
+current_account: fixtures
+accounts:
+  - name: fixtures
+    driver: dir
+    path: ./testdata/emails
     mailbox: INBOX
 ```
 

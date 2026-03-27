@@ -76,6 +76,7 @@ Still evolving:
 Current built-in driver types:
 
 - `imap` for real mailbox access
+- `dir` for local `.eml` directories and zero-network agent workflows
 - `stub` for local development, tests, and driver-extension examples
 
 Current parser fixture coverage now includes:
@@ -275,6 +276,17 @@ current_account: demo
 accounts:
   - name: demo
     driver: stub
+    mailbox: INBOX
+```
+
+Use the built-in `dir` driver when you want to point MailCLI at a local corpus of `.eml` fixtures or archived messages:
+
+```yaml
+current_account: fixtures
+accounts:
+  - name: fixtures
+    driver: dir
+    path: ./testdata/emails
     mailbox: INBOX
 ```
 

@@ -15,6 +15,7 @@
 - `pkg/driver/conformance_test.go`
 - `pkg/driver/factory.go`
 - `pkg/driver/stub.go`
+- `pkg/driver/dir.go`
 
 如果你的 driver 需要修改以下公开边界，请先开 issue 讨论：
 

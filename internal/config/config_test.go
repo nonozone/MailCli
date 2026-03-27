@@ -29,6 +29,29 @@ func TestConfigRoundTrip(t *testing.T) {
 	}
 }
 
+func TestConfigRoundTripPreservesPathField(t *testing.T) {
+	cfg := Config{
+		CurrentAccount: "fixtures",
+		Accounts: []AccountConfig{
+			{Name: "fixtures", Driver: "dir", Path: "./testdata/emails"},
+		},
+	}
+
+	data, err := Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Unmarshal(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got.Accounts[0].Path != "./testdata/emails" {
+		t.Fatalf("expected path field to survive round-trip, got %q", got.Accounts[0].Path)
+	}
+}
+
 func TestLoadReadsConfigFile(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.yaml")
