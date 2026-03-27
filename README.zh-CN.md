@@ -4,11 +4,17 @@
 
 **AI Native 的邮件接口：把混乱的 MIME 转换成适合 agent 使用的结构化上下文。**
 
-MailCLI 是一个面向 **AI agent**、**LLM 工作流** 和 **自动化开发者** 的开源命令行邮件工具。
+MailCLI 是一个面向 **AI agent**、**LLM 工作流** 和 **自动化开发者** 的开源邮件接口。
 
-传统邮件工具主要是为人类阅读收件箱而设计的，而 MailCLI 的目标是让系统能够通过稳定的机器接口去 **读取**、**理解**、**回复** 和 **发送** 邮件。
+它并不打算成为一个给人类浏览收件箱的传统 mail client。
 
-它不会把原始 MIME、臃肿 HTML 和 provider 私有行为直接推给 prompt，而是把邮件转换成结构化 JSON、干净 Markdown 和可组合的工作流。
+它的目标是成为 agent 与邮件系统之间的稳定边界：
+
+- agent 消费的是结构化消息上下文，而不是原始 MIME
+- agent 产出的是 `DraftMessage` 或 `ReplyDraft`，而不是手写 MIME
+- 邮箱接入与传输细节隐藏在 driver 和 CLI 契约后面
+
+它不会把原始 MIME、臃肿 HTML 和 provider 私有行为直接推给 prompt，而是把邮件转换成结构化 JSON、干净 Markdown 和面向机器的工作流。
 
 ## 项目状态
 

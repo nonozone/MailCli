@@ -4,11 +4,17 @@ English | [中文](README.zh-CN.md)
 
 **AI-Native Email Interface: turning messy MIME into clean, structured context for agents.**
 
-MailCLI is an open-source command-line toolkit built for **AI agents**, **LLM workflows**, and **automation developers**.
+MailCLI is an open-source email interface built for **AI agents**, **LLM workflows**, and **automation developers**.
 
-Traditional mail tools are designed for humans reading inboxes. MailCLI is designed for systems that need to **read**, **understand**, **reply to**, and **send** email through stable machine-friendly contracts.
+It is not trying to be a traditional mail client for humans browsing inboxes.
 
-Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and composable workflows.
+It is trying to be the stable boundary between agents and email systems:
+
+- agents consume structured message context instead of raw MIME
+- agents produce `DraftMessage` or `ReplyDraft` instead of hand-written MIME
+- mailbox and transport details stay behind drivers and CLI contracts
+
+Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and machine-facing workflows.
 
 ## Project Status
 
