@@ -98,5 +98,6 @@ python3 examples/python/agent_inbox_assistant.py \
 契约参考：
 
 - [Agent Provider 契约](../spec/agent-provider.md)
+- [Examples 索引](README.md)
 - 模板 provider：`examples/providers/template_external_provider.py`
 - 可选 OpenAI provider 示例：[OpenAI External Provider](openai-external-provider.md)

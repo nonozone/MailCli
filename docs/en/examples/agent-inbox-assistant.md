@@ -100,5 +100,6 @@ It should return a JSON object like:
 Contract reference:
 
 - [Agent Provider Contract](../spec/agent-provider.md)
+- [Examples Index](README.md)
 - Template provider: `examples/providers/template_external_provider.py`
 - Optional OpenAI provider example: [OpenAI External Provider](openai-external-provider.md)

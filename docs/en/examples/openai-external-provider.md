@@ -85,6 +85,7 @@ When a reply is appropriate, it can also return:
 
 Related references:
 
+- [Examples Index](README.md)
 - [Agent Provider Contract](../spec/agent-provider.md)
 - [Agent Decision Spec](../spec/agent-decisions.md)
 - [Agent Inbox Example](agent-inbox-assistant.md)

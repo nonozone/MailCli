@@ -85,6 +85,7 @@ python3 examples/python/agent_thread_assistant.py \
 
 相关参考：
 
+- [Examples 索引](README.md)
 - [Agent Provider 契约](../spec/agent-provider.md)
 - [Agent Decision 规范](../spec/agent-decisions.md)
 - [Agent Inbox 示例](agent-inbox-assistant.md)
