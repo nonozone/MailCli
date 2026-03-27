@@ -1,0 +1,14 @@
+[
+  {
+    "account": "demo",
+    "mailbox": "INBOX",
+    "id": "stub:invoice",
+    "thread_id": "<stub-invoice@example.com>",
+    "subject": "Invoice INV-2026-031 ready",
+    "from": "Example Billing <billing@example.com>",
+    "date": "2026-03-24T16:10:00Z",
+    "snippet": "Your **March invoice** is ready.",
+    "score": 21,
+    "indexed_at": "2026-03-27T10:00:00Z"
+  }
+]

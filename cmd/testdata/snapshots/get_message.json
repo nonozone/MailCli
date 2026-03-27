@@ -1,0 +1,24 @@
+{
+  "id": "<id-1@example.com>",
+  "meta": {
+    "from": {
+      "address": "sender@example.com"
+    },
+    "to": [
+      {
+        "address": "user@example.com"
+      }
+    ],
+    "subject": "Hello",
+    "date": "2026-03-26T03:00:00Z",
+    "message_id": "<id-1@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "Hello from fetched email.",
+    "snippet": "Hello from fetched email."
+  },
+  "token_usage": {
+    "estimated_input_tokens": 4
+  }
+}

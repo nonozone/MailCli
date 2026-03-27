@@ -1,0 +1,30 @@
+[
+  {
+    "account": "demo",
+    "mailbox": "INBOX",
+    "thread_id": "<root@example.com>",
+    "subject": "Project update",
+    "latest_date": "2026-03-27T09:00:00Z",
+    "last_message_id": "msg-reply",
+    "last_message_preview": "Looks good",
+    "categories": [
+      "operations",
+      "verification"
+    ],
+    "action_types": [
+      "verify_sign_in",
+      "view_online"
+    ],
+    "labels": [
+      "project",
+      "security"
+    ],
+    "has_codes": true,
+    "message_count": 2,
+    "message_ids": [
+      "msg-reply",
+      "msg-root"
+    ],
+    "score": 2
+  }
+]
