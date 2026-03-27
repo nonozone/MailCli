@@ -618,6 +618,59 @@ print(json.dumps({"summary": "missing decision"}))
 	}
 }
 
+func TestAgentThreadAssistantRejectsInvalidExternalProviderJSON(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+	providerPath := writeTempFile(t, "thread_provider_bad_json.py", `print("not-json")`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected invalid thread provider json to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider returned invalid JSON") {
+		t.Fatalf("expected invalid json contract error, got %s", string(output))
+	}
+}
+
 func TestAgentThreadAssistantRejectsUnknownExternalDecision(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
@@ -670,6 +723,61 @@ print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
 	}
 	if !strings.Contains(string(output), "external provider decision must be one of") {
 		t.Fatalf("expected decision enum error, got %s", string(output))
+	}
+}
+
+func TestAgentThreadAssistantRejectsInvalidReplyTextType(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := writeTempFile(t, "index.json", `{
+  "version": 1,
+  "messages": [
+    {
+      "account": "demo",
+      "mailbox": "INBOX",
+      "id": "msg-root",
+      "indexed_at": "2026-03-27T08:00:00Z",
+      "message": {
+        "id": "msg-root",
+        "meta": {
+          "subject": "Project update",
+          "date": "2026-03-27T08:00:00Z",
+          "message_id": "<root@example.com>",
+          "from": {
+            "name": "Example Sender",
+            "address": "sender@example.com"
+          }
+        },
+        "content": {
+          "snippet": "Initial update",
+          "body_md": "Initial update"
+        }
+      }
+    }
+  ]
+}`)
+	providerPath := writeTempFile(t, "thread_provider_bad_reply_text.py", `import json
+print(json.dumps({"decision": "draft_reply", "summary": "bad", "reply_text": 123}))
+`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--index", indexPath,
+		"--skip-sync",
+		"--thread-id", "<root@example.com>",
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected invalid thread provider reply_text to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider reply_text must be a string when present") {
+		t.Fatalf("expected reply_text contract error, got %s", string(output))
 	}
 }
 
@@ -750,6 +858,30 @@ print(json.dumps({"summary": "missing decision"}))
 	}
 }
 
+func TestAgentInboxAssistantRejectsInvalidExternalProviderJSON(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	providerPath := writeTempFile(t, "provider_bad_json.py", `print("not-json")`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected invalid provider json to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider returned invalid JSON") {
+		t.Fatalf("expected invalid json contract error, got %s", string(output))
+	}
+}
+
 func TestAgentInboxAssistantRejectsUnknownExternalDecision(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
@@ -773,6 +905,30 @@ print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
 	}
 	if !strings.Contains(string(output), "external provider decision must be one of") {
 		t.Fatalf("expected decision enum error, got %s", string(output))
+	}
+}
+
+func TestAgentInboxAssistantRejectsNonObjectExternalProviderJSON(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	providerPath := writeTempFile(t, "provider_array_json.py", `print("[]")`)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", providerPath,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("expected non-object provider json to fail, got success: %s", string(output))
+	}
+	if !strings.Contains(string(output), "external provider must return a JSON object") {
+		t.Fatalf("expected object contract error, got %s", string(output))
 	}
 }
 
