@@ -296,6 +296,8 @@ mailcli threads
 mailcli threads invoice
 ```
 
+Thread summaries now include the latest message preview and sender, so agents can often choose the right conversation before loading the full thread.
+
 ### Search within a selected thread
 
 ```bash

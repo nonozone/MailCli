@@ -15,15 +15,18 @@ type ThreadQuery struct {
 }
 
 type ThreadSummary struct {
-	Account      string   `json:"account,omitempty"`
-	Mailbox      string   `json:"mailbox,omitempty"`
-	ThreadID     string   `json:"thread_id,omitempty"`
-	Subject      string   `json:"subject,omitempty"`
-	LatestDate   string   `json:"latest_date,omitempty"`
-	MessageCount int      `json:"message_count"`
-	Participants []string `json:"participants,omitempty"`
-	MessageIDs   []string `json:"message_ids,omitempty"`
-	Score        int      `json:"score"`
+	Account            string   `json:"account,omitempty"`
+	Mailbox            string   `json:"mailbox,omitempty"`
+	ThreadID           string   `json:"thread_id,omitempty"`
+	Subject            string   `json:"subject,omitempty"`
+	LatestDate         string   `json:"latest_date,omitempty"`
+	LastMessageID      string   `json:"last_message_id,omitempty"`
+	LastMessageFrom    string   `json:"last_message_from,omitempty"`
+	LastMessagePreview string   `json:"last_message_preview,omitempty"`
+	MessageCount       int      `json:"message_count"`
+	Participants       []string `json:"participants,omitempty"`
+	MessageIDs         []string `json:"message_ids,omitempty"`
+	Score              int      `json:"score"`
 }
 
 type ThreadMessageQuery struct {
@@ -77,6 +80,13 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 
 		if item.Message.Meta.Date > acc.summary.LatestDate {
 			acc.summary.LatestDate = item.Message.Meta.Date
+			acc.summary.LastMessageID = item.ID
+			acc.summary.LastMessageFrom = formatAddress(item.Message.Meta.From)
+			acc.summary.LastMessagePreview = firstNonEmptyThreadValue(item.Message.Content.Snippet, item.Message.Content.BodyMD)
+		} else if acc.summary.LastMessageID == "" {
+			acc.summary.LastMessageID = item.ID
+			acc.summary.LastMessageFrom = formatAddress(item.Message.Meta.From)
+			acc.summary.LastMessagePreview = firstNonEmptyThreadValue(item.Message.Content.Snippet, item.Message.Content.BodyMD)
 		}
 		if item.IndexedAt > acc.latestIndexed {
 			acc.latestIndexed = item.IndexedAt

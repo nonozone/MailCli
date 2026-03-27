@@ -296,6 +296,8 @@ mailcli threads
 mailcli threads invoice
 ```
 
+当前线程摘要已经包含最新消息的预览和发件人，所以 agent 往往可以先在 `threads` 阶段完成初筛，再决定是否读取完整线程。
+
 ### 在选中的线程内继续搜索
 
 ```bash

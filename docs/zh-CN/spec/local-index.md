@@ -109,6 +109,9 @@ $CACHE_DIR/mailcli/index.json
 - `thread_id`
 - subject
 - latest date
+- latest message id
+- latest message sender
+- latest message preview
 - message count
 - participants
 - 本地 message ids

@@ -73,6 +73,9 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 	if !strings.Contains(out.String(), `"message_count": 2`) {
 		t.Fatalf("expected message count in output, got %s", out.String())
 	}
+	if !strings.Contains(out.String(), `"last_message_preview": "Looks good"`) {
+		t.Fatalf("expected last message preview in output, got %s", out.String())
+	}
 }
 
 func TestThreadsCommandSupportsAccountFilter(t *testing.T) {

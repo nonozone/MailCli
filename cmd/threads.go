@@ -59,7 +59,7 @@ func writeThreadResults(out io.Writer, results []mailindex.ThreadSummary, format
 		return writeJSON(out, results)
 	case "table":
 		table := tablewriter.NewWriter(out)
-		table.SetHeader([]string{"ThreadID", "Subject", "Count", "LatestDate", "Score"})
+		table.SetHeader([]string{"ThreadID", "Subject", "Count", "LatestDate", "LastFrom", "Preview", "Score"})
 		rows := make([][]string, 0, len(results))
 		for _, item := range results {
 			rows = append(rows, []string{
@@ -67,6 +67,8 @@ func writeThreadResults(out io.Writer, results []mailindex.ThreadSummary, format
 				item.Subject,
 				fmt.Sprintf("%d", item.MessageCount),
 				item.LatestDate,
+				item.LastMessageFrom,
+				item.LastMessagePreview,
 				fmt.Sprintf("%d", item.Score),
 			})
 		}

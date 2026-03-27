@@ -148,6 +148,8 @@ flowchart LR
 6. Agent can read the full local thread with `mailcli thread <thread_id>`
 7. Agent decides whether to fetch a full remote message or draft a reply
 
+Thread summaries now expose the latest message preview and sender, which reduces the number of full thread loads needed during triage.
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

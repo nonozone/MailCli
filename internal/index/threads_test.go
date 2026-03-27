@@ -84,6 +84,15 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 	if thread.LatestDate != "2026-03-27T09:00:00Z" {
 		t.Fatalf("expected latest date from reply, got %q", thread.LatestDate)
 	}
+	if thread.LastMessageID != "msg-reply" {
+		t.Fatalf("expected last message id from latest reply, got %q", thread.LastMessageID)
+	}
+	if thread.LastMessageFrom != "Bob <bob@example.com>" {
+		t.Fatalf("expected last message sender from latest reply, got %q", thread.LastMessageFrom)
+	}
+	if thread.LastMessagePreview != "Looks good" {
+		t.Fatalf("expected preview from latest reply, got %q", thread.LastMessagePreview)
+	}
 	if len(thread.MessageIDs) != 2 {
 		t.Fatalf("expected both message ids in thread summary, got %d", len(thread.MessageIDs))
 	}
