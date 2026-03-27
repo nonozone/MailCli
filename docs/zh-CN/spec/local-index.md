@@ -123,6 +123,12 @@ $CACHE_DIR/mailcli/index.json
 
 `mailcli thread <thread_id>` 会返回选中本地线程中的完整索引消息，并按消息时间排序。
 
+`mailcli threads` 当前支持以下确定性的 thread 级过滤：
+
+- `--has-codes`
+- `--category <value>`
+- `--action <type>`
+
 ## 同步语义
 
 当前 `mailcli sync` 默认采用增量策略：

@@ -152,6 +152,12 @@ flowchart LR
 
 它们也会暴露确定性的 thread 级 triage 元数据，比如聚合后的 `labels`、`categories`、`action_types` 和 `has_codes`。
 
+agent 现在也可以直接在本地 thread 层做过滤：
+
+- `mailcli threads --has-codes`
+- `mailcli threads --category verification`
+- `mailcli threads --action verify_sign_in`
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。

@@ -300,6 +300,14 @@ mailcli threads invoice
 
 线程摘要现在也会聚合确定性的 triage 信号，包括 thread 级别的 `labels`、`categories`、`action_types` 和 `has_codes`。
 
+现在也可以直接在 thread 层过滤：
+
+```bash
+mailcli threads --has-codes
+mailcli threads --category verification
+mailcli threads --action verify_sign_in
+```
+
 ### 在选中的线程内继续搜索
 
 ```bash

@@ -152,6 +152,12 @@ Thread summaries now expose the latest message preview and sender, which reduces
 
 They also expose deterministic thread-level triage metadata such as aggregated `labels`, `categories`, `action_types`, and `has_codes`.
 
+Agents can now filter local threads directly with:
+
+- `mailcli threads --has-codes`
+- `mailcli threads --category verification`
+- `mailcli threads --action verify_sign_in`
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

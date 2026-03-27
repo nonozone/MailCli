@@ -123,6 +123,12 @@ Thread summaries currently expose:
 
 `mailcli thread <thread_id>` returns the full indexed messages for a selected local thread, ordered by message date.
 
+`mailcli threads` currently supports deterministic thread-level filtering by:
+
+- `--has-codes`
+- `--category <value>`
+- `--action <type>`
+
 ## Sync Semantics
 
 Current `mailcli sync` behavior is incremental by default:

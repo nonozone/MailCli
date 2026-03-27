@@ -8,10 +8,13 @@ import (
 )
 
 type ThreadQuery struct {
-	Query   string
-	Account string
-	Mailbox string
-	Limit   int
+	Query    string
+	Account  string
+	Mailbox  string
+	Category string
+	Action   string
+	HasCodes bool
+	Limit    int
 }
 
 type ThreadSummary struct {
@@ -58,6 +61,8 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 	needle := strings.ToLower(strings.TrimSpace(query.Query))
 	account := strings.TrimSpace(query.Account)
 	mailbox := strings.TrimSpace(query.Mailbox)
+	category := strings.TrimSpace(query.Category)
+	action := strings.TrimSpace(query.Action)
 	threads := map[string]*threadAccumulator{}
 
 	for _, item := range data.Messages {
@@ -130,6 +135,15 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 		if needle != "" && acc.summary.Score == 0 {
 			continue
 		}
+		if query.HasCodes && !acc.summary.HasCodes {
+			continue
+		}
+		if category != "" && !containsThreadValue(acc.summary.Categories, category) {
+			continue
+		}
+		if action != "" && !containsThreadValue(acc.summary.ActionTypes, action) {
+			continue
+		}
 
 		sort.Strings(acc.summary.Categories)
 		sort.Strings(acc.summary.ActionTypes)
@@ -154,6 +168,19 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 	}
 
 	return results, nil
+}
+
+func containsThreadValue(values []string, target string) bool {
+	target = strings.TrimSpace(target)
+	if target == "" {
+		return false
+	}
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *FileStore) ThreadMessages(query ThreadMessageQuery) ([]IndexedMessage, error) {

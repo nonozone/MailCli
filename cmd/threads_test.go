@@ -144,3 +144,70 @@ func TestThreadsCommandSupportsAccountFilter(t *testing.T) {
 		t.Fatalf("expected personal thread to remain, got %s", out.String())
 	}
 }
+
+func TestThreadsCommandSupportsTriageFilters(t *testing.T) {
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+	store := mailindex.NewFileStore(indexPath)
+
+	for _, item := range []mailindex.IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "verification-thread",
+			Message: schema.StandardMessage{
+				ID: "verification-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Verify sign in",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<verification@example.com>",
+				},
+				Content: schema.Content{
+					Category: "verification",
+					Snippet:  "Verification code",
+					BodyMD:   "Verification code",
+				},
+				Actions: []schema.Action{{Type: "verify_sign_in"}},
+				Codes:   []schema.Code{{Type: "otp", Value: "123456"}},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "invoice-thread",
+			Message: schema.StandardMessage{
+				ID: "invoice-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Invoice ready",
+					Date:      "2026-03-27T10:00:00Z",
+					MessageID: "<invoice@example.com>",
+				},
+				Content: schema.Content{
+					Category: "finance",
+					Snippet:  "Invoice reminder",
+					BodyMD:   "Invoice reminder",
+				},
+				Actions: []schema.Action{{Type: "view_invoice"}},
+			},
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("expected upsert to succeed: %v", err)
+		}
+	}
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"threads", "--index", indexPath, "--has-codes", "--category", "verification", "--action", "verify_sign_in"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected filtered threads command to succeed: %v", err)
+	}
+
+	if strings.Contains(out.String(), `"thread_id": "\u003cinvoice@example.com\u003e"`) {
+		t.Fatalf("expected invoice thread to be filtered out, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"thread_id": "\u003cverification@example.com\u003e"`) {
+		t.Fatalf("expected verification thread to remain, got %s", out.String())
+	}
+}

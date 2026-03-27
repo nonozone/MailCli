@@ -275,3 +275,69 @@ func TestFileStoreThreadMessagesReturnsFullMessagesForThread(t *testing.T) {
 		t.Fatalf("expected messages ordered by date within thread, got %q then %q", messages[0].ID, messages[1].ID)
 	}
 }
+
+func TestFileStoreThreadsSupportsTriageFilters(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, item := range []IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "verification-thread",
+			Message: schema.StandardMessage{
+				ID: "verification-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Verify sign in",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<verification@example.com>",
+				},
+				Content: schema.Content{
+					Category: "verification",
+					Snippet:  "Verification code",
+					BodyMD:   "Verification code",
+				},
+				Actions: []schema.Action{{Type: "verify_sign_in"}},
+				Codes:   []schema.Code{{Type: "otp", Value: "123456"}},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "invoice-thread",
+			Message: schema.StandardMessage{
+				ID: "invoice-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Invoice ready",
+					Date:      "2026-03-27T10:00:00Z",
+					MessageID: "<invoice@example.com>",
+				},
+				Content: schema.Content{
+					Category: "finance",
+					Snippet:  "Invoice reminder",
+					BodyMD:   "Invoice reminder",
+				},
+				Actions: []schema.Action{{Type: "view_invoice"}},
+			},
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("expected upsert to succeed: %v", err)
+		}
+	}
+
+	verification, err := store.Threads(ThreadQuery{
+		HasCodes: true,
+		Category: "verification",
+		Action:   "verify_sign_in",
+		Limit:    10,
+	})
+	if err != nil {
+		t.Fatalf("expected filtered threads to succeed: %v", err)
+	}
+	if len(verification) != 1 {
+		t.Fatalf("expected one verification thread, got %d", len(verification))
+	}
+	if verification[0].ThreadID != "<verification@example.com>" {
+		t.Fatalf("expected verification thread, got %q", verification[0].ThreadID)
+	}
+}

@@ -300,6 +300,14 @@ Thread summaries now include the latest message preview and sender, so agents ca
 
 They also aggregate deterministic triage signals from indexed messages, including thread-level `labels`, `categories`, `action_types`, and `has_codes`.
 
+You can filter threads directly:
+
+```bash
+mailcli threads --has-codes
+mailcli threads --category verification
+mailcli threads --action verify_sign_in
+```
+
 ### Search within a selected thread
 
 ```bash

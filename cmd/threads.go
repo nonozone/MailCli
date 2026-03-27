@@ -16,6 +16,9 @@ func newThreadsCmd() *cobra.Command {
 		indexPath string
 		account   string
 		mailbox   string
+		category  string
+		action    string
+		hasCodes  bool
 		format    string
 		limit     int
 	)
@@ -32,10 +35,13 @@ func newThreadsCmd() *cobra.Command {
 
 			store := mailindex.NewFileStore(indexPath)
 			results, err := store.Threads(mailindex.ThreadQuery{
-				Query:   query,
-				Account: account,
-				Mailbox: mailbox,
-				Limit:   limit,
+				Query:    query,
+				Account:  account,
+				Mailbox:  mailbox,
+				Category: category,
+				Action:   action,
+				HasCodes: hasCodes,
+				Limit:    limit,
 			})
 			if err != nil {
 				return err
@@ -48,6 +54,9 @@ func newThreadsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&indexPath, "index", "", "local index file path")
 	cmd.Flags().StringVar(&account, "account", "", "filter local threads by account")
 	cmd.Flags().StringVar(&mailbox, "mailbox", "", "filter local threads by mailbox")
+	cmd.Flags().StringVar(&category, "category", "", "filter local threads by aggregated category")
+	cmd.Flags().StringVar(&action, "action", "", "filter local threads by aggregated action type")
+	cmd.Flags().BoolVar(&hasCodes, "has-codes", false, "filter local threads that include extracted codes")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of thread results")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
