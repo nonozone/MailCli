@@ -19,8 +19,8 @@
   },
   "content": {
     "format": "markdown",
-    "body_md": "## 📊 Real-time financial clarity, built right in\n\nMercury Insights is now live in your dashboard.\n\n[Open Mercury Insights](https://app.mercury.com/insights)\n\n[Unsubscribe](https://email.mercury.com/unsubscribe/token123)",
-    "snippet": "## 📊 Real-time financial clarity, built right in Mercury Insights is now live in your dashboard. [Open Mercury Insights](https://app.mercury.com/insights) [Unsu..."
+    "body_md": "## 📊 Real-time financial clarity, built right in\n\nMercury Insights is now live in your dashboard.\n\n[Open Mercury Insights](https://app.mercury.com/insights)",
+    "snippet": "## 📊 Real-time financial clarity, built right in Mercury Insights is now live in your dashboard. [Open Mercury Insights](https://app.mercury.com/insights)"
   },
   "actions": [
     {
@@ -30,6 +30,6 @@
     }
   ],
   "token_usage": {
-    "estimated_input_tokens": 20
+    "estimated_input_tokens": 19
   }
 }

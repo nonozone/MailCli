@@ -373,6 +373,118 @@ func TestCleanHTMLBodyFallbackRemovesTopLevelHeaderNoise(t *testing.T) {
 	}
 }
 
+func TestCleanHTMLPrefersDenseContentContainerWithoutSemanticRoot(t *testing.T) {
+	input := `<html><body>
+<div class="preheader">Preview text and account links</div>
+<table><tr><td><a href="https://example.com/home">Home</a></td></tr></table>
+<div class="shell">
+  <div class="hero">Top campaign banner</div>
+  <div class="content">
+    <h1>Quarterly update</h1>
+    <p>The main report is ready for review.</p>
+    <p><a href="https://example.com/report">Open report</a></p>
+  </div>
+</div>
+<div class="footer">
+  <p>Manage preferences</p>
+  <p><a href="https://example.com/unsubscribe">Unsubscribe</a></p>
+</div>
+</body></html>`
+
+	cleaned, err := cleanHTML(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	markdown, err := htmlToMarkdown(cleaned)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(markdown, "Quarterly update") || !strings.Contains(markdown, "The main report is ready for review.") {
+		t.Fatalf("expected dense content container to be selected, got %q", markdown)
+	}
+	if strings.Contains(markdown, "Preview text") || strings.Contains(markdown, "Manage preferences") || strings.Contains(markdown, "Unsubscribe") {
+		t.Fatalf("expected surrounding email chrome to be removed, got %q", markdown)
+	}
+}
+
+func TestCleanHTMLKeepsPrimaryContentInsidePreferencesContainer(t *testing.T) {
+	input := `<html><body>
+<div id="preferences">
+  <h1>Email preferences updated</h1>
+  <p>Your notification settings were saved successfully.</p>
+</div>
+<div><a href="https://example.com/unsubscribe">Unsubscribe</a></div>
+</body></html>`
+
+	cleaned, err := cleanHTML(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	markdown, err := htmlToMarkdown(cleaned)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(markdown, "Email preferences updated") || !strings.Contains(markdown, "Your notification settings were saved successfully.") {
+		t.Fatalf("expected legitimate preferences content to survive cleanup, got %q", markdown)
+	}
+}
+
+func TestCleanHTMLDoesNotPreferLinkHeavyHeaderOverShortTransactionalContent(t *testing.T) {
+	input := `<html><body>
+<table><tr>
+  <td><a href="https://example.com/1">One</a></td>
+  <td><a href="https://example.com/2">Two</a></td>
+  <td><a href="https://example.com/3">Three</a></td>
+  <td><a href="https://example.com/4">Four</a></td>
+  <td><a href="https://example.com/5">Five</a></td>
+  <td><a href="https://example.com/6">Six</a></td>
+</tr></table>
+<div>
+  <p>Your code is 123456.</p>
+</div>
+</body></html>`
+
+	cleaned, err := cleanHTML(input)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	markdown, err := htmlToMarkdown(cleaned)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(markdown, "Your code is 123456.") {
+		t.Fatalf("expected transactional body to win over link-heavy header, got %q", markdown)
+	}
+	if strings.Contains(markdown, "One") && strings.Contains(markdown, "Six") {
+		t.Fatalf("expected link-heavy header chrome to stay out of primary body, got %q", markdown)
+	}
+}
+
+func TestParseOmitsUnsubscribeFooterFromBodyMarkdown(t *testing.T) {
+	raw, err := os.ReadFile("../../testdata/emails/mercury.eml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(got.Content.BodyMD, "Unsubscribe") {
+		t.Fatalf("expected unsubscribe footer to be omitted from body markdown, got %q", got.Content.BodyMD)
+	}
+	if strings.Contains(got.Content.BodyMD, "https://email.mercury.com/unsubscribe/token123") {
+		t.Fatalf("expected unsubscribe url to stay out of body markdown, got %q", got.Content.BodyMD)
+	}
+}
+
 func TestParseCleansTrackedURLsInMarkdown(t *testing.T) {
 	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Tracked link\r\nMessage-ID: <tracked-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><p><a href=\"https://tracker.example.com/click?redirect=https%3A%2F%2Fapp.example.com%2Freport\">Open report</a></p></body></html>")
 
