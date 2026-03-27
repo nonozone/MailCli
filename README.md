@@ -19,19 +19,45 @@ Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into pro
 ## In 10 Seconds
 
 ```bash
-# 1. read one message as structured context
-mailcli parse --format json test.eml
+# 1. build mailcli
+go build -o mailcli ./cmd/mailcli
 
-# 2. work with local memory and threads
-mailcli sync --config ~/.config/mailcli/config.yaml --limit 10
-mailcli threads
+# 2. run the zero-network local thread loop
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 
-# 3. let the agent produce a reply draft, then compile it
-mailcli reply --dry-run reply.json
+# 3. inspect the full agent boundary
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --index /tmp/mailcli-fixtures-index.json \
+  --sync-limit 20 \
+  --query invoice
 ```
 
 ```text
 Raw Email -> MailCLI -> StandardMessage / Thread Context -> Agent -> ReplyDraft -> MailCLI -> MIME
+```
+
+## Start Without IMAP
+
+The fastest way to understand MailCLI is to avoid mailbox setup entirely.
+
+The repository already includes:
+
+- a local fixture corpus under `testdata/emails`
+- a zero-network config at `examples/config/fixtures-dir.yaml`
+- runnable Python examples
+- a full local round-trip demo at [Local Thread Demo](docs/en/examples/local-thread-demo.md)
+
+Recommended first commands:
+
+```bash
+go build -o mailcli ./cmd/mailcli
+./mailcli parse --format json testdata/emails/verification.eml
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ```
 
 ## Project Status
@@ -290,6 +316,12 @@ accounts:
     mailbox: INBOX
 ```
 
+The repository already ships a ready-to-run zero-network config:
+
+```text
+examples/config/fixtures-dir.yaml
+```
+
 Secret fields currently support environment-variable expansion:
 
 - `password`
@@ -305,6 +337,8 @@ Recommended usage:
 
 ### Recommended Paths
 
+- Zero-network first path:
+  Start with `examples/config/fixtures-dir.yaml`, then see [Local Thread Demo](docs/en/examples/local-thread-demo.md).
 - Single-message agent path:
   Start with `mailcli parse` or `mailcli get`, then see [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md).
 - Thread-aware agent path:
@@ -316,6 +350,26 @@ Recommended usage:
 
 ```bash
 cat test.eml | mailcli parse --format json -
+```
+
+### Zero-network local thread loop
+
+```bash
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+./mailcli thread --index /tmp/mailcli-fixtures-index.json "<invoice-123@example.com>"
+```
+
+If you want the full agent-side JSON and reply boundary, use:
+
+```bash
+python3 examples/python/agent_thread_assistant.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --index /tmp/mailcli-fixtures-index.json \
+  --sync-limit 20 \
+  --query invoice
 ```
 
 ### List messages from a configured account
