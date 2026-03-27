@@ -27,9 +27,14 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 				To: []schema.Address{{Name: "Bob", Address: "bob@example.com"}},
 			},
 			Content: schema.Content{
+				Category: "operations",
 				Snippet: "Initial update",
 				BodyMD:  "Initial update",
 			},
+			Actions: []schema.Action{
+				{Type: "view_online"},
+			},
+			Labels: []string{"project"},
 		},
 	}
 
@@ -54,9 +59,17 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 				To: []schema.Address{{Name: "Alice", Address: "alice@example.com"}},
 			},
 			Content: schema.Content{
+				Category: "verification",
 				Snippet: "Looks good",
 				BodyMD:  "Looks good",
 			},
+			Actions: []schema.Action{
+				{Type: "verify_sign_in"},
+			},
+			Codes: []schema.Code{
+				{Type: "otp", Value: "123456"},
+			},
+			Labels: []string{"security"},
 		},
 	}
 
@@ -93,12 +106,33 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 	if thread.LastMessagePreview != "Looks good" {
 		t.Fatalf("expected preview from latest reply, got %q", thread.LastMessagePreview)
 	}
+	if !containsString(thread.Categories, "operations") || !containsString(thread.Categories, "verification") {
+		t.Fatalf("expected aggregated categories, got %#v", thread.Categories)
+	}
+	if !containsString(thread.ActionTypes, "view_online") || !containsString(thread.ActionTypes, "verify_sign_in") {
+		t.Fatalf("expected aggregated action types, got %#v", thread.ActionTypes)
+	}
+	if !containsString(thread.Labels, "project") || !containsString(thread.Labels, "security") {
+		t.Fatalf("expected aggregated labels, got %#v", thread.Labels)
+	}
+	if !thread.HasCodes {
+		t.Fatalf("expected thread to expose has_codes")
+	}
 	if len(thread.MessageIDs) != 2 {
 		t.Fatalf("expected both message ids in thread summary, got %d", len(thread.MessageIDs))
 	}
 	if len(thread.Participants) != 2 {
 		t.Fatalf("expected deduplicated participants, got %d", len(thread.Participants))
 	}
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }
 
 func TestFileStoreThreadsSupportsQueryFilteringAndRanking(t *testing.T) {

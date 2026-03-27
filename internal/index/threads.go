@@ -23,6 +23,10 @@ type ThreadSummary struct {
 	LastMessageID      string   `json:"last_message_id,omitempty"`
 	LastMessageFrom    string   `json:"last_message_from,omitempty"`
 	LastMessagePreview string   `json:"last_message_preview,omitempty"`
+	Categories         []string `json:"categories,omitempty"`
+	ActionTypes        []string `json:"action_types,omitempty"`
+	Labels             []string `json:"labels,omitempty"`
+	HasCodes           bool     `json:"has_codes"`
 	MessageCount       int      `json:"message_count"`
 	Participants       []string `json:"participants,omitempty"`
 	MessageIDs         []string `json:"message_ids,omitempty"`
@@ -40,6 +44,9 @@ type threadAccumulator struct {
 	summary       ThreadSummary
 	latestIndexed string
 	participants  map[string]struct{}
+	categories    map[string]struct{}
+	actionTypes   map[string]struct{}
+	labels        map[string]struct{}
 }
 
 func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
@@ -71,6 +78,9 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 					ThreadID: threadID,
 				},
 				participants: map[string]struct{}{},
+				categories:   map[string]struct{}{},
+				actionTypes:  map[string]struct{}{},
+				labels:       map[string]struct{}{},
 			}
 			threads[threadID] = acc
 		}
@@ -101,6 +111,16 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 			addrCopy := addr
 			addThreadParticipant(acc, &addrCopy)
 		}
+		addThreadCategory(acc, item.Message.Content.Category)
+		for _, action := range item.Message.Actions {
+			addThreadActionType(acc, action.Type)
+		}
+		for _, label := range item.Message.Labels {
+			addThreadLabel(acc, label)
+		}
+		if len(item.Message.Codes) > 0 {
+			acc.summary.HasCodes = true
+		}
 
 		acc.summary.Score += scoreMatch(item, needle)
 	}
@@ -111,6 +131,9 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 			continue
 		}
 
+		sort.Strings(acc.summary.Categories)
+		sort.Strings(acc.summary.ActionTypes)
+		sort.Strings(acc.summary.Labels)
 		sort.Strings(acc.summary.Participants)
 		sort.Strings(acc.summary.MessageIDs)
 		results = append(results, acc.summary)
@@ -213,6 +236,42 @@ func addThreadParticipant(acc *threadAccumulator, addr *schema.Address) {
 	}
 	acc.participants[participant] = struct{}{}
 	acc.summary.Participants = append(acc.summary.Participants, participant)
+}
+
+func addThreadCategory(acc *threadAccumulator, category string) {
+	value := strings.TrimSpace(category)
+	if acc == nil || value == "" {
+		return
+	}
+	if _, ok := acc.categories[value]; ok {
+		return
+	}
+	acc.categories[value] = struct{}{}
+	acc.summary.Categories = append(acc.summary.Categories, value)
+}
+
+func addThreadActionType(acc *threadAccumulator, actionType string) {
+	value := strings.TrimSpace(actionType)
+	if acc == nil || value == "" {
+		return
+	}
+	if _, ok := acc.actionTypes[value]; ok {
+		return
+	}
+	acc.actionTypes[value] = struct{}{}
+	acc.summary.ActionTypes = append(acc.summary.ActionTypes, value)
+}
+
+func addThreadLabel(acc *threadAccumulator, label string) {
+	value := strings.TrimSpace(label)
+	if acc == nil || value == "" {
+		return
+	}
+	if _, ok := acc.labels[value]; ok {
+		return
+	}
+	acc.labels[value] = struct{}{}
+	acc.summary.Labels = append(acc.summary.Labels, value)
 }
 
 func firstNonEmptyThreadValue(values ...string) string {

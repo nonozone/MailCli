@@ -112,6 +112,10 @@ Thread summaries currently expose:
 - latest message id
 - latest message sender
 - latest message preview
+- aggregated categories
+- aggregated action types
+- aggregated labels
+- `has_codes`
 - message count
 - participants
 - local message ids

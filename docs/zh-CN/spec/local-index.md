@@ -112,6 +112,10 @@ $CACHE_DIR/mailcli/index.json
 - latest message id
 - latest message sender
 - latest message preview
+- aggregated categories
+- aggregated action types
+- aggregated labels
+- `has_codes`
 - message count
 - participants
 - 本地 message ids

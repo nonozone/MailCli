@@ -298,6 +298,8 @@ mailcli threads invoice
 
 Thread summaries now include the latest message preview and sender, so agents can often choose the right conversation before loading the full thread.
 
+They also aggregate deterministic triage signals from indexed messages, including thread-level `labels`, `categories`, `action_types`, and `has_codes`.
+
 ### Search within a selected thread
 
 ```bash

@@ -150,6 +150,8 @@ flowchart LR
 
 Thread summaries now expose the latest message preview and sender, which reduces the number of full thread loads needed during triage.
 
+They also expose deterministic thread-level triage metadata such as aggregated `labels`, `categories`, `action_types`, and `has_codes`.
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

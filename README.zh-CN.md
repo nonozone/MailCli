@@ -298,6 +298,8 @@ mailcli threads invoice
 
 当前线程摘要已经包含最新消息的预览和发件人，所以 agent 往往可以先在 `threads` 阶段完成初筛，再决定是否读取完整线程。
 
+线程摘要现在也会聚合确定性的 triage 信号，包括 thread 级别的 `labels`、`categories`、`action_types` 和 `has_codes`。
+
 ### 在选中的线程内继续搜索
 
 ```bash

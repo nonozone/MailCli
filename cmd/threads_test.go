@@ -26,9 +26,12 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 					MessageID: "<root@example.com>",
 				},
 				Content: schema.Content{
+					Category: "operations",
 					Snippet: "Initial update",
 					BodyMD:  "Initial update",
 				},
+				Actions: []schema.Action{{Type: "view_online"}},
+				Labels:  []string{"project"},
 			},
 		},
 		{
@@ -47,9 +50,13 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 					},
 				},
 				Content: schema.Content{
+					Category: "verification",
 					Snippet: "Looks good",
 					BodyMD:  "Looks good",
 				},
+				Actions: []schema.Action{{Type: "verify_sign_in"}},
+				Codes:   []schema.Code{{Type: "otp", Value: "123456"}},
+				Labels:  []string{"security"},
 			},
 		},
 	} {
@@ -75,6 +82,12 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"last_message_preview": "Looks good"`) {
 		t.Fatalf("expected last message preview in output, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"has_codes": true`) {
+		t.Fatalf("expected has_codes in output, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"action_types": [`) {
+		t.Fatalf("expected action_types in output, got %s", out.String())
 	}
 }
 

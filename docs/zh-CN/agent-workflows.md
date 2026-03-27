@@ -150,6 +150,8 @@ flowchart LR
 
 当前线程摘要还会暴露最新消息的预览和发件人，这能减少 agent 在分拣阶段读取完整线程的次数。
 
+它们也会暴露确定性的 thread 级 triage 元数据，比如聚合后的 `labels`、`categories`、`action_types` 和 `has_codes`。
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。
