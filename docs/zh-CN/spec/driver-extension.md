@@ -83,6 +83,25 @@ Driver 应优先返回：
 
 其他 provider 私有错误仍然可以继续冒泡，但如果能提升上层行为，优先补充稳定的 typed error。
 
+## 合规测试建议
+
+MailCLI 现在在下面这个文件里提供了一套共享 driver 合同测试：
+
+- `pkg/driver/conformance_test.go`
+
+新增 driver 时，建议先用这套测试证明每个 driver 都应保持的最低行为：
+
+- `List` 返回的消息 id 应该可用于后续抓取
+- `FetchRaw` 对已列出的 id 必须成功
+- 缺失消息应返回 `ErrMessageNotFound`
+- `SendRaw` 要么成功，要么返回稳定的操作级错误
+
+这套测试刻意保持小而稳定。
+
+它不能替代 driver 自己的边界测试。
+
+但它为贡献者和维护者提供了一条共享的最低验收线，让 provider 私有边界问题放到第二层再看。
+
 ## 消息标识建议
 
 Driver 应明确说明自己接受哪些消息标识形式。

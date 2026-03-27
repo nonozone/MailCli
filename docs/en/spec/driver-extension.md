@@ -83,6 +83,25 @@ Drivers should prefer returning:
 
 Other provider-specific errors may still bubble up, but stable typed errors are preferred when they improve caller behavior.
 
+## Conformance Test Guidance
+
+MailCLI now includes a shared driver contract suite in:
+
+- `pkg/driver/conformance_test.go`
+
+Contributors adding a driver should use that suite to prove the baseline behaviors that every driver is expected to preserve:
+
+- `List` returns fetchable message ids
+- `FetchRaw` succeeds for a listed id
+- missing messages return `ErrMessageNotFound`
+- `SendRaw` either succeeds or returns a stable operational error
+
+This suite is intentionally small.
+
+It does not replace driver-specific tests.
+
+It gives contributors and maintainers a common minimum acceptance bar before provider-specific edge cases are reviewed.
+
 ## Message Identity Guidance
 
 Drivers should document which message identifiers they accept.

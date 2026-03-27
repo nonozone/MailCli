@@ -215,6 +215,84 @@ func TestIMAPDriverListUsesSessionFetch(t *testing.T) {
 	}
 }
 
+func TestIMAPDriverContractSuite(t *testing.T) {
+	restore := smtpSendFunc
+	t.Cleanup(func() {
+		smtpSendFunc = restore
+	})
+
+	runDriverContractTests(t, driverContractHarness{
+		newDriver: func(t *testing.T) Driver {
+			t.Helper()
+
+			section, err := imap.ParseBodySectionName("BODY[]")
+			if err != nil {
+				t.Fatalf("expected body section to parse: %v", err)
+			}
+
+			session := &fakeIMAPSession{
+				mailboxStatus: &imap.MailboxStatus{Name: "INBOX", Messages: 1},
+				searchResults: []uint32{1},
+				messages: []*imap.Message{
+					{
+						SeqNum: 1,
+						Envelope: &imap.Envelope{
+							Subject:   "Contract message",
+							MessageId: "<contract-1@example.com>",
+							Date:      time.Date(2026, 3, 26, 12, 0, 0, 0, time.UTC),
+							From: []*imap.Address{
+								{
+									PersonalName: "Contract Sender",
+									MailboxName:  "sender",
+									HostName:     "example.com",
+								},
+							},
+						},
+						Body: map[*imap.BodySectionName]imap.Literal{
+							section: bytes.NewReader([]byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Contract message\r\n\r\nBody")),
+						},
+					},
+				},
+			}
+
+			drv := newTestIMAPDriver(session)
+			drv.smtp = smtpConfig{
+				host:     "smtp.example.com",
+				port:     587,
+				username: "user@example.com",
+				password: "secret",
+			}
+			smtpSendFunc = func(cfg smtpConfig, from string, to []string, raw []byte) error {
+				return nil
+			}
+			return drv
+		},
+		newMissingDriver: func(t *testing.T) Driver {
+			t.Helper()
+			session := &fakeIMAPSession{}
+			return newTestIMAPDriver(session)
+		},
+		listQuery:      schema.SearchQuery{Limit: 1},
+		missingFetchID: "missing@example.com",
+		sendRaw:        []byte("From: support@example.com\r\nTo: user@example.com\r\nSubject: Contract send\r\n\r\nHello"),
+		assertList: func(t *testing.T, got []schema.MessageMetaSummary) {
+			t.Helper()
+			if len(got) != 1 {
+				t.Fatalf("expected one listed message, got %d", len(got))
+			}
+			if got[0].ID != "<contract-1@example.com>" {
+				t.Fatalf("expected message-id backed list id, got %+v", got[0])
+			}
+		},
+		assertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
+			t.Helper()
+			if !bytes.Contains(raw, []byte("Subject: Contract message")) {
+				t.Fatalf("expected fetched raw message content, got %q", raw)
+			}
+		},
+	})
+}
+
 func newTestIMAPDriver(session imapSession) *imapDriver {
 	account := config.AccountConfig{
 		Name:     "work",

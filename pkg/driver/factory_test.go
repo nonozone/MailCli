@@ -67,43 +67,47 @@ func TestNewFromAccountBuildsStubDriver(t *testing.T) {
 }
 
 func TestStubDriverListFetchAndSend(t *testing.T) {
-	drv, err := NewFromAccount(config.AccountConfig{
-		Name:   "demo",
-		Driver: "stub",
-	})
-	if err != nil {
-		t.Fatalf("expected stub account to build driver: %v", err)
-	}
-
-	stub := drv.(*stubDriver)
-	ctx := context.Background()
-
-	results, err := stub.List(ctx, schema.SearchQuery{Limit: 1})
-	if err != nil {
-		t.Fatalf("expected stub list to succeed: %v", err)
-	}
-	if len(results) != 1 {
-		t.Fatalf("expected limited stub list result, got %d", len(results))
-	}
-	if results[0].ID == "" {
-		t.Fatalf("expected stub list item id")
-	}
-
-	raw, err := stub.FetchRaw(ctx, results[0].ID)
-	if err != nil {
-		t.Fatalf("expected stub fetch to succeed: %v", err)
-	}
-	if !strings.Contains(string(raw), "Subject:") {
-		t.Fatalf("expected raw stub message to look like RFC822 content")
-	}
-
 	outbound := []byte("From: sender@example.com\r\nTo: receiver@example.com\r\nSubject: Demo\r\n\r\nHello")
-	if err := stub.SendRaw(ctx, outbound); err != nil {
-		t.Fatalf("expected stub send to succeed: %v", err)
-	}
-	if got := len(stub.sent); got != 1 {
-		t.Fatalf("expected stub driver to record sent payload, got %d", got)
-	}
+
+	runDriverContractTests(t, driverContractHarness{
+		newDriver: func(t *testing.T) Driver {
+			t.Helper()
+
+			drv, err := NewFromAccount(config.AccountConfig{
+				Name:   "demo",
+				Driver: "stub",
+			})
+			if err != nil {
+				t.Fatalf("expected stub account to build driver: %v", err)
+			}
+			return drv
+		},
+		listQuery:      schema.SearchQuery{Limit: 1},
+		missingFetchID: "missing-id",
+		sendRaw:        outbound,
+		assertList: func(t *testing.T, got []schema.MessageMetaSummary) {
+			t.Helper()
+			if len(got) != 1 {
+				t.Fatalf("expected limited stub list result, got %d", len(got))
+			}
+			if got[0].ID == "" {
+				t.Fatalf("expected stub list item id")
+			}
+		},
+		assertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
+			t.Helper()
+			if !strings.Contains(string(raw), "Subject:") {
+				t.Fatalf("expected raw stub message to look like RFC822 content")
+			}
+		},
+		assertAfterSend: func(t *testing.T, drv Driver) {
+			t.Helper()
+			stub := drv.(*stubDriver)
+			if got := len(stub.sent); got != 1 {
+				t.Fatalf("expected stub driver to record sent payload, got %d", got)
+			}
+		},
+	})
 }
 
 func TestStubDriverFetchRawReturnsNotFound(t *testing.T) {

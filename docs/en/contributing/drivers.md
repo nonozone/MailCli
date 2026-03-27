@@ -11,6 +11,7 @@ Read:
 - [Driver Extension Spec](../spec/driver-extension.md)
 - [Config Spec](../spec/config.md)
 - `pkg/driver/driver.go`
+- `pkg/driver/conformance_test.go`
 - `pkg/driver/factory.go`
 - `pkg/driver/stub.go`
 
@@ -31,6 +32,8 @@ If the change would affect a shared contract, open the `RFC contract change` iss
 4. Add tests for listing, raw fetch, and send behavior where applicable
 5. Document required config fields and limitations
 
+Prefer wiring the new driver into the shared contract suite in `pkg/driver/conformance_test.go` first, then add provider-specific edge-case tests around it.
+
 ## Design Rules
 
 - keep transport logic in the driver
@@ -48,6 +51,7 @@ At minimum, add tests for:
 - list behavior
 - fetch behavior
 - send behavior or explicit send-not-supported behavior
+- shared contract coverage through `pkg/driver/conformance_test.go`
 
 ## Factory Integration
 

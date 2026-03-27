@@ -11,6 +11,7 @@
 - [Driver 扩展规范](../spec/driver-extension.md)
 - [配置规范](../spec/config.md)
 - `pkg/driver/driver.go`
+- `pkg/driver/conformance_test.go`
 - `pkg/driver/factory.go`
 - `pkg/driver/stub.go`
 
@@ -31,6 +32,8 @@
 4. 为 list、raw fetch、send 行为补测试
 5. 文档化必需配置字段和限制
 
+建议优先把新 driver 接到 `pkg/driver/conformance_test.go` 这套共享合同测试里，再额外补 provider 私有边界用例。
+
 ## 设计规则
 
 - 传输逻辑只放在 driver 里
@@ -48,6 +51,7 @@
 - list 行为
 - fetch 行为
 - send 行为，或明确不支持 send 的行为
+- 通过 `pkg/driver/conformance_test.go` 的共享合同覆盖
 
 ## Factory 接入
 

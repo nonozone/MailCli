@@ -183,6 +183,8 @@ Goal: lower the effort required for outside developers to make useful PRs.
 
 #### Issue: Add a fake-driver test harness for extension contributors
 
+Status: baseline shared driver contract suite completed in `pkg/driver/conformance_test.go`.
+
 - Area: driver, tests, docs
 - Problem: contributor drivers are harder to validate than they need to be
 - Scope:

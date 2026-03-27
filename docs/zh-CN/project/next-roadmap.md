@@ -183,6 +183,8 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 #### Issue: 为 driver 扩展贡献者增加 fake-driver 测试支架
 
+状态：基础版共享 driver 合同测试已完成，见 `pkg/driver/conformance_test.go`。
+
 - Area: driver, tests, docs
 - Problem: 外部 driver 的验证门槛仍偏高
 - Scope:
