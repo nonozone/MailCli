@@ -139,6 +139,13 @@ Current limitations:
 - attachment support is path-based; inline attachments and remote fetch are out of scope
 - this is a transport-safe baseline, not a full newsletter-grade MIME engine
 
+Current Markdown rendering baseline now preserves:
+
+- headings
+- Markdown links as clickable HTML anchors
+- basic bullet lists as `ul/li`
+- readable plain-text link fallbacks such as `Label: https://...`
+
 ## Command Direction
 
 Recommended future commands:

@@ -143,3 +143,57 @@ func TestComposeReplyPackagesAttachments(t *testing.T) {
 		}
 	}
 }
+
+func TestComposeDraftRendersMarkdownLinksIntoHTMLAndPlainText(t *testing.T) {
+	raw, err := ComposeDraft(schema.DraftMessage{
+		From: &schema.Address{
+			Address: "support@nono.im",
+		},
+		To: []schema.Address{
+			{Address: "user@example.com"},
+		},
+		Subject: "Welcome",
+		BodyMD:  "## Access your workspace\n\n[Open dashboard](https://example.com/dashboard)",
+	})
+	if err != nil {
+		t.Fatalf("expected draft compose to succeed: %v", err)
+	}
+
+	mime := string(raw)
+	for _, token := range []string{
+		"Content-Type: multipart/alternative;",
+		"Open dashboard: https://example.com/dashboard",
+		`<a href="https://example.com/dashboard">Open dashboard</a>`,
+	} {
+		if !strings.Contains(mime, token) {
+			t.Fatalf("expected markdown link rendering to contain %q", token)
+		}
+	}
+}
+
+func TestComposeDraftRendersMarkdownBulletListsIntoHTML(t *testing.T) {
+	raw, err := ComposeDraft(schema.DraftMessage{
+		From: &schema.Address{
+			Address: "support@nono.im",
+		},
+		To: []schema.Address{
+			{Address: "user@example.com"},
+		},
+		Subject: "Checklist",
+		BodyMD:  "## Next steps\n\n- Confirm billing email\n- Verify sign-in settings",
+	})
+	if err != nil {
+		t.Fatalf("expected draft compose to succeed: %v", err)
+	}
+
+	mime := string(raw)
+	for _, token := range []string{
+		"<ul>",
+		"<li>Confirm billing email</li>",
+		"<li>Verify sign-in settings</li>",
+	} {
+		if !strings.Contains(mime, token) {
+			t.Fatalf("expected markdown list rendering to contain %q", token)
+		}
+	}
+}

@@ -10,11 +10,14 @@ import (
 	"net/textproto"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/nonozone/MailCli/pkg/schema"
 )
+
+var markdownLinkRe = regexp.MustCompile(`\[(.*?)\]\((https?://[^)\s]+)\)`)
 
 func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {
 	headers := map[string]string{
@@ -280,6 +283,7 @@ func markdownToPlain(input string) string {
 	for i, line := range lines {
 		line = strings.TrimSpace(line)
 		line = strings.TrimLeft(line, "#")
+		line = markdownLinkRe.ReplaceAllString(line, "$1: $2")
 		lines[i] = strings.TrimSpace(replacer.Replace(line))
 	}
 
@@ -289,30 +293,80 @@ func markdownToPlain(input string) string {
 func markdownToHTML(input string) string {
 	lines := strings.Split(strings.TrimSpace(input), "\n")
 	var blocks []string
+	inList := false
+
+	closeList := func() {
+		if inList {
+			blocks = append(blocks, "</ul>")
+			inList = false
+		}
+	}
 
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
 		if trimmed == "" {
+			closeList()
 			continue
 		}
 
 		switch {
 		case strings.HasPrefix(trimmed, "### "):
-			blocks = append(blocks, "<h3>"+html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "### ")))+"</h3>")
+			closeList()
+			blocks = append(blocks, "<h3>"+renderInlineHTML(strings.TrimSpace(strings.TrimPrefix(trimmed, "### ")))+"</h3>")
 		case strings.HasPrefix(trimmed, "## "):
-			blocks = append(blocks, "<h2>"+html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")))+"</h2>")
+			closeList()
+			blocks = append(blocks, "<h2>"+renderInlineHTML(strings.TrimSpace(strings.TrimPrefix(trimmed, "## ")))+"</h2>")
 		case strings.HasPrefix(trimmed, "# "):
-			blocks = append(blocks, "<h1>"+html.EscapeString(strings.TrimSpace(strings.TrimPrefix(trimmed, "# ")))+"</h1>")
+			closeList()
+			blocks = append(blocks, "<h1>"+renderInlineHTML(strings.TrimSpace(strings.TrimPrefix(trimmed, "# ")))+"</h1>")
+		case strings.HasPrefix(trimmed, "- "):
+			if !inList {
+				blocks = append(blocks, "<ul>")
+				inList = true
+			}
+			blocks = append(blocks, "<li>"+renderInlineHTML(strings.TrimSpace(strings.TrimPrefix(trimmed, "- ")))+"</li>")
 		default:
-			blocks = append(blocks, "<p>"+html.EscapeString(trimmed)+"</p>")
+			closeList()
+			blocks = append(blocks, "<p>"+renderInlineHTML(trimmed)+"</p>")
 		}
 	}
+	closeList()
 
 	if len(blocks) == 0 {
 		return ""
 	}
 
 	return strings.Join(blocks, "\n")
+}
+
+func renderInlineHTML(input string) string {
+	if strings.TrimSpace(input) == "" {
+		return ""
+	}
+
+	indexes := markdownLinkRe.FindAllStringSubmatchIndex(input, -1)
+	if len(indexes) == 0 {
+		return html.EscapeString(input)
+	}
+
+	var buf strings.Builder
+	last := 0
+	for _, match := range indexes {
+		if len(match) < 6 {
+			continue
+		}
+		buf.WriteString(html.EscapeString(input[last:match[0]]))
+		label := html.EscapeString(input[match[2]:match[3]])
+		url := html.EscapeString(input[match[4]:match[5]])
+		buf.WriteString(`<a href="`)
+		buf.WriteString(url)
+		buf.WriteString(`">`)
+		buf.WriteString(label)
+		buf.WriteString(`</a>`)
+		last = match[1]
+	}
+	buf.WriteString(html.EscapeString(input[last:]))
+	return buf.String()
 }
 
 func wrapBase64(input string) string {
