@@ -1,0 +1,20 @@
+From: Mail Delivery System <MAILER-DAEMON@example.net>
+To: nono@example.com
+Subject: Undelivered Mail Returned to Sender
+Message-ID: <postfix-bounce-123@example.net>
+Date: Thu, 26 Mar 2026 13:50:00 +0800
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Auto-Submitted: auto-generated
+
+This is the mail system at host mx.example.net.
+
+I'm sorry to have to inform you that your message could not
+be delivered to one or more recipients.
+
+Final-Recipient: rfc822; missing@example.com
+Action: failed
+Status: 5.1.1
+Diagnostic-Code: smtp; 550 5.1.1 <missing@example.com>: Recipient address rejected: User unknown in local recipient table
+Original-Message-ID: <orig-postfix-123@example.com>
+Original-Subject: Hello there

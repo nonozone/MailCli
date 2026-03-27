@@ -1,0 +1,32 @@
+{
+  "id": "<related-inline-image-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Security Center",
+      "address": "security@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Verify your sign-in attempt",
+    "date": "2026-03-26T05:40:00Z",
+    "message_id": "<related-inline-image-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "# Security alert\n\nUse the link below to verify this sign-in attempt.\n\nSecurity code illustration\n\n[Verify sign-in](https://security.example.com/verify/session-123)",
+    "snippet": "# Security alert Use the link below to verify this sign-in attempt. Security code illustration [Verify sign-in](https://security.example.com/verify/session-123)"
+  },
+  "actions": [
+    {
+      "type": "verify_sign_in",
+      "label": "Verify sign-in",
+      "url": "https://security.example.com/verify/session-123"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 17
+  }
+}

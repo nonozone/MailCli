@@ -49,6 +49,22 @@ func TestParseAttachmentNoticeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice.eml", "../../testdata/golden/attachment_notice.json")
 }
 
+func TestParseMixedUnsubscribeEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/unsubscribe_mixed.eml", "../../testdata/golden/unsubscribe_mixed.json")
+}
+
+func TestParseRelatedInlineImageEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/related_inline_image.eml", "../../testdata/golden/related_inline_image.json")
+}
+
+func TestParseReplyQuotedVerificationEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/reply_quoted_verification.eml", "../../testdata/golden/reply_quoted_verification.json")
+}
+
+func TestParsePostfixBounceEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/postfix_bounce.eml", "../../testdata/golden/postfix_bounce.json")
+}
+
 func assertFixtureMatchesGolden(t *testing.T, fixturePath, goldenPath string) {
 	t.Helper()
 
@@ -122,6 +138,45 @@ func TestParseExtractsUnsubscribeAction(t *testing.T) {
 	}
 }
 
+func TestParseExtractsMailtoUnsubscribeAction(t *testing.T) {
+	raw, err := os.ReadFile("../../testdata/emails/unsubscribe_mixed.eml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Meta.ListUnsubscribe) != 2 {
+		t.Fatalf("expected two normalized unsubscribe header entries, got %+v", got.Meta.ListUnsubscribe)
+	}
+	if got.Meta.ListUnsubscribe[0] != "mailto:leave@example.com?subject=unsubscribe" {
+		t.Fatalf("expected mailto unsubscribe header to be preserved, got %q", got.Meta.ListUnsubscribe[0])
+	}
+	if got.Meta.ListUnsubscribe[1] != "https://example.com/unsubscribe" {
+		t.Fatalf("expected https unsubscribe header to be normalized, got %q", got.Meta.ListUnsubscribe[1])
+	}
+
+	foundMailto := false
+	foundHTTPS := false
+	for _, action := range got.Actions {
+		if action.Type != "unsubscribe" {
+			continue
+		}
+		switch action.URL {
+		case "mailto:leave@example.com?subject=unsubscribe":
+			foundMailto = true
+		case "https://example.com/unsubscribe":
+			foundHTTPS = true
+		}
+	}
+	if !foundMailto || !foundHTTPS {
+		t.Fatalf("expected both mailto and https unsubscribe actions, got %+v", got.Actions)
+	}
+}
+
 func TestParseBounceEmailExtractsErrorContext(t *testing.T) {
 	raw, err := os.ReadFile("../../testdata/emails/bounce.eml")
 	if err != nil {
@@ -135,6 +190,34 @@ func TestParseBounceEmailExtractsErrorContext(t *testing.T) {
 
 	if got.ErrorContext == nil || got.ErrorContext.StatusCode == "" {
 		t.Fatalf("expected bounce status code to be extracted")
+	}
+}
+
+func TestParsePostfixBounceExtractsErrorContext(t *testing.T) {
+	raw, err := os.ReadFile("../../testdata/emails/postfix_bounce.eml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got.ErrorContext == nil {
+		t.Fatalf("expected postfix-style bounce context to be extracted")
+	}
+	if got.ErrorContext.FailedRecipient != "missing@example.com" {
+		t.Fatalf("expected failed recipient to be extracted, got %+v", got.ErrorContext)
+	}
+	if got.ErrorContext.StatusCode != "550" {
+		t.Fatalf("expected smtp status code to be extracted, got %+v", got.ErrorContext)
+	}
+	if got.Content.Category != "system_error" {
+		t.Fatalf("expected bounce content category, got %q", got.Content.Category)
+	}
+	if len(got.Labels) == 0 {
+		t.Fatalf("expected bounce labels, got %+v", got.Labels)
 	}
 }
 
@@ -208,6 +291,19 @@ func TestParseExtractsChineseVerificationCode(t *testing.T) {
 	}
 	if got.Codes[0].ExpiresInSeconds != 300 {
 		t.Fatalf("expected chinese expiry in seconds, got %d", got.Codes[0].ExpiresInSeconds)
+	}
+}
+
+func TestParseIgnoresQuotedVerificationCodeInReply(t *testing.T) {
+	raw := []byte("From: user@example.com\r\nTo: support@example.com\r\nSubject: Re: Your verification code\r\nMessage-ID: <reply-quoted-code@example.com>\r\nDate: Thu, 26 Mar 2026 12:40:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nThanks, this is resolved.\r\n\r\nOn Wed, 25 Mar 2026 at 10:00, Security Team <security@example.com> wrote:\r\n> Your verification code is 123 456.\r\n> Use this one-time code to sign in.\r\n> This code expires in 10 minutes.")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Codes) != 0 {
+		t.Fatalf("expected quoted verification code to be ignored, got %+v", got.Codes)
 	}
 }
 
@@ -879,6 +975,25 @@ func TestParseKeepsImageSrcWrapperURLUnchanged(t *testing.T) {
 
 	if !strings.Contains(got.Content.BodyMD, "https://tracker.example.com/click?redirect=https%3A%2F%2Fcdn.example.com%2Fchart.png") {
 		t.Fatalf("expected image src to remain unchanged, got %q", got.Content.BodyMD)
+	}
+}
+
+func TestParseReplacesCIDImageReferencesWithAltText(t *testing.T) {
+	raw, err := os.ReadFile("../../testdata/emails/related_inline_image.eml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if strings.Contains(got.Content.BodyMD, "cid:hero-image") {
+		t.Fatalf("expected cid image reference to be removed from markdown, got %q", got.Content.BodyMD)
+	}
+	if !strings.Contains(got.Content.BodyMD, "Security code illustration") {
+		t.Fatalf("expected inline image alt text to survive cleanup, got %q", got.Content.BodyMD)
 	}
 }
 

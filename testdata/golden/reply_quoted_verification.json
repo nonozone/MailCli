@@ -1,0 +1,24 @@
+{
+  "id": "<reply-quoted-code-123@example.com>",
+  "meta": {
+    "from": {
+      "address": "user@example.com"
+    },
+    "to": [
+      {
+        "address": "support@example.com"
+      }
+    ],
+    "subject": "Re: Your verification code",
+    "date": "2026-03-26T04:40:00Z",
+    "message_id": "<reply-quoted-code-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "Thanks, this is resolved.\n\nOn Wed, 25 Mar 2026 at 10:00, Security Team <security@example.com> wrote:\n> Your verification code is 123 456.\n> Use this one-time code to sign in.\n> This code expires in 10 minutes.",
+    "snippet": "Thanks, this is resolved. On Wed, 25 Mar 2026 at 10:00, Security Team <security@example.com> wrote: > Your verification code is 123 456. > Use this one-time cod..."
+  },
+  "token_usage": {
+    "estimated_input_tokens": 37
+  }
+}

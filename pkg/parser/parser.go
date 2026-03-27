@@ -67,6 +67,7 @@ func Parse(raw []byte) (*schema.StandardMessage, error) {
 var (
 	statusCodeRegex   = regexp.MustCompile(`\b([245]\d{2})\b`)
 	failedRecipientRe = regexp.MustCompile(`(?im)^Failed recipient:\s*(.+)$`)
+	finalRecipientRe  = regexp.MustCompile(`(?im)^Final-Recipient:\s*[^;]+;\s*(.+)$`)
 	diagnosticCodeRe  = regexp.MustCompile(`(?im)^.*?([245]\d{2}.*)$`)
 	originalMessageRe = regexp.MustCompile(`(?im)^Original-Message-ID:\s*(.+)$`)
 	originalSubjectRe = regexp.MustCompile(`(?im)^Original-Subject:\s*(.+)$`)
@@ -75,7 +76,9 @@ var (
 func extractBounceContext(input string) *schema.ErrorContext {
 	lower := strings.ToLower(input)
 	if !strings.Contains(lower, "delivery status notification") &&
+		!strings.Contains(lower, "undelivered mail returned to sender") &&
 		!strings.Contains(lower, "邮件未送达") &&
+		!(strings.Contains(lower, "final-recipient:") && strings.Contains(lower, "diagnostic-code:")) &&
 		!strings.Contains(lower, "authentication credentials invalid") {
 		return nil
 	}
@@ -83,6 +86,8 @@ func extractBounceContext(input string) *schema.ErrorContext {
 	ctx := &schema.ErrorContext{}
 
 	if match := failedRecipientRe.FindStringSubmatch(input); len(match) > 1 {
+		ctx.FailedRecipient = strings.TrimSpace(match[1])
+	} else if match := finalRecipientRe.FindStringSubmatch(input); len(match) > 1 {
 		ctx.FailedRecipient = strings.TrimSpace(match[1])
 	}
 	if match := statusCodeRegex.FindStringSubmatch(input); len(match) > 1 {

@@ -1,6 +1,7 @@
 package parser
 
 import (
+	stdhtml "html"
 	"math"
 	"strings"
 
@@ -19,6 +20,7 @@ func cleanHTML(input string) (string, error) {
 		s.Remove()
 	})
 	pruneLikelyNoise(doc.Selection)
+	replaceCIDImages(doc.Selection)
 
 	doc.Find("*").Each(func(i int, s *goquery.Selection) {
 		for _, node := range s.Nodes {
@@ -88,6 +90,27 @@ func pruneLikelyNoise(root *goquery.Selection) {
 			return
 		}
 		s.Remove()
+	})
+}
+
+func replaceCIDImages(root *goquery.Selection) {
+	if root == nil {
+		return
+	}
+
+	root.Find("img").Each(func(i int, s *goquery.Selection) {
+		src := strings.TrimSpace(getAttr(s, "src"))
+		if !strings.HasPrefix(strings.ToLower(src), "cid:") {
+			return
+		}
+
+		alt := strings.TrimSpace(getAttr(s, "alt"))
+		if alt == "" {
+			s.Remove()
+			return
+		}
+
+		_ = s.ReplaceWithHtml("<p>" + stdhtml.EscapeString(alt) + "</p>")
 	})
 }
 

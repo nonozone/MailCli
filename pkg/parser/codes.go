@@ -13,11 +13,12 @@ var (
 	digitsOnlyRe      = regexp.MustCompile(`^\d{4,8}$`)
 	expiresEnglishRe  = regexp.MustCompile(`(?i)\bexpires?\s+in\s+(\d+)\s+minutes?\b`)
 	expiresChineseRe  = regexp.MustCompile(`(\d+)\s*分钟内有效`)
+	replyIntroRe      = regexp.MustCompile(`(?i)^on .+wrote:$`)
 	verificationLabel = "Verification code"
 )
 
 func extractCodes(inputs ...string) []schema.Code {
-	combined := normalizeText(strings.Join(inputs, "\n"))
+	combined := stripQuotedReplyLines(normalizeText(strings.Join(inputs, "\n")))
 	if strings.TrimSpace(combined) == "" {
 		return nil
 	}
@@ -115,4 +116,24 @@ func parseMinutesToSeconds(value string) int {
 		return 0
 	}
 	return total * 60
+}
+
+func stripQuotedReplyLines(input string) string {
+	if strings.TrimSpace(input) == "" {
+		return input
+	}
+
+	lines := strings.Split(input, "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, ">") {
+			continue
+		}
+		if replyIntroRe.MatchString(trimmed) {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	return strings.Join(filtered, "\n")
 }

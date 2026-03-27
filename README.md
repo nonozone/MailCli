@@ -82,11 +82,15 @@ Current parser fixture coverage now includes:
 
 - plaintext mail
 - newsletter/promo mail
+- subscription/unsubscribe mail
 - delivery failure mail
+- postfix-style DSN / bounce mail
 - verification mail
+- quoted-reply verification mail
 - invoice/payment mail
 - security reset mail
 - attachment-entry mail
+- multipart/related inline-image mail
 
 Heuristic areas to treat as evolving:
 

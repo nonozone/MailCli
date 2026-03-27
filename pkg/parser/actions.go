@@ -17,12 +17,19 @@ func extractActions(meta schema.MessageMeta, htmlBody string, abuseTargets ...st
 	var actions []schema.Action
 
 	for _, value := range meta.ListUnsubscribe {
-		for _, url := range extractURLs(value) {
-			url = cleanURL(url)
+		if target := normalizeHeaderLinkTarget(value); target != "" {
 			appendAction(&actions, seen, schema.Action{
 				Type:  "unsubscribe",
 				Label: "Unsubscribe",
-				URL:   url,
+				URL:   normalizeActionURL(target),
+			})
+			continue
+		}
+		for _, url := range extractURLs(value) {
+			appendAction(&actions, seen, schema.Action{
+				Type:  "unsubscribe",
+				Label: "Unsubscribe",
+				URL:   normalizeActionURL(url),
 			})
 		}
 	}
@@ -48,12 +55,27 @@ func splitHeaderLinks(value string) []string {
 		return nil
 	}
 
+	matches := regexp.MustCompile(`<([^>]+)>`).FindAllStringSubmatch(value, -1)
+	if len(matches) > 0 {
+		out := make([]string, 0, len(matches))
+		for _, match := range matches {
+			if len(match) < 2 {
+				continue
+			}
+			if target := normalizeHeaderLinkTarget(match[1]); target != "" {
+				out = append(out, target)
+			}
+		}
+		if len(out) > 0 {
+			return out
+		}
+	}
+
 	parts := strings.Split(value, ",")
 	out := make([]string, 0, len(parts))
 	for _, part := range parts {
-		part = strings.TrimSpace(strings.Trim(part, "<>"))
-		if part != "" {
-			out = append(out, part)
+		if target := normalizeHeaderLinkTarget(part); target != "" {
+			out = append(out, target)
 		}
 	}
 	return out
@@ -65,6 +87,33 @@ func extractURLs(value string) []string {
 		return nil
 	}
 	return matches
+}
+
+func normalizeHeaderLinkTarget(value string) string {
+	trimmed := strings.TrimSpace(strings.Trim(value, "<>"))
+	if trimmed == "" {
+		return ""
+	}
+
+	lower := strings.ToLower(trimmed)
+	switch {
+	case strings.HasPrefix(lower, "mailto:"):
+		return trimmed
+	case strings.HasPrefix(lower, "http://"), strings.HasPrefix(lower, "https://"):
+		return trimmed
+	case strings.Contains(trimmed, "@") && !strings.Contains(trimmed, " "):
+		return "mailto:" + trimmed
+	default:
+		return ""
+	}
+}
+
+func normalizeActionURL(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if strings.HasPrefix(strings.ToLower(trimmed), "mailto:") {
+		return trimmed
+	}
+	return cleanURL(trimmed)
 }
 
 func cleanURL(value string) string {

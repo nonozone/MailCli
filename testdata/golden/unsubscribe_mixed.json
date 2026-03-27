@@ -1,0 +1,41 @@
+{
+  "id": "<unsubscribe-mixed-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Newsletter Bot",
+      "address": "newsletter@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Manage your subscription",
+    "date": "2026-03-26T05:30:00Z",
+    "message_id": "<unsubscribe-mixed-123@example.com>",
+    "list_unsubscribe": [
+      "mailto:leave@example.com?subject=unsubscribe",
+      "https://example.com/unsubscribe"
+    ]
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "You can unsubscribe using the mail client action or the account portal.",
+    "snippet": "You can unsubscribe using the mail client action or the account portal."
+  },
+  "actions": [
+    {
+      "type": "unsubscribe",
+      "label": "Unsubscribe",
+      "url": "mailto:leave@example.com?subject=unsubscribe"
+    },
+    {
+      "type": "unsubscribe",
+      "label": "Unsubscribe",
+      "url": "https://example.com/unsubscribe"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 12
+  }
+}

@@ -82,11 +82,15 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 
 - 纯文本邮件
 - newsletter / 推广邮件
+- 订阅 / 退订邮件
 - 投递失败邮件
+- Postfix 风格 DSN / 退信邮件
 - 验证码邮件
+- 引用旧验证码的回复链邮件
 - 账单 / 支付邮件
 - 安全重置邮件
 - 附件入口邮件
+- `multipart/related` 内联图片邮件
 
 应视为持续演进中的 heuristic 区域：
 

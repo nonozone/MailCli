@@ -1,0 +1,30 @@
+From: Security Center <security@example.com>
+To: nono@example.com
+Subject: Verify your sign-in attempt
+Message-ID: <related-inline-image-123@example.com>
+Date: Thu, 26 Mar 2026 13:40:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="boundary-related"
+
+--boundary-related
+Content-Type: text/html; charset=UTF-8
+
+<html>
+  <body>
+    <main>
+      <h1>Security alert</h1>
+      <p>Use the link below to verify this sign-in attempt.</p>
+      <img src="cid:hero-image" alt="Security code illustration" />
+      <p><a href="https://security.example.com/verify/session-123">Verify sign-in</a></p>
+    </main>
+  </body>
+</html>
+
+--boundary-related
+Content-Type: image/png
+Content-ID: <hero-image>
+Content-Transfer-Encoding: base64
+
+aGVsbG8=
+
+--boundary-related--

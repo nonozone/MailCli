@@ -1,0 +1,10 @@
+From: Newsletter Bot <newsletter@example.com>
+To: nono@example.com
+Subject: Manage your subscription
+Message-ID: <unsubscribe-mixed-123@example.com>
+Date: Thu, 26 Mar 2026 13:30:00 +0800
+MIME-Version: 1.0
+List-Unsubscribe: <mailto:leave@example.com?subject=unsubscribe>, <https://example.com/unsubscribe>
+Content-Type: text/plain; charset=UTF-8
+
+You can unsubscribe using the mail client action or the account portal.

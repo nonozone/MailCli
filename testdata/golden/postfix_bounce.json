@@ -1,0 +1,38 @@
+{
+  "id": "<postfix-bounce-123@example.net>",
+  "meta": {
+    "from": {
+      "name": "Mail Delivery System",
+      "address": "MAILER-DAEMON@example.net"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Undelivered Mail Returned to Sender",
+    "date": "2026-03-26T05:50:00Z",
+    "message_id": "<postfix-bounce-123@example.net>",
+    "is_auto_submitted": true
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "This is the mail system at host mx.example.net.\n\nI'm sorry to have to inform you that your message could not\nbe delivered to one or more recipients.\n\nFinal-Recipient: rfc822; missing@example.com\nAction: failed\nStatus: 5.1.1\nDiagnostic-Code: smtp; 550 5.1.1 <missing@example.com>: Recipient address rejected: User unknown in local recipient table\nOriginal-Message-ID: <orig-postfix-123@example.com>\nOriginal-Subject: Hello there",
+    "snippet": "This is the mail system at host mx.example.net. I'm sorry to have to inform you that your message could not be delivered to one or more recipients. Final-Recipi...",
+    "category": "system_error"
+  },
+  "error_context": {
+    "failed_recipient": "missing@example.com",
+    "status_code": "550",
+    "diagnostic_code": "550 5.1.1 <missing@example.com>: Recipient address rejected: User unknown in local recipient table",
+    "original_message_id": "<orig-postfix-123@example.com>",
+    "original_subject": "Hello there"
+  },
+  "labels": [
+    "bounce",
+    "error"
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 53
+  }
+}
