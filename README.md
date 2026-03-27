@@ -119,6 +119,7 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
+- `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--thread <thread_id>] [--limit <n>] [--full] <query>`
 - `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 
 ### Write path
@@ -292,6 +293,12 @@ Compact search results now include a deterministic `score` field, and results ar
 ```bash
 mailcli threads
 mailcli threads invoice
+```
+
+### Search within a selected thread
+
+```bash
+mailcli search --thread "<root@example.com>" update
 ```
 
 ### Dry-run an outbound draft

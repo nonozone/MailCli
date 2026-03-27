@@ -235,3 +235,85 @@ func TestFileStoreSearchRanksMoreRelevantResultsFirst(t *testing.T) {
 		t.Fatalf("expected first result to have higher score, got %d <= %d", results[0].Score, results[1].Score)
 	}
 }
+
+func TestFileStoreSearchSupportsThreadFilter(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, record := range []IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "msg-root",
+			Message: schema.StandardMessage{
+				ID: "msg-root",
+				Meta: schema.MessageMeta{
+					Subject:   "Project update",
+					Date:      "2026-03-27T08:00:00Z",
+					MessageID: "<root@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "initial",
+					BodyMD:  "initial",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "msg-reply",
+			Message: schema.StandardMessage{
+				ID: "msg-reply",
+				Meta: schema.MessageMeta{
+					Subject:   "Re: Project update",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<reply@example.com>",
+					InReplyTo: "<root@example.com>",
+					References: []string{
+						"<root@example.com>",
+					},
+				},
+				Content: schema.Content{
+					Snippet: "reply",
+					BodyMD:  "reply",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "other-thread",
+			Message: schema.StandardMessage{
+				ID: "other-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Invoice",
+					Date:      "2026-03-27T10:00:00Z",
+					MessageID: "<invoice@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "invoice",
+					BodyMD:  "invoice",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(record); err != nil {
+			t.Fatalf("expected index write to succeed: %v", err)
+		}
+	}
+
+	results, err := store.Search(SearchQuery{
+		ThreadID: "<root@example.com>",
+		Limit:    10,
+	})
+	if err != nil {
+		t.Fatalf("expected thread-filtered search to succeed: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected two messages in thread, got %d", len(results))
+	}
+	for _, result := range results {
+		if result.ID == "other-thread" {
+			t.Fatalf("expected other thread to be filtered out")
+		}
+	}
+}

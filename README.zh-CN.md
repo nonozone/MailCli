@@ -119,6 +119,7 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
+- `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--thread <thread_id>] [--limit <n>] [--full] <query>`
 - `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 
 ### 写路径
@@ -292,6 +293,12 @@ mailcli search --full invoice
 ```bash
 mailcli threads
 mailcli threads invoice
+```
+
+### 在选中的线程内继续搜索
+
+```bash
+mailcli search --thread "<root@example.com>" update
 ```
 
 ### Dry-run 新邮件

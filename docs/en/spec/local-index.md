@@ -88,6 +88,7 @@ Results are ordered by score first, then by recency of local indexing.
 
 - account
 - mailbox
+- thread id
 
 When `--full` is used, the command returns full indexed records rather than the compact summary shape.
 

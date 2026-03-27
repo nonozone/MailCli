@@ -144,7 +144,8 @@ flowchart LR
 2. agent 调用 `mailcli threads`
 3. MailCLI 基于 `references`、`in_reply_to` 和 `message_id` 聚合本地消息
 4. agent 选择一个 thread
-5. agent 决定是否继续局部搜索、抓取完整消息或直接草拟回复
+5. agent 可以继续调用 `mailcli search --thread <thread_id> <query>`
+6. agent 决定是否抓取完整消息或直接草拟回复
 
 ## 回复路径
 

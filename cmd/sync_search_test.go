@@ -205,3 +205,86 @@ func TestSearchCommandIncludesScoreInCompactResults(t *testing.T) {
 		t.Fatalf("expected compact search output to include score, got %s", out.String())
 	}
 }
+
+func TestSearchCommandSupportsThreadFilter(t *testing.T) {
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+	store := mailindex.NewFileStore(indexPath)
+
+	for _, item := range []mailindex.IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "msg-root",
+			Message: schema.StandardMessage{
+				ID: "msg-root",
+				Meta: schema.MessageMeta{
+					Subject:   "Project update",
+					Date:      "2026-03-27T08:00:00Z",
+					MessageID: "<root@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "initial",
+					BodyMD:  "initial",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "msg-reply",
+			Message: schema.StandardMessage{
+				ID: "msg-reply",
+				Meta: schema.MessageMeta{
+					Subject:   "Re: Project update",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<reply@example.com>",
+					InReplyTo: "<root@example.com>",
+					References: []string{
+						"<root@example.com>",
+					},
+				},
+				Content: schema.Content{
+					Snippet: "reply",
+					BodyMD:  "reply",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "other-thread",
+			Message: schema.StandardMessage{
+				ID: "other-thread",
+				Meta: schema.MessageMeta{
+					Subject:   "Invoice",
+					Date:      "2026-03-27T10:00:00Z",
+					MessageID: "<invoice@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "invoice",
+					BodyMD:  "invoice",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("expected upsert to succeed: %v", err)
+		}
+	}
+
+	searchCmd := NewRootCmd()
+	var out bytes.Buffer
+	searchCmd.SetOut(&out)
+	searchCmd.SetErr(&out)
+	searchCmd.SetArgs([]string{"search", "--index", indexPath, "--thread", "<root@example.com>", "update"})
+	if err := searchCmd.Execute(); err != nil {
+		t.Fatalf("expected thread-filtered search to succeed: %v", err)
+	}
+
+	if strings.Contains(out.String(), `"id": "other-thread"`) {
+		t.Fatalf("expected other thread to be filtered out, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"id": "msg-root"`) {
+		t.Fatalf("expected thread result to include root message, got %s", out.String())
+	}
+}

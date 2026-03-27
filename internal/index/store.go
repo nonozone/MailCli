@@ -20,10 +20,11 @@ type IndexedMessage struct {
 }
 
 type SearchQuery struct {
-	Query   string
-	Account string
-	Mailbox string
-	Limit   int
+	Query    string
+	Account  string
+	Mailbox  string
+	ThreadID string
+	Limit    int
 }
 
 type SearchResult struct {
@@ -176,6 +177,7 @@ func (s *FileStore) findMatches(query SearchQuery) ([]searchMatch, error) {
 	needle := strings.ToLower(strings.TrimSpace(query.Query))
 	account := strings.TrimSpace(query.Account)
 	mailbox := strings.TrimSpace(query.Mailbox)
+	threadID := normalizeMessageRef(query.ThreadID)
 	results := make([]searchMatch, 0, len(data.Messages))
 
 	for _, item := range data.Messages {
@@ -183,6 +185,9 @@ func (s *FileStore) findMatches(query SearchQuery) ([]searchMatch, error) {
 			continue
 		}
 		if mailbox != "" && !strings.EqualFold(item.Mailbox, mailbox) {
+			continue
+		}
+		if threadID != "" && deriveThreadID(item) != threadID {
 			continue
 		}
 		score := scoreMatch(item, needle)

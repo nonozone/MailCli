@@ -124,6 +124,7 @@ func newSearchCmd() *cobra.Command {
 		indexPath string
 		account   string
 		mailbox   string
+		threadID  string
 		format    string
 		limit     int
 		full      bool
@@ -136,10 +137,11 @@ func newSearchCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			store := mailindex.NewFileStore(indexPath)
 			query := mailindex.SearchQuery{
-				Query:   args[0],
-				Account: account,
-				Mailbox: mailbox,
-				Limit:   limit,
+				Query:    args[0],
+				Account:  account,
+				Mailbox:  mailbox,
+				ThreadID: threadID,
+				Limit:    limit,
 			}
 
 			if full {
@@ -161,6 +163,7 @@ func newSearchCmd() *cobra.Command {
 	cmd.Flags().StringVar(&indexPath, "index", "", "local index file path")
 	cmd.Flags().StringVar(&account, "account", "", "filter local results by account")
 	cmd.Flags().StringVar(&mailbox, "mailbox", "", "filter local results by mailbox")
+	cmd.Flags().StringVar(&threadID, "thread", "", "filter local results by thread id")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of search results")
 	cmd.Flags().BoolVar(&full, "full", false, "return full indexed messages instead of compact search results")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")

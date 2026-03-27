@@ -88,6 +88,7 @@ $CACHE_DIR/mailcli/index.json
 
 - account
 - mailbox
+- thread id
 
 当使用 `--full` 时，命令会返回完整的索引记录，而不是紧凑摘要。
 
