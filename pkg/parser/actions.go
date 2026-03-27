@@ -68,6 +68,14 @@ func extractURLs(value string) []string {
 }
 
 func cleanURL(value string) string {
+	return cleanURLDepth(value, 0)
+}
+
+func cleanURLDepth(value string, depth int) string {
+	if depth >= 4 {
+		return value
+	}
+
 	parsed, err := url.Parse(strings.TrimSpace(value))
 	if err != nil || parsed == nil {
 		return value
@@ -76,26 +84,73 @@ func cleanURL(value string) string {
 		return value
 	}
 
-	for _, key := range []string{"url", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
-		candidate := strings.TrimSpace(parsed.Query().Get(key))
-		if candidate == "" {
-			continue
+	if target := extractWrappedTarget(parsed); target != "" {
+		if cleaned := cleanURLDepth(target, depth+1); cleaned != "" {
+			return cleaned
 		}
-
-		target, err := url.Parse(candidate)
-		if err != nil || target == nil {
-			continue
-		}
-		if target.Scheme != "http" && target.Scheme != "https" {
-			continue
-		}
-		if target.Host == "" {
-			continue
-		}
-		return target.String()
+		return target
 	}
 
 	return value
+}
+
+func extractWrappedTarget(parsed *url.URL) string {
+	if parsed == nil {
+		return ""
+	}
+
+	for _, key := range []string{"url", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
+		if target := decodeURLCandidate(parsed.Query().Get(key)); target != "" {
+			return target
+		}
+	}
+
+	pathSegments := strings.Split(parsed.EscapedPath(), "/")
+	for i := len(pathSegments) - 1; i >= 0; i-- {
+		if target := decodeURLCandidate(pathSegments[i]); target != "" {
+			return target
+		}
+	}
+
+	return ""
+}
+
+func decodeURLCandidate(value string) string {
+	candidate := strings.TrimSpace(value)
+	if candidate == "" {
+		return ""
+	}
+
+	for range 3 {
+		if target, ok := parseAbsoluteHTTPURL(candidate); ok {
+			return target
+		}
+
+		decoded, err := url.QueryUnescape(candidate)
+		if err != nil || decoded == candidate {
+			break
+		}
+		candidate = strings.TrimSpace(decoded)
+	}
+
+	if target, ok := parseAbsoluteHTTPURL(candidate); ok {
+		return target
+	}
+	return ""
+}
+
+func parseAbsoluteHTTPURL(value string) (string, bool) {
+	target, err := url.Parse(strings.TrimSpace(value))
+	if err != nil || target == nil {
+		return "", false
+	}
+	if target.Scheme != "http" && target.Scheme != "https" {
+		return "", false
+	}
+	if target.Host == "" {
+		return "", false
+	}
+	return target.String(), true
 }
 
 func extractAnchorActions(htmlBody string) []schema.Action {
