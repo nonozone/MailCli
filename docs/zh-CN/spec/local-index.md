@@ -141,6 +141,17 @@ $CACHE_DIR/mailcli/index.json
 
 如果你希望重新抓取并覆盖已有记录，可以使用 `--refresh`。
 
+当前 `mailcli sync` 的输出也会显式暴露：
+
+- `listed_count`
+- `fetched_count`
+- `indexed_count`
+- `skipped_count`
+- `refreshed_count`
+- `index_path`
+
+这样 agent 和贡献者无需直接打开索引文件，也能更清楚地理解本轮本地 sync 到底发生了什么。
+
 ## 当前阶段明确不做的事
 
 - 暂不要求 SQLite

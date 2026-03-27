@@ -14,11 +14,14 @@ import (
 )
 
 type syncResult struct {
-	Account      string `json:"account,omitempty"`
-	Mailbox      string `json:"mailbox,omitempty"`
-	IndexedCount int    `json:"indexed_count"`
-	SkippedCount int    `json:"skipped_count"`
-	IndexPath    string `json:"index_path,omitempty"`
+	Account        string `json:"account,omitempty"`
+	Mailbox        string `json:"mailbox,omitempty"`
+	ListedCount    int    `json:"listed_count"`
+	FetchedCount   int    `json:"fetched_count"`
+	IndexedCount   int    `json:"indexed_count"`
+	SkippedCount   int    `json:"skipped_count"`
+	RefreshedCount int    `json:"refreshed_count"`
+	IndexPath      string `json:"index_path,omitempty"`
 }
 
 func newSyncCmd() *cobra.Command {
@@ -64,8 +67,11 @@ func newSyncCmd() *cobra.Command {
 			}
 
 			store := mailindex.NewFileStore(indexPath)
+			listedCount := len(items)
+			fetchedCount := 0
 			indexedCount := 0
 			skippedCount := 0
+			refreshedCount := 0
 			for _, item := range items {
 				if !refresh {
 					has, err := store.Has(selectedAccount.Name, item.ID)
@@ -82,6 +88,7 @@ func newSyncCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
+				fetchedCount++
 
 				msg, err := parser.Parse(raw)
 				if err != nil {
@@ -96,15 +103,21 @@ func newSyncCmd() *cobra.Command {
 				}); err != nil {
 					return err
 				}
+				if refresh {
+					refreshedCount++
+				}
 				indexedCount++
 			}
 
 			return writeSyncResult(cmd.OutOrStdout(), syncResult{
-				Account:      selectedAccount.Name,
-				Mailbox:      queryMailbox,
-				IndexedCount: indexedCount,
-				SkippedCount: skippedCount,
-				IndexPath:    store.Path(),
+				Account:        selectedAccount.Name,
+				Mailbox:        queryMailbox,
+				ListedCount:    listedCount,
+				FetchedCount:   fetchedCount,
+				IndexedCount:   indexedCount,
+				SkippedCount:   skippedCount,
+				RefreshedCount: refreshedCount,
+				IndexPath:      store.Path(),
 			}, format)
 		},
 	}
@@ -180,8 +193,11 @@ func writeSyncResult(out io.Writer, result syncResult, format string) error {
 		table.AppendBulk([][]string{
 			{"Account", result.Account},
 			{"Mailbox", result.Mailbox},
+			{"ListedCount", fmt.Sprintf("%d", result.ListedCount)},
+			{"FetchedCount", fmt.Sprintf("%d", result.FetchedCount)},
 			{"IndexedCount", fmt.Sprintf("%d", result.IndexedCount)},
 			{"SkippedCount", fmt.Sprintf("%d", result.SkippedCount)},
+			{"RefreshedCount", fmt.Sprintf("%d", result.RefreshedCount)},
 			{"IndexPath", result.IndexPath},
 		})
 		table.Render()

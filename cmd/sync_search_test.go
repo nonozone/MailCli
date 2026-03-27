@@ -26,6 +26,15 @@ func TestSyncAndSearchCommandsUseLocalIndex(t *testing.T) {
 	if !strings.Contains(syncOut.String(), `"indexed_count": 2`) {
 		t.Fatalf("expected sync result output, got %s", syncOut.String())
 	}
+	if !strings.Contains(syncOut.String(), `"listed_count": 2`) {
+		t.Fatalf("expected sync output to expose listed count, got %s", syncOut.String())
+	}
+	if !strings.Contains(syncOut.String(), `"fetched_count": 2`) {
+		t.Fatalf("expected sync output to expose fetched count, got %s", syncOut.String())
+	}
+	if !strings.Contains(syncOut.String(), `"refreshed_count": 0`) {
+		t.Fatalf("expected sync output to expose refreshed count, got %s", syncOut.String())
+	}
 
 	searchCmd := NewRootCmd()
 	var searchOut bytes.Buffer
@@ -70,6 +79,12 @@ func TestSyncCommandSkipsExistingMessagesByDefault(t *testing.T) {
 	if !strings.Contains(secondOut.String(), `"skipped_count": 2`) {
 		t.Fatalf("expected second sync to report skipped messages, got %s", secondOut.String())
 	}
+	if !strings.Contains(secondOut.String(), `"listed_count": 2`) {
+		t.Fatalf("expected second sync to expose listed count, got %s", secondOut.String())
+	}
+	if !strings.Contains(secondOut.String(), `"fetched_count": 0`) {
+		t.Fatalf("expected second sync to expose zero fetched count, got %s", secondOut.String())
+	}
 }
 
 func TestSyncCommandRefreshesExistingMessagesWhenRequested(t *testing.T) {
@@ -98,6 +113,12 @@ func TestSyncCommandRefreshesExistingMessagesWhenRequested(t *testing.T) {
 	}
 	if !strings.Contains(refreshOut.String(), `"skipped_count": 0`) {
 		t.Fatalf("expected refresh sync to avoid skip counts, got %s", refreshOut.String())
+	}
+	if !strings.Contains(refreshOut.String(), `"fetched_count": 2`) {
+		t.Fatalf("expected refresh sync to expose fetched count, got %s", refreshOut.String())
+	}
+	if !strings.Contains(refreshOut.String(), `"refreshed_count": 2`) {
+		t.Fatalf("expected refresh sync to expose refreshed count, got %s", refreshOut.String())
 	}
 }
 

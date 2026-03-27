@@ -141,6 +141,17 @@ Current `mailcli sync` behavior is incremental by default:
 
 Use `--refresh` to force a re-fetch and overwrite existing indexed records.
 
+Current `mailcli sync` output also exposes:
+
+- `listed_count`
+- `fetched_count`
+- `indexed_count`
+- `skipped_count`
+- `refreshed_count`
+- `index_path`
+
+This is intended to make local sync state easier for agents and contributors to reason about without inspecting the index file directly.
+
 ## Non-Goals For This Stage
 
 - no SQLite requirement yet
