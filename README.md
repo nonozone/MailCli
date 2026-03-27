@@ -460,6 +460,7 @@ Apache-2.0
 - [Adding a Driver](docs/en/contributing/drivers.md)
 - [Config Spec](docs/en/spec/config.md)
 - [v0.1 RC Release Notes](docs/en/release/v0.1-rc.md)
+- [Announcement Kit](docs/en/release/announcement-kit.md)
 - [Examples Index](docs/en/examples/README.md)
 - [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
 - [Agent Thread Example](docs/en/examples/agent-thread-assistant.md)

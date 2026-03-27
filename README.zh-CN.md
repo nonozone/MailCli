@@ -461,6 +461,7 @@ Apache-2.0
 - [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
 - [配置规范](docs/zh-CN/spec/config.md)
 - [v0.1 RC 发布说明](docs/zh-CN/release/v0.1-rc.md)
+- [Announcement Kit](docs/zh-CN/release/announcement-kit.md)
 - [Examples 索引](docs/zh-CN/examples/README.md)
 - [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
 - [Agent Thread 示例](docs/zh-CN/examples/agent-thread-assistant.md)
