@@ -8,6 +8,8 @@
 
 目标是把当前 RC 打磨成一个稳定、易贡献、真正服务于 agent 开发者的开源项目。
 
+如果你需要可直接复制到 GitHub 的 issue 草案，见 [GitHub Backlog 草案](github-backlog.md)。
+
 ## 优先级顺序
 
 1. 先把当前 RC 的稳定边界收紧。

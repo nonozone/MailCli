@@ -8,6 +8,8 @@ The goal is not to add random surface area.
 
 The goal is to turn the current RC into a stable, contributor-friendly open-source project for agent developers.
 
+For copy-ready GitHub issue drafts, see [GitHub Backlog Drafts](github-backlog.md).
+
 ## Priority Order
 
 1. Harden the current RC boundary.
