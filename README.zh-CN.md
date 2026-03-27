@@ -21,6 +21,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 通过序号、UID 或 `Message-ID` 抓取并解析邮件
 - 将近期邮件同步到本地可检索索引
 - 在不重复远程抓取的前提下检索本地邮件索引
+- 查看本地索引中的会话 / thread 摘要
 - 编译出站草稿和回复草稿
 - 通过 SMTP 为 IMAP 风格账户发信
 - 通过稳定 JSON 契约与 Python / shell agent 工作流协作
@@ -32,6 +33,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - `mailcli get`
 - `mailcli sync`
 - `mailcli search`
+- `mailcli threads`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -117,6 +119,7 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
+- `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 
 ### 写路径
 
@@ -165,6 +168,12 @@ Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMess
 
 ```text
 Agent -> mailcli sync -> Local Index -> mailcli search -> Indexed Message Context -> Agent
+```
+
+### 本地线程循环
+
+```text
+Agent -> mailcli sync -> mailcli threads -> 选择 thread -> mailcli search/get/reply
 ```
 
 ### 回复循环
@@ -277,6 +286,13 @@ mailcli search --full invoice
 在多账户场景下，可以使用 `--account` 和 `--mailbox` 对本地结果做过滤。
 
 当前紧凑搜索结果还会返回一个确定性的 `score` 字段，并优先按相关性、再按时间排序。
+
+### 查看本地线程
+
+```bash
+mailcli threads
+mailcli threads invoice
+```
 
 ### Dry-run 新邮件
 

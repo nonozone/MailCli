@@ -125,6 +125,27 @@ mailcli search --full invoice
 
 当前紧凑本地搜索结果也会暴露一个相关性 `score`，方便 agent 在不额外做排序逻辑的情况下决定下一步处理哪封邮件。
 
+## 本地线程路径
+
+当 agent 更关心“会话”而不是“单封邮件”时，可以走这条链路。
+
+```mermaid
+flowchart LR
+  A["Agent"] --> B["mailcli sync"]
+  B --> C["Local Index"]
+  C --> D["mailcli threads"]
+  D --> E["Thread Summaries"]
+  E --> A
+```
+
+### 典型本地线程循环
+
+1. agent 调用 `mailcli sync`
+2. agent 调用 `mailcli threads`
+3. MailCLI 基于 `references`、`in_reply_to` 和 `message_id` 聚合本地消息
+4. agent 选择一个 thread
+5. agent 决定是否继续局部搜索、抓取完整消息或直接草拟回复
+
 ## 回复路径
 
 当 agent 需要回复已有邮件线程时，走这条链路。

@@ -125,6 +125,27 @@ For multi-account local retrieval, combine `search` with `--account` and `--mail
 
 Compact local search results now expose a relevance `score`, which makes it easier for agents to pick the next message without additional ranking logic.
 
+## The Local Thread Path
+
+Use this path when an agent wants to reason about conversations instead of individual messages.
+
+```mermaid
+flowchart LR
+  A["Agent"] --> B["mailcli sync"]
+  B --> C["Local Index"]
+  C --> D["mailcli threads"]
+  D --> E["Thread Summaries"]
+  E --> A
+```
+
+### Typical local thread loop
+
+1. Agent calls `mailcli sync`
+2. Agent calls `mailcli threads`
+3. MailCLI groups indexed messages using `references`, `in_reply_to`, and `message_id`
+4. Agent chooses a thread
+5. Agent decides whether to search within it, fetch a full message, or draft a reply
+
 ## The Reply Path
 
 Use this path when the agent is responding to an existing email thread.

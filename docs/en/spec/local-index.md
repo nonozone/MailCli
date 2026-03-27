@@ -14,11 +14,16 @@ Current commands:
 
 - `mailcli sync`
 - `mailcli search`
+- `mailcli threads`
 
 Current search modes:
 
 - compact search results by default
 - full indexed message output with `mailcli search --full`
+
+Current thread mode:
+
+- conversation summaries with `mailcli threads`
 
 ## Storage Model
 
@@ -85,6 +90,27 @@ Results are ordered by score first, then by recency of local indexing.
 - mailbox
 
 When `--full` is used, the command returns full indexed records rather than the compact summary shape.
+
+## Thread Semantics
+
+`mailcli threads` groups local indexed messages into conversation summaries.
+
+Current thread grouping is deterministic and based on:
+
+- first available `references` entry
+- otherwise `in_reply_to`
+- otherwise `message_id`
+- otherwise the local indexed message id
+
+Thread summaries currently expose:
+
+- `thread_id`
+- subject
+- latest date
+- message count
+- participants
+- local message ids
+- score
 
 ## Sync Semantics
 

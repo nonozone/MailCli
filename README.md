@@ -21,6 +21,7 @@ Working today:
 - fetch and parse messages by sequence number, UID, or `Message-ID`
 - sync recent messages into a local searchable index
 - search a local message index without re-fetching remote mail
+- inspect local conversation/thread summaries from indexed messages
 - compile outbound drafts and replies
 - send through SMTP-backed IMAP-style accounts
 - integrate with Python or shell agent workflows through stable JSON contracts
@@ -32,6 +33,7 @@ Stable enough to build against for `v0.1 RC`:
 - `mailcli get`
 - `mailcli sync`
 - `mailcli search`
+- `mailcli threads`
 - `mailcli send`
 - `mailcli reply`
 - `StandardMessage`
@@ -117,6 +119,7 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
 - `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
+- `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 
 ### Write path
 
@@ -165,6 +168,12 @@ Agent -> mailcli list/get/parse -> Driver -> Raw Email -> Parser -> StandardMess
 
 ```text
 Agent -> mailcli sync -> Local Index -> mailcli search -> Indexed Message Context -> Agent
+```
+
+### Local thread loop
+
+```text
+Agent -> mailcli sync -> mailcli threads -> choose thread -> mailcli search/get/reply
 ```
 
 ### Reply loop
@@ -277,6 +286,13 @@ mailcli search --full invoice
 Use `--account` and `--mailbox` to filter local results in multi-account setups.
 
 Compact search results now include a deterministic `score` field, and results are ordered by relevance before recency.
+
+### Inspect local threads
+
+```bash
+mailcli threads
+mailcli threads invoice
+```
 
 ### Dry-run an outbound draft
 

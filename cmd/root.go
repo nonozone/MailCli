@@ -16,6 +16,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newGetCmd())
 	cmd.AddCommand(newSyncCmd())
 	cmd.AddCommand(newSearchCmd())
+	cmd.AddCommand(newThreadsCmd())
 	cmd.AddCommand(newSendCmd())
 	cmd.AddCommand(newReplyCmd())
 
