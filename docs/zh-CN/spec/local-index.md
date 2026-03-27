@@ -118,7 +118,10 @@ $CACHE_DIR/mailcli/index.json
 - aggregated action types
 - aggregated labels
 - `has_codes`
+- `code_count`
+- `action_count`
 - message count
+- `participant_count`
 - participants
 - 本地 message ids
 - score

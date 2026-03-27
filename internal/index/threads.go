@@ -30,7 +30,10 @@ type ThreadSummary struct {
 	ActionTypes        []string `json:"action_types,omitempty"`
 	Labels             []string `json:"labels,omitempty"`
 	HasCodes           bool     `json:"has_codes"`
+	CodeCount          int      `json:"code_count"`
+	ActionCount        int      `json:"action_count"`
 	MessageCount       int      `json:"message_count"`
+	ParticipantCount   int      `json:"participant_count"`
 	Participants       []string `json:"participants,omitempty"`
 	MessageIDs         []string `json:"message_ids,omitempty"`
 	Score              int      `json:"score"`
@@ -125,6 +128,7 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 		}
 		if len(item.Message.Codes) > 0 {
 			acc.summary.HasCodes = true
+			acc.summary.CodeCount += len(item.Message.Codes)
 		}
 
 		acc.summary.Score += scoreMatch(item, needle)
@@ -150,6 +154,8 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 		sort.Strings(acc.summary.Labels)
 		sort.Strings(acc.summary.Participants)
 		sort.Strings(acc.summary.MessageIDs)
+		acc.summary.ActionCount = len(acc.summary.ActionTypes)
+		acc.summary.ParticipantCount = len(acc.summary.Participants)
 		results = append(results, acc.summary)
 	}
 

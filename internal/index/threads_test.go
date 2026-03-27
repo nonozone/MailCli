@@ -28,8 +28,8 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 			},
 			Content: schema.Content{
 				Category: "operations",
-				Snippet: "Initial update",
-				BodyMD:  "Initial update",
+				Snippet:  "Initial update",
+				BodyMD:   "Initial update",
 			},
 			Actions: []schema.Action{
 				{Type: "view_online"},
@@ -60,8 +60,8 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 			},
 			Content: schema.Content{
 				Category: "verification",
-				Snippet: "Looks good",
-				BodyMD:  "Looks good",
+				Snippet:  "Looks good",
+				BodyMD:   "Looks good",
 			},
 			Actions: []schema.Action{
 				{Type: "verify_sign_in"},
@@ -123,6 +123,15 @@ func TestFileStoreThreadsGroupsRepliesIntoSingleThread(t *testing.T) {
 	}
 	if len(thread.Participants) != 2 {
 		t.Fatalf("expected deduplicated participants, got %d", len(thread.Participants))
+	}
+	if thread.ParticipantCount != 2 {
+		t.Fatalf("expected participant count to expose deduplicated total, got %d", thread.ParticipantCount)
+	}
+	if thread.ActionCount != 2 {
+		t.Fatalf("expected action count to expose unique aggregated total, got %d", thread.ActionCount)
+	}
+	if thread.CodeCount != 1 {
+		t.Fatalf("expected code count to expose extracted code total, got %d", thread.CodeCount)
 	}
 }
 

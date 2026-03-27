@@ -118,7 +118,10 @@ Thread summaries currently expose:
 - aggregated action types
 - aggregated labels
 - `has_codes`
+- `code_count`
+- `action_count`
 - message count
+- `participant_count`
 - participants
 - local message ids
 - score

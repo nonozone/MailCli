@@ -24,11 +24,16 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 					Subject:   "Project update",
 					Date:      "2026-03-27T08:00:00Z",
 					MessageID: "<root@example.com>",
+					From: &schema.Address{
+						Name:    "Alice",
+						Address: "alice@example.com",
+					},
+					To: []schema.Address{{Name: "Bob", Address: "bob@example.com"}},
 				},
 				Content: schema.Content{
 					Category: "operations",
-					Snippet: "Initial update",
-					BodyMD:  "Initial update",
+					Snippet:  "Initial update",
+					BodyMD:   "Initial update",
 				},
 				Actions: []schema.Action{{Type: "view_online"}},
 				Labels:  []string{"project"},
@@ -48,11 +53,16 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 					References: []string{
 						"<root@example.com>",
 					},
+					From: &schema.Address{
+						Name:    "Bob",
+						Address: "bob@example.com",
+					},
+					To: []schema.Address{{Name: "Alice", Address: "alice@example.com"}},
 				},
 				Content: schema.Content{
 					Category: "verification",
-					Snippet: "Looks good",
-					BodyMD:  "Looks good",
+					Snippet:  "Looks good",
+					BodyMD:   "Looks good",
 				},
 				Actions: []schema.Action{{Type: "verify_sign_in"}},
 				Codes:   []schema.Code{{Type: "otp", Value: "123456"}},
@@ -85,6 +95,15 @@ func TestThreadsCommandListsLocalThreadSummaries(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), `"has_codes": true`) {
 		t.Fatalf("expected has_codes in output, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"code_count": 1`) {
+		t.Fatalf("expected code_count in output, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"action_count": 2`) {
+		t.Fatalf("expected action_count in output, got %s", out.String())
+	}
+	if !strings.Contains(out.String(), `"participant_count": 2`) {
+		t.Fatalf("expected participant_count in output, got %s", out.String())
 	}
 	if !strings.Contains(out.String(), `"action_types": [`) {
 		t.Fatalf("expected action_types in output, got %s", out.String())

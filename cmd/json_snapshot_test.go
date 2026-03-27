@@ -114,6 +114,11 @@ func TestThreadsCommandJSONSnapshot(t *testing.T) {
 					Subject:   "Project update",
 					Date:      "2026-03-27T08:00:00Z",
 					MessageID: "<root@example.com>",
+					From: &schema.Address{
+						Name:    "Alice",
+						Address: "alice@example.com",
+					},
+					To: []schema.Address{{Name: "Bob", Address: "bob@example.com"}},
 				},
 				Content: schema.Content{
 					Category: "operations",
@@ -139,6 +144,11 @@ func TestThreadsCommandJSONSnapshot(t *testing.T) {
 					References: []string{
 						"<root@example.com>",
 					},
+					From: &schema.Address{
+						Name:    "Bob",
+						Address: "bob@example.com",
+					},
+					To: []schema.Address{{Name: "Alice", Address: "alice@example.com"}},
 				},
 				Content: schema.Content{
 					Category: "verification",

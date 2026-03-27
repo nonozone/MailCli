@@ -1,30 +1,38 @@
 [
   {
     "account": "demo",
-    "mailbox": "INBOX",
-    "thread_id": "<root@example.com>",
-    "subject": "Project update",
-    "latest_date": "2026-03-27T09:00:00Z",
-    "last_message_id": "msg-reply",
-    "last_message_preview": "Looks good",
-    "categories": [
-      "operations",
-      "verification"
-    ],
+    "action_count": 2,
     "action_types": [
       "verify_sign_in",
       "view_online"
     ],
+    "categories": [
+      "operations",
+      "verification"
+    ],
+    "code_count": 1,
+    "has_codes": true,
     "labels": [
       "project",
       "security"
     ],
-    "has_codes": true,
+    "last_message_from": "Bob <bob@example.com>",
+    "mailbox": "INBOX",
+    "last_message_id": "msg-reply",
+    "last_message_preview": "Looks good",
+    "latest_date": "2026-03-27T09:00:00Z",
     "message_count": 2,
     "message_ids": [
       "msg-reply",
       "msg-root"
     ],
-    "score": 2
+    "participant_count": 2,
+    "participants": [
+      "Alice <alice@example.com>",
+      "Bob <bob@example.com>"
+    ],
+    "score": 2,
+    "subject": "Project update",
+    "thread_id": "<root@example.com>"
   }
 ]
