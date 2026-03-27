@@ -184,6 +184,45 @@ func TestAgentThreadAssistantBuildsReplyDryRunFromLocalThread(t *testing.T) {
 	}
 }
 
+func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	indexPath := filepath.Join(t.TempDir(), "index.json")
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
+		"--account", "fixtures",
+		"--index", indexPath,
+		"--sync-limit", "20",
+		"--query", "invoice",
+	)
+	cmd.Dir = t.TempDir()
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("thread agent example with fixture dir config failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	syncResult := mustMap(t, report["sync"])
+	if syncResult["indexed_count"] != float64(11) {
+		t.Fatalf("expected fixture sync to index all repository fixtures, got %#v", syncResult["indexed_count"])
+	}
+
+	selection := mustMap(t, report["selection"])
+	if selection["thread_id"] != "<invoice-123@example.com>" {
+		t.Fatalf("expected invoice fixture thread to be selected, got %#v", selection["thread_id"])
+	}
+}
+
 func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)

@@ -46,6 +46,7 @@ python3 examples/python/agent_thread_assistant.py \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
   --index /tmp/mailcli-fixtures-index.json \
+  --sync-limit 20 \
   --query invoice
 ```
 
