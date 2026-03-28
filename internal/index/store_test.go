@@ -236,6 +236,60 @@ func TestFileStoreSearchRanksMoreRelevantResultsFirst(t *testing.T) {
 	}
 }
 
+func TestFileStoreSearchPrefersMessageDateOverIndexedAtWhenScoresTie(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, record := range []IndexedMessage{
+		{
+			Account:   "demo",
+			Mailbox:   "INBOX",
+			ID:        "older-but-reindexed",
+			IndexedAt: "2026-03-28T12:00:00Z",
+			Message: schema.StandardMessage{
+				ID: "older-but-reindexed",
+				Meta: schema.MessageMeta{
+					Subject: "Invoice ready",
+					Date:    "2026-03-20T08:00:00Z",
+				},
+				Content: schema.Content{
+					Snippet: "Invoice attached",
+				},
+			},
+		},
+		{
+			Account:   "demo",
+			Mailbox:   "INBOX",
+			ID:        "recent-message",
+			IndexedAt: "2026-03-27T12:00:00Z",
+			Message: schema.StandardMessage{
+				ID: "recent-message",
+				Meta: schema.MessageMeta{
+					Subject: "Invoice ready",
+					Date:    "2026-03-27T08:00:00Z",
+				},
+				Content: schema.Content{
+					Snippet: "Invoice attached",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(record); err != nil {
+			t.Fatalf("expected index write to succeed: %v", err)
+		}
+	}
+
+	results, err := store.Search(SearchQuery{Query: "invoice", Limit: 10})
+	if err != nil {
+		t.Fatalf("expected tied-score search to succeed: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("expected two tied-score results, got %d", len(results))
+	}
+	if results[0].ID != "recent-message" {
+		t.Fatalf("expected newer message date to rank first, got %q", results[0].ID)
+	}
+}
+
 func TestFileStoreSearchSupportsThreadFilter(t *testing.T) {
 	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
 

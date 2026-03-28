@@ -131,7 +131,9 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 			acc.summary.CodeCount += len(item.Message.Codes)
 		}
 
-		acc.summary.Score += scoreMatch(item, needle)
+		if needle != "" {
+			acc.summary.Score += scoreMatch(item, needle)
+		}
 	}
 
 	results := make([]ThreadSummary, 0, len(threads))
@@ -160,11 +162,17 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 	}
 
 	sort.SliceStable(results, func(i, j int) bool {
-		if results[i].Score != results[j].Score {
+		if needle != "" && results[i].Score != results[j].Score {
 			return results[i].Score > results[j].Score
 		}
 		if results[i].LatestDate != results[j].LatestDate {
 			return results[i].LatestDate > results[j].LatestDate
+		}
+		if results[i].ActionCount != results[j].ActionCount {
+			return results[i].ActionCount > results[j].ActionCount
+		}
+		if results[i].CodeCount != results[j].CodeCount {
+			return results[i].CodeCount > results[j].CodeCount
 		}
 		return results[i].ThreadID < results[j].ThreadID
 	})

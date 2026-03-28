@@ -231,7 +231,15 @@ func (s *FileStore) findMatches(query SearchQuery) ([]searchMatch, error) {
 		if results[i].score != results[j].score {
 			return results[i].score > results[j].score
 		}
-		return results[i].item.IndexedAt > results[j].item.IndexedAt
+		leftDate := effectiveMessageDate(results[i].item)
+		rightDate := effectiveMessageDate(results[j].item)
+		if leftDate != rightDate {
+			return leftDate > rightDate
+		}
+		if results[i].item.IndexedAt != results[j].item.IndexedAt {
+			return results[i].item.IndexedAt > results[j].item.IndexedAt
+		}
+		return results[i].item.ID < results[j].item.ID
 	})
 
 	if query.Limit > 0 && len(results) > query.Limit {
@@ -311,9 +319,16 @@ func searchableText(item IndexedMessage) string {
 	return normalizeSearchValue(strings.Join(parts, "\n"))
 }
 
+func effectiveMessageDate(item IndexedMessage) string {
+	if strings.TrimSpace(item.Message.Meta.Date) != "" {
+		return item.Message.Meta.Date
+	}
+	return item.IndexedAt
+}
+
 func scoreMatch(item IndexedMessage, needle string) int {
 	if needle == "" {
-		return 1
+		return 0
 	}
 
 	score := 0

@@ -205,6 +205,83 @@ func TestFileStoreThreadsSupportsQueryFilteringAndRanking(t *testing.T) {
 	}
 }
 
+func TestFileStoreThreadsWithoutQueryPreferRecentActivityOverThreadSize(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
+
+	for _, item := range []IndexedMessage{
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "older-root",
+			Message: schema.StandardMessage{
+				ID: "older-root",
+				Meta: schema.MessageMeta{
+					Subject:   "Long running thread",
+					Date:      "2026-03-20T08:00:00Z",
+					MessageID: "<older-root@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "First update",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "older-reply",
+			Message: schema.StandardMessage{
+				ID: "older-reply",
+				Meta: schema.MessageMeta{
+					Subject:   "Re: Long running thread",
+					Date:      "2026-03-21T08:00:00Z",
+					MessageID: "<older-reply@example.com>",
+					InReplyTo: "<older-root@example.com>",
+					References: []string{
+						"<older-root@example.com>",
+					},
+				},
+				Content: schema.Content{
+					Snippet: "Second update",
+				},
+			},
+		},
+		{
+			Account: "demo",
+			Mailbox: "INBOX",
+			ID:      "recent-root",
+			Message: schema.StandardMessage{
+				ID: "recent-root",
+				Meta: schema.MessageMeta{
+					Subject:   "Fresh thread",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<recent-root@example.com>",
+				},
+				Content: schema.Content{
+					Snippet: "Fresh update",
+				},
+			},
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("expected upsert to succeed: %v", err)
+		}
+	}
+
+	threads, err := store.Threads(ThreadQuery{Limit: 10})
+	if err != nil {
+		t.Fatalf("expected unfiltered thread list to succeed: %v", err)
+	}
+	if len(threads) != 2 {
+		t.Fatalf("expected two threads, got %d", len(threads))
+	}
+	if threads[0].ThreadID != "<recent-root@example.com>" {
+		t.Fatalf("expected most recent thread first, got %q", threads[0].ThreadID)
+	}
+	if threads[0].Score != 0 || threads[1].Score != 0 {
+		t.Fatalf("expected queryless thread scores to stay neutral, got %d and %d", threads[0].Score, threads[1].Score)
+	}
+}
+
 func TestFileStoreThreadMessagesReturnsFullMessagesForThread(t *testing.T) {
 	store := NewFileStore(filepath.Join(t.TempDir(), "index.json"))
 
