@@ -148,7 +148,7 @@ func extractWrappedTarget(parsed *url.URL) string {
 		return ""
 	}
 
-	for _, key := range []string{"url", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
+	for _, key := range []string{"url", "u", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
 		if target := decodeURLCandidate(parsed.Query().Get(key)); target != "" {
 			return target
 		}
@@ -335,6 +335,12 @@ func looksLikeRedirectWrapper(parsed *url.URL) bool {
 	host := strings.ToLower(parsed.Hostname())
 	fullPath := strings.ToLower(path.Clean(parsed.Path))
 	combined := host + " " + fullPath
+
+	for _, token := range []string{"proofpoint", "urldefense", "safelinks.protection.outlook.com"} {
+		if strings.Contains(host, token) {
+			return true
+		}
+	}
 
 	for _, token := range []string{"click", "track", "redirect", "redir", "out", "away", "link", "lnk"} {
 		if strings.Contains(combined, token) {

@@ -652,6 +652,22 @@ func TestParseCleansNestedTrackedURLsInMarkdown(t *testing.T) {
 	}
 }
 
+func TestParseCleansProofpointTrackedURLsInMarkdown(t *testing.T) {
+	raw := []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Proofpoint tracked link\r\nMessage-ID: <tracked-proofpoint@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n<html><body><p><a href=\"https://urldefense.proofpoint.com/v2/url?u=https%3A%2F%2Fapp.example.com%2Freports%2Fweekly\">Open report</a></p></body></html>")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(got.Content.BodyMD, "https://app.example.com/reports/weekly") {
+		t.Fatalf("expected markdown to resolve proofpoint target url, got %q", got.Content.BodyMD)
+	}
+	if strings.Contains(got.Content.BodyMD, "urldefense.proofpoint.com") {
+		t.Fatalf("expected markdown to avoid proofpoint wrapper url, got %q", got.Content.BodyMD)
+	}
+}
+
 func TestExtractActionsCleansPathEmbeddedTrackedURLs(t *testing.T) {
 	meta := schema.MessageMeta{
 		ListUnsubscribe: []string{
@@ -665,6 +681,22 @@ func TestExtractActionsCleansPathEmbeddedTrackedURLs(t *testing.T) {
 	}
 	if actions[0].URL != "https://example.com/unsubscribe" {
 		t.Fatalf("expected path-embedded tracked url to be cleaned, got %q", actions[0].URL)
+	}
+}
+
+func TestExtractActionsCleansProofpointTrackedURLs(t *testing.T) {
+	meta := schema.MessageMeta{
+		ListUnsubscribe: []string{
+			"https://urldefense.proofpoint.com/v2/url?u=https%3A%2F%2Fexample.com%2Funsubscribe",
+		},
+	}
+
+	actions := extractActions(meta, `<a href="https://urldefense.proofpoint.com/v2/url?u=https%3A%2F%2Fexample.com%2Funsubscribe">Unsubscribe</a>`)
+	if len(actions) == 0 {
+		t.Fatalf("expected unsubscribe action")
+	}
+	if actions[0].URL != "https://example.com/unsubscribe" {
+		t.Fatalf("expected proofpoint tracked url to be cleaned, got %q", actions[0].URL)
 	}
 }
 
