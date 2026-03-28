@@ -1136,6 +1136,77 @@ func TestAgentInboxAssistantTemplateProviderSummarizesUnsubscribeActions(t *test
 	}
 }
 
+func TestOutboundPatternArtifactsCompile(t *testing.T) {
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	tests := []struct {
+		name     string
+		args     []string
+		contains []string
+	}{
+		{
+			name: "ack reply via reply_to_id",
+			args: []string{
+				"reply",
+				"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
+				"--account", "fixtures",
+				"--dry-run",
+				filepath.Join(repoRoot, "examples/artifacts/outbound-patterns/ack-reply.draft.json"),
+			},
+			contains: []string{
+				"Subject: Re: Your April invoice is ready",
+				"In-Reply-To: <invoice-123@example.com>",
+				"queued it for processing",
+			},
+		},
+		{
+			name: "support follow-up reply preserves multipart output",
+			args: []string{
+				"reply",
+				"--dry-run",
+				filepath.Join(repoRoot, "examples/artifacts/outbound-patterns/support-followup.reply.json"),
+			},
+			contains: []string{
+				"Content-Type: multipart/alternative;",
+				"In-Reply-To: <plain-123@example.com>",
+				"<blockquote>",
+			},
+		},
+		{
+			name: "release update draft renders markdown html",
+			args: []string{
+				"send",
+				"--dry-run",
+				filepath.Join(repoRoot, "examples/artifacts/outbound-patterns/release-update.draft.json"),
+			},
+			contains: []string{
+				"Subject: Weekly parser status",
+				"Content-Type: multipart/alternative;",
+				"<table>",
+				"<a href=\"https://github.com/nonozone/MailCli/tree/main/docs/en/examples/README.md\">examples index</a>",
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := exec.Command(mailcliBin, tc.args...)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("mailcli command failed: %v\n%s", err, string(output))
+			}
+
+			text := string(output)
+			for _, want := range tc.contains {
+				if !strings.Contains(text, want) {
+					t.Fatalf("expected output to contain %q, got %s", want, text)
+				}
+			}
+		})
+	}
+}
+
 func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
