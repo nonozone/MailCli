@@ -136,11 +136,82 @@ parser 可以是 heuristic。
 - 安全重置
 - 附件入口
 
+仓库里已经有一些可以直接参考的代表性样本：
+
+- `mercury.eml`：大型 HTML newsletter / 推广邮件
+- `verification.eml`：标准验证码 / 验证流程
+- `reply_quoted_verification.eml`：验证码内容被引用回复噪音包裹的场景
+- `invoice.eml`：账单 / 发票类 transactional 邮件
+- `attachment_notice.eml`：主要动作是查看附件或附件入口的邮件
+- `bounce.eml` 与 `postfix_bounce.eml`：投递失败和机器生成退信上下文
+- `unsubscribe_mixed.eml`：正文和退订动作并存，且退订不能压过主内容的场景
+
 增加 fixture 时：
 
 - 尽量脱敏地址、id 和 token
 - 让原始邮件足够真实，保留真正的问题形态
 - 用最小但足够保护该行为的样本
+
+## 多语言 Action 样本
+
+MailCLI 现在已经有一批多语言 action 覆盖，尤其包括中文 transactional 与偏好设置类邮件。
+
+可直接参考的多语言样本：
+
+- `unsubscribe_cn.eml`
+- `confirm_subscription_cn.eml`
+- `invoice_cn.eml`
+- `security_reset_cn.eml`
+- `security_verify_cn.eml`
+- `verification_cn_fullwidth.eml`
+- `view_online_abuse_cn.eml`
+- `attachment_notice_cn.eml`
+
+扩展多语言覆盖时，建议遵守这些原则：
+
+- 优先补真实 action 模式，不要只补一段翻译文本
+- action label 和它所在的正文上下文要一起覆盖
+- 如果新关键词可能误伤，至少补一个 negative case
+- heuristic 可以语言感知，但仍应保持“模式导向”，不要按发件人品牌硬编码
+
+如果一条新规则只因为某个 provider 固定用了某一句话才成立，那它通常应该更窄，或者暂时不合并。
+
+## Golden 更新规则
+
+golden 文件的作用是保护契约，不是帮你“顺手接受输出变化”。
+
+更新 golden 之前，请先确认：
+
+- 你看过完整 diff，而不只是改动行
+- 新输出确实更利于 agent 消费
+- token 或结构变化是有意的
+- 是否同时影响了 `cmd/json_snapshot_test.go`
+
+不要把无关的 parser 清洗顺手塞进同一次 golden 更新里。小而能解释清楚的 diff 更容易 review，也更安全。
+
+## 推荐验证闭环
+
+parser 相关改动，推荐按这个顺序验证：
+
+```bash
+go test ./pkg/parser -run TestParse
+go test ./pkg/parser -run TestExtractActions
+go test ./pkg/parser -run TestExtractCodes
+go test ./cmd
+go test ./...
+go build -o /tmp/mailcli ./cmd/mailcli
+```
+
+如果改动影响 local demo 产物或 thread-facing JSON 输出，再补跑：
+
+```bash
+make demo-local-thread-refresh
+make demo-local-thread-check
+```
+
+第一条命令会重建仓库中提交的 demo 产物。
+
+第二条命令会校验这些产物与仓库预期仍然一致。
 
 ## 契约变更
 

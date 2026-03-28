@@ -136,11 +136,82 @@ Good fixture categories:
 - security reset
 - attachment entry
 
+Representative fixtures already in the repo:
+
+- `mercury.eml`: large HTML-heavy newsletter or promo mail
+- `verification.eml`: straightforward verification flow
+- `reply_quoted_verification.eml`: verification content inside quoted thread noise
+- `invoice.eml`: transactional billing or invoice flow
+- `attachment_notice.eml`: message where the main user action is attachment access
+- `bounce.eml` and `postfix_bounce.eml`: delivery failure and machine-generated bounce context
+- `unsubscribe_mixed.eml`: mixed-content mail where unsubscribe must stay available but not dominate the body
+
 When adding a fixture:
 
 - anonymize addresses, ids, and tokens when possible
 - keep the raw mail realistic enough to preserve the failure mode
 - add the smallest fixture that still protects the behavior
+
+## Multilingual Action Fixtures
+
+MailCLI already carries multilingual action coverage, including Chinese transactional and preference-management cases.
+
+Representative multilingual fixtures:
+
+- `unsubscribe_cn.eml`
+- `confirm_subscription_cn.eml`
+- `invoice_cn.eml`
+- `security_reset_cn.eml`
+- `security_verify_cn.eml`
+- `verification_cn_fullwidth.eml`
+- `view_online_abuse_cn.eml`
+- `attachment_notice_cn.eml`
+
+When expanding multilingual coverage:
+
+- prefer adding a real action pattern over adding generic translated copy
+- cover the action label and the surrounding body context together
+- include at least one negative case if a new keyword could overfire
+- keep heuristics language-aware, but still pattern-based rather than sender-branded
+
+If a new rule only works because one provider always uses one exact phrase, it probably belongs in a narrower test or should not land yet.
+
+## Golden Update Rules
+
+Golden files are contract protection, not a shortcut for approving changed output.
+
+Before updating a golden:
+
+- read the full diff, not only the changed lines
+- confirm the new output is easier for agents to consume
+- confirm token or structure changes are intentional
+- check whether the change also affects `cmd/json_snapshot_test.go`
+
+Avoid bundling unrelated parser cleanup into the same golden refresh. Small, explainable diffs are easier to review and safer to keep.
+
+## Recommended Verification Loop
+
+For parser-focused work, this is the preferred loop:
+
+```bash
+go test ./pkg/parser -run TestParse
+go test ./pkg/parser -run TestExtractActions
+go test ./pkg/parser -run TestExtractCodes
+go test ./cmd
+go test ./...
+go build -o /tmp/mailcli ./cmd/mailcli
+```
+
+If your change affects local demo artifacts or thread-facing JSON output, also run:
+
+```bash
+make demo-local-thread-refresh
+make demo-local-thread-check
+```
+
+The first command regenerates the checked-in demo artifacts.
+
+The second command proves the refreshed artifacts still match repository expectations.
 
 ## Contract Changes
 
