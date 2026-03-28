@@ -57,6 +57,10 @@ func TestParseSecurityResetSafeLinksEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset_safelinks.eml", "../../testdata/golden/security_reset_safelinks.json")
 }
 
+func TestParseChineseVerifySignInEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/security_verify_cn.eml", "../../testdata/golden/security_verify_cn.json")
+}
+
 func TestParseAttachmentNoticeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice.eml", "../../testdata/golden/attachment_notice.json")
 }
@@ -1123,10 +1127,52 @@ func TestExtractActionsClassifiesVerifySignInLink(t *testing.T) {
 	}
 }
 
+func TestExtractActionsClassifiesChineseVerifySignInLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/security/session/abc123">验证登录</a>`)
+	action := findAction(actions, "verify_sign_in")
+	if action == nil {
+		t.Fatalf("expected chinese verify_sign_in action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/security/session/abc123" {
+		t.Fatalf("expected verify_sign_in url, got %q", action.URL)
+	}
+	if action.Label != "验证登录" {
+		t.Fatalf("expected preserved verify_sign_in label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseConfirmSignInLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/security/session/xyz789">确认登录</a>`)
+	action := findAction(actions, "verify_sign_in")
+	if action == nil {
+		t.Fatalf("expected chinese confirm verify_sign_in action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/security/session/xyz789" {
+		t.Fatalf("expected verify_sign_in url, got %q", action.URL)
+	}
+	if action.Label != "确认登录" {
+		t.Fatalf("expected preserved verify_sign_in label, got %q", action.Label)
+	}
+}
+
 func TestExtractActionsDoesNotClassifyGenericSignInLinkAsVerifySignIn(t *testing.T) {
 	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/sign-in">Sign in</a>`)
 	if action := findAction(actions, "verify_sign_in"); action != nil {
 		t.Fatalf("expected generic sign in link to avoid verify_sign_in classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseLoginLinkAsVerifySignIn(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/login">登录账户</a>`)
+	if action := findAction(actions, "verify_sign_in"); action != nil {
+		t.Fatalf("expected chinese login link to avoid verify_sign_in classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseAccountSecurityLinkAsVerifySignIn(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/security/settings">查看账号安全设置</a>`)
+	if action := findAction(actions, "verify_sign_in"); action != nil {
+		t.Fatalf("expected chinese account security link to avoid verify_sign_in classification, got %+v", actions)
 	}
 }
 

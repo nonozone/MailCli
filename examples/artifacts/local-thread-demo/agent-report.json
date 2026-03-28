@@ -192,9 +192,9 @@
   "sync": {
     "account": "fixtures",
     "mailbox": "INBOX",
-    "listed_count": 16,
-    "fetched_count": 16,
-    "indexed_count": 16,
+    "listed_count": 17,
+    "fetched_count": 17,
+    "indexed_count": 17,
     "skipped_count": 0,
     "refreshed_count": 0,
     "index_path": "/tmp/mailcli-fixtures-index.json"

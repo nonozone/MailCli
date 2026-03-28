@@ -1,0 +1,32 @@
+{
+  "id": "<security-verify-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "安全中心",
+      "address": "security@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "检测到新的登录请求",
+    "date": "2026-03-28T04:10:00Z",
+    "message_id": "<security-verify-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## 检测到新的登录请求\n\n如果这是你的操作，请尽快完成验证。\n\n[验证登录](https://example.cn/security/session/abc123)\n\n[查看安全说明](https://example.cn/security/help)",
+    "snippet": "## 检测到新的登录请求 如果这是你的操作，请尽快完成验证。 [验证登录](https://example.cn/security/session/abc123) [查看安全说明](https://example.cn/security/help)"
+  },
+  "actions": [
+    {
+      "type": "verify_sign_in",
+      "label": "验证登录",
+      "url": "https://example.cn/security/session/abc123"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 5
+  }
+}

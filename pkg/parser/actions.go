@@ -416,6 +416,12 @@ func looksLikeVerifySignIn(label, href string) bool {
 		return true
 	}
 
+	for _, token := range []string{"验证登录", "确认登录"} {
+		if label == token {
+			return true
+		}
+	}
+
 	return strings.Contains(href, "/verify-sign-in") || strings.Contains(href, "/verify-login") || strings.Contains(href, "/approve-login")
 }
 

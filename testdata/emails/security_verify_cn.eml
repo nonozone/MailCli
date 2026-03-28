@@ -1,0 +1,40 @@
+From: 安全中心 <security@example.cn>
+To: nono@example.com
+Subject: 检测到新的登录请求
+Message-ID: <security-verify-cn-123@example.cn>
+Date: Sat, 28 Mar 2026 12:10:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="mailcli-cn-verify"
+
+--mailcli-cn-verify
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+=E6=88=91=E4=BB=AC=E6=A3=80=E6=B5=8B=E5=88=B0=E4=B8=80=E6=AC=A1=E6=96=B0=E7=
+=9A=84=E7=99=BB=E5=BD=95=E8=AF=B7=E6=B1=82=E3=80=82
+
+=E5=A6=82=E6=9E=9C=E8=BF=99=E6=98=AF=E4=BD=A0=E7=9A=84=E6=93=8D=E4=BD=9C=EF=
+=BC=8C=E8=AF=B7=E9=80=9A=E8=BF=87=E4=B8=8B=E9=9D=A2=E9=93=BE=E6=8E=A5=E9=AA=
+=8C=E8=AF=81=E7=99=BB=E5=BD=95=E3=80=82
+
+--mailcli-cn-verify
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <body>
+    <main>
+      <h2>=E6=A3=80=E6=B5=8B=E5=88=B0=E6=96=B0=E7=9A=84=E7=99=BB=E5=BD=95=E8=
+=AF=B7=E6=B1=82</h2>
+      <p>=E5=A6=82=E6=9E=9C=E8=BF=99=E6=98=AF=E4=BD=A0=E7=9A=84=E6=93=8D=E4=
+=BD=9C=EF=BC=8C=E8=AF=B7=E5=B0=BD=E5=BF=AB=E5=AE=8C=E6=88=90=E9=AA=8C=E8=AF=
+=81=E3=80=82</p>
+      <p><a href=3D"https://example.cn/security/session/abc123">=E9=AA=8C=E8=
+=AF=81=E7=99=BB=E5=BD=95</a></p>
+      <p><a href=3D"https://example.cn/security/help">=E6=9F=A5=E7=9C=8B=E5=
+=AE=89=E5=85=A8=E8=AF=B4=E6=98=8E</a></p>
+    </main>
+  </body>
+</html>
+
+--mailcli-cn-verify--
