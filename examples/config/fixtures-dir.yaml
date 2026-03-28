@@ -3,4 +3,5 @@ accounts:
   - name: fixtures
     driver: dir
     path: ../../testdata/emails
+    username: support@nono.im
     mailbox: INBOX

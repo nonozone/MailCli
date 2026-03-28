@@ -16,6 +16,8 @@ The goal is to show which JSON boundary to return for three common outbound case
 
 - [ack-reply.draft.json](../../../examples/artifacts/outbound-patterns/ack-reply.draft.json)
 - [ack-reply.mime.txt](../../../examples/artifacts/outbound-patterns/ack-reply.mime.txt)
+- [minimal-reply.reply.json](../../../examples/artifacts/outbound-patterns/minimal-reply.reply.json)
+- [minimal-reply.mime.txt](../../../examples/artifacts/outbound-patterns/minimal-reply.mime.txt)
 - [support-followup.reply.json](../../../examples/artifacts/outbound-patterns/support-followup.reply.json)
 - [support-followup.mime.txt](../../../examples/artifacts/outbound-patterns/support-followup.mime.txt)
 - [release-update.draft.json](../../../examples/artifacts/outbound-patterns/release-update.draft.json)
@@ -51,6 +53,32 @@ Why this shape matters:
 - MailCLI can also derive a default reply recipient from the original message when `to` is omitted
 - the agent does not need to construct `In-Reply-To` or `References`
 - this is the best fit for zero-network demos and local retrieval loops
+
+## Pattern 1B: Minimal Reply With Derived Addressing
+
+Use this when the agent already chose the target message and you want the smallest possible reply boundary.
+
+Draft boundary:
+
+```json
+{
+  "account": "fixtures",
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}
+```
+
+Compile command:
+
+```bash
+mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/minimal-reply.reply.json
+```
+
+Why this shape matters:
+
+- MailCLI derives `from.address` from the configured account when the account already represents the sending identity
+- MailCLI derives the default reply recipient from the original message
+- this is the smallest useful handoff for agent-generated acknowledgement replies
 
 ## Pattern 2: Support Follow-Up Reply
 
@@ -113,6 +141,7 @@ Why this shape matters:
 ## Choosing Between Them
 
 - Use `reply_to_id` when MailCLI already has local access to the original message.
+- Use the minimal `reply_to_id` form when account config should provide sender identity and the original message should provide reply routing.
 - Use `reply_to_message_id` plus `references` when thread metadata comes from elsewhere and must stay portable.
 - Use `DraftMessage` when you are starting a new conversation and do not want reply headers at all.
 

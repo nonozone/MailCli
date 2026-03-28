@@ -1,0 +1,5 @@
+{
+  "account": "fixtures",
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}

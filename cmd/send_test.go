@@ -550,6 +550,94 @@ func TestReplyCommandDerivesRecipientAndSenderFromContext(t *testing.T) {
 	}
 }
 
+func TestReplyCommandDerivesRecipientFromOriginalToWhenOriginalFromIsSelf(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+
+	drv := &replyResolveDriver{
+		fakeSendDriver: &fakeSendDriver{},
+		raw:            []byte("From: support@nono.im\r\nTo: sender@example.com, support@nono.im\r\nSubject: Original subject\r\nMessage-ID: <orig-123@example.com>\r\nReferences: <older-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nOriginal body"),
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return drv, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "body_text": "Following up on the sent thread.",
+  "reply_to_id": "imap:uid:123"
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "--config", configPath, replyPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected self-sent reply command to succeed: %v", err)
+	}
+
+	raw := string(drv.lastRaw)
+	if !strings.Contains(raw, "To: sender@example.com") {
+		t.Fatalf("expected original non-self recipient to be derived, got %s", raw)
+	}
+	if strings.Contains(raw, "To: support@nono.im,") || strings.Contains(raw, "To: sender@example.com, support@nono.im") {
+		t.Fatalf("expected self address to be excluded from derived recipients, got %s", raw)
+	}
+}
+
+func TestReplyCommandDoesNotFallbackToSelfWhenNoOtherRecipientExists(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+
+	drv := &replyResolveDriver{
+		fakeSendDriver: &fakeSendDriver{},
+		raw:            []byte("From: support@nono.im\r\nTo: support@nono.im\r\nSubject: Original subject\r\nMessage-ID: <orig-123@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nOriginal body"),
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return drv, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "body_text": "Following up on the sent thread.",
+  "reply_to_id": "imap:uid:123"
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "--config", configPath, replyPath})
+
+	err := cmd.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected invalid reply draft to return outbound failure sentinel, got %v", err)
+	}
+
+	if strings.Contains(string(drv.lastRaw), "To: support@nono.im") {
+		t.Fatalf("expected reply flow not to fallback to self recipient, got %s", string(drv.lastRaw))
+	}
+	if !strings.Contains(out.String(), `"code": "invalid_draft"`) {
+		t.Fatalf("expected invalid_draft result when no reply recipient can be derived, got %s", out.String())
+	}
+}
+
 func TestSendCommandDryRunInvalidJSONStillReturnsRawError(t *testing.T) {
 	draftPath := writeTempFile(t, "draft.json", `{`)
 

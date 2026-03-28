@@ -1162,6 +1162,21 @@ func TestOutboundPatternArtifactsCompile(t *testing.T) {
 			},
 		},
 		{
+			name: "minimal reply derives sender and recipient from config and source message",
+			args: []string{
+				"reply",
+				"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
+				"--account", "fixtures",
+				"--dry-run",
+				filepath.Join(repoRoot, "examples/artifacts/outbound-patterns/minimal-reply.reply.json"),
+			},
+			contains: []string{
+				"From: support@nono.im",
+				"To: Billing Team <billing@example.com>",
+				"In-Reply-To: <invoice-123@example.com>",
+			},
+		},
+		{
 			name: "support follow-up reply preserves multipart output",
 			args: []string{
 				"reply",

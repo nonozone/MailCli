@@ -16,6 +16,8 @@
 
 - [ack-reply.draft.json](../../../examples/artifacts/outbound-patterns/ack-reply.draft.json)
 - [ack-reply.mime.txt](../../../examples/artifacts/outbound-patterns/ack-reply.mime.txt)
+- [minimal-reply.reply.json](../../../examples/artifacts/outbound-patterns/minimal-reply.reply.json)
+- [minimal-reply.mime.txt](../../../examples/artifacts/outbound-patterns/minimal-reply.mime.txt)
 - [support-followup.reply.json](../../../examples/artifacts/outbound-patterns/support-followup.reply.json)
 - [support-followup.mime.txt](../../../examples/artifacts/outbound-patterns/support-followup.mime.txt)
 - [release-update.draft.json](../../../examples/artifacts/outbound-patterns/release-update.draft.json)
@@ -51,6 +53,32 @@ mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dr
 - 当 `to` 省略时，MailCLI 也可以从原邮件里补默认回复收件人
 - agent 不需要自己拼 `In-Reply-To` 或 `References`
 - 它非常适合零网络 demo 和本地检索闭环
+
+## 模式 1B：自动补地址的极简回复
+
+当 agent 已经决定要回复哪封邮件，而且你希望把 reply draft 压缩到最小边界时，使用这个模式。
+
+草稿边界：
+
+```json
+{
+  "account": "fixtures",
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}
+```
+
+编译命令：
+
+```bash
+mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/minimal-reply.reply.json
+```
+
+这个形态的价值：
+
+- 当账户配置本身已经代表发信身份时，MailCLI 可以从 account 自动补 `from.address`
+- MailCLI 可以从原邮件里自动推导默认回复收件人
+- 这是 agent 产出确认型回复时最小、最稳的 handoff 形式
 
 ## 模式 2：支持型跟进回复
 
@@ -113,6 +141,7 @@ mailcli send --dry-run examples/artifacts/outbound-patterns/release-update.draft
 ## 怎么选
 
 - 当 MailCLI 已经能访问原邮件时，优先用 `reply_to_id`。
+- 当 account 配置应该负责发件人身份，且原邮件应该负责回复路由时，优先用极简 `reply_to_id` 形态。
 - 当 thread 元数据来自其他系统、需要保持可移植性时，用 `reply_to_message_id` 加 `references`。
 - 当你要发起一个全新会话，不需要任何回复头时，用 `DraftMessage`。
 

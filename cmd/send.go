@@ -69,6 +69,10 @@ func newSendCmd() *cobra.Command {
 				if err != nil {
 					return writeSendFailure(cmd, providerName, accountName, err)
 				}
+
+				if err := validateEnvelopeAddressing(draft.From, draft.To, draft.Cc, draft.Bcc); err != nil {
+					return writeSendFailure(cmd, providerName, accountName, err)
+				}
 			}
 
 			mime, err := composer.ComposeDraft(draft)
@@ -159,6 +163,12 @@ func newReplyCmd() *cobra.Command {
 					return err
 				}
 				return writeSendFailure(cmd, providerName, accountName, err)
+			}
+
+			if !dryRun {
+				if err := validateEnvelopeAddressing(draft.From, draft.To, draft.Cc, draft.Bcc); err != nil {
+					return writeSendFailure(cmd, providerName, accountName, err)
+				}
 			}
 
 			mime, err := composer.ComposeReply(draft)
@@ -296,6 +306,10 @@ func deriveReplyRecipients(msg *schema.StandardMessage, sender *schema.Address) 
 		return recipients
 	}
 
+	if msg.Meta.From != nil && sameAddress(msg.Meta.From.Address, senderAddress) {
+		return nil
+	}
+
 	if msg.Meta.From != nil && (strings.TrimSpace(msg.Meta.From.Address) != "" || strings.TrimSpace(msg.Meta.From.Name) != "") {
 		return []schema.Address{*msg.Meta.From}
 	}
@@ -310,6 +324,26 @@ func sameAddress(left, right string) bool {
 		return false
 	}
 	return left == right
+}
+
+func validateEnvelopeAddressing(from *schema.Address, to, cc, bcc []schema.Address) error {
+	if from == nil || strings.TrimSpace(from.Address) == "" {
+		return errors.New("missing from header")
+	}
+	if countAddressRecipients(to)+countAddressRecipients(cc)+countAddressRecipients(bcc) == 0 {
+		return errors.New("missing recipients")
+	}
+	return nil
+}
+
+func countAddressRecipients(values []schema.Address) int {
+	count := 0
+	for _, addr := range values {
+		if strings.TrimSpace(addr.Address) != "" {
+			count++
+		}
+	}
+	return count
 }
 
 func writeSendFailure(cmd *cobra.Command, provider, account string, err error) error {
