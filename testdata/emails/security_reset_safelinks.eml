@@ -1,0 +1,18 @@
+From: Security Center <security@example.com>
+To: nono@example.com
+Subject: Reset your password
+Message-ID: <security-reset-safelinks-123@example.com>
+Date: Thu, 26 Mar 2026 13:20:00 +0800
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<html>
+  <body>
+    <main>
+      <h2>Reset your password</h2>
+      <p>We received a request to reset your password.</p>
+      <p><a href="https://nam12.safelinks.protection.outlook.com/?url=https%3A%2F%2Fsecurity.example.com%2Freset%3Ftoken%3Dabc123&data=example">Reset password</a></p>
+      <p><a href="https://nam12.safelinks.protection.outlook.com/?url=https%3A%2F%2Fsecurity.example.com%2Fverify%3Fsession%3Dxyz789&data=example">Verify sign-in</a></p>
+    </main>
+  </body>
+</html>

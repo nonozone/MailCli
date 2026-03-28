@@ -118,6 +118,7 @@ Current parser fixture coverage now includes:
 - quoted-reply verification mail
 - invoice/payment mail
 - security reset mail
+- security reset mail with corporate safe-link wrappers
 - attachment-entry mail
 - multipart/related inline-image mail
 

@@ -50,9 +50,9 @@ mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dr
 {
   "account": "fixtures",
   "mailbox": "INBOX",
-  "listed_count": 12,
-  "fetched_count": 12,
-  "indexed_count": 12,
+  "listed_count": 13,
+  "fetched_count": 13,
+  "indexed_count": 13,
   "skipped_count": 0,
   "refreshed_count": 0,
   "index_path": "/tmp/mailcli-fixtures-index.json"

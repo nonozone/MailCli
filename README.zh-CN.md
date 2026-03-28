@@ -118,6 +118,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 引用旧验证码的回复链邮件
 - 账单 / 支付邮件
 - 安全重置邮件
+- 带企业 safe-link 包装链接的安全重置邮件
 - 附件入口邮件
 - `multipart/related` 内联图片邮件
 

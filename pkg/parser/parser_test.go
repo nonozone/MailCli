@@ -49,6 +49,10 @@ func TestParseSecurityResetEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset.eml", "../../testdata/golden/security_reset.json")
 }
 
+func TestParseSecurityResetSafeLinksEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset_safelinks.eml", "../../testdata/golden/security_reset_safelinks.json")
+}
+
 func TestParseAttachmentNoticeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice.eml", "../../testdata/golden/attachment_notice.json")
 }

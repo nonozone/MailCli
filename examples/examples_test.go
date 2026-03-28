@@ -213,7 +213,7 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 	}
 
 	syncResult := mustMap(t, report["sync"])
-	if syncResult["indexed_count"] != float64(12) {
+	if syncResult["indexed_count"] != float64(13) {
 		t.Fatalf("expected fixture sync to index all repository fixtures, got %#v", syncResult["indexed_count"])
 	}
 
