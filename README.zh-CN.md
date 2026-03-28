@@ -478,52 +478,17 @@ python3 examples/python/agent_thread_assistant.py \
 
 - [Examples 索引](docs/zh-CN/examples/README.md)
 
-## 路线图
+## 当前优先级
 
-### Phase 1: The Brain
+- 保持当前 agent-facing 机器接口稳定
+- 继续用 fixture 驱动的方式提升 parser 质量
+- 提升本地 search 和 thread 工作流的可靠性
+- 让 driver、parser 和契约变更的贡献路径更明确
 
-- [x] 定义 `StandardMessage`、`DraftMessage`、`ReplyDraft` 和 `SendResult`
-- [x] 构建 parser-first MVP，并建立代表性 golden tests
-- [x] 建立 `parse`、`list`、`get`、`send`、`reply` 的命令骨架
-- [x] 增加本地 MIME composer
-- [x] 强化 HTML 降噪、主体区域提取和 URL 清洗
-- [x] 扩大样本集，覆盖 newsletter、交易邮件、告警和边界场景
+详细规划见：
 
-### Phase 2: The Hands
-
-- [x] 增加基于配置文件的账户上下文
-- [x] 增加基础 IMAP 读路径
-- [x] 为 IMAP 风格账户增加 SMTP 发信路径
-- [x] 完成 IMAP `FetchRaw`，支持序号、UID 和 `Message-ID`
-- [x] 增加面向 agent 检索闭环的本地文件索引 / 搜索基线
-- [x] 将常见发送失败映射为稳定结果码
-
-### Phase 3: The Memory
-
-- [x] 增加本地索引 / 搜索基线
-- [x] 增加本地线程导航
-- [x] 提升 mailbox cache 可见性和 refresh 语义
-- [x] 增加更适合本地 agent 工作流的结构化元数据
-
-### Phase 4: The Ecosystem
-
-- [ ] 支持更多 provider
-- [x] 增加更完整的生态集成与 driver 扩展文档
-- [x] 文档化 parser 贡献路径和 heuristic 边界
-- [ ] 稳定 RFC 驱动的扩展点
-
-## 示例
-
-- Python 解析示例：`examples/python/parse_email.py`
-- Python 回复 dry-run 示例：`examples/python/reply_dry_run.py`
-- Python inbox agent 示例：`examples/python/agent_inbox_assistant.py`
-  支持内置规则 provider，也支持外部命令 provider。
-- Python thread agent 示例：`examples/python/agent_thread_assistant.py`
-  演示本地同步、thread 选择和回复 dry-run 生成。
-- External provider 模板：`examples/providers/template_external_provider.py`
-- 可选 OpenAI provider 示例：`examples/providers/openai_external_provider.py`
-- Shell 解析示例：`examples/shell/parse_email.sh`
-- Shell 回复 dry-run 示例：`examples/shell/reply_dry_run.sh`
+- [下一阶段开发路线](docs/zh-CN/project/next-roadmap.md)
+- [内部主导开发顺序](docs/zh-CN/project/internal-priority.md)
 
 ## 如何贡献
 
@@ -554,27 +519,27 @@ MailCLI 还处在早期阶段，但方向已经明确。
 - 清晰的关注点分离
 - 稳定的机器接口
 
+## 文档导航
+
+- 从这里开始：
+  [Examples 索引](docs/zh-CN/examples/README.md)，
+  [Local Thread Demo](docs/zh-CN/examples/local-thread-demo.md)，
+  [Agent 协作流程](docs/zh-CN/agent-workflows.md)
+- 规范：
+  [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)，
+  [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)，
+  [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)，
+  [配置规范](docs/zh-CN/spec/config.md)，
+  [本地索引规范](docs/zh-CN/spec/local-index.md)
+- 贡献：
+  [贡献指南](CONTRIBUTING.zh-CN.md)，
+  [Parser 贡献指南](docs/zh-CN/contributing/parser.md)，
+  [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
+- 发布与规划：
+  [v0.1 RC 发布说明](docs/zh-CN/release/v0.1-rc.md)，
+  [Announcement Kit](docs/zh-CN/release/announcement-kit.md)，
+  [下一阶段开发路线](docs/zh-CN/project/next-roadmap.md)
+
 ## 许可证
 
 Apache-2.0
-
-## 相关文档
-
-- [English documentation](README.md)
-- [Agent 协作流程](docs/zh-CN/agent-workflows.md)
-- [Agent Decision 规范](docs/zh-CN/spec/agent-decisions.md)
-- [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)
-- [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)
-- [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)
-- [Parser 贡献指南](docs/zh-CN/contributing/parser.md)
-- [如何添加 Driver](docs/zh-CN/contributing/drivers.md)
-- [配置规范](docs/zh-CN/spec/config.md)
-- [下一阶段开发路线](docs/zh-CN/project/next-roadmap.md)
-- [内部主导开发顺序](docs/zh-CN/project/internal-priority.md)
-- [v0.1 RC 发布说明](docs/zh-CN/release/v0.1-rc.md)
-- [Announcement Kit](docs/zh-CN/release/announcement-kit.md)
-- [Examples 索引](docs/zh-CN/examples/README.md)
-- [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)
-- [Agent Thread 示例](docs/zh-CN/examples/agent-thread-assistant.md)
-- [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md)
-- [贡献指南](CONTRIBUTING.zh-CN.md)

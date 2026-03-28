@@ -478,52 +478,17 @@ More runnable entry points:
 
 - [Examples Index](docs/en/examples/README.md)
 
-## Roadmap
+## Current Priorities
 
-### Phase 1: The Brain
+- keep the current machine-facing contracts stable for agent developers
+- continue improving parser quality through fixture-driven regression work
+- make local search and thread workflows more reliable
+- keep contribution paths explicit for drivers, parser work, and contract changes
 
-- [x] Define `StandardMessage`, `DraftMessage`, `ReplyDraft`, and `SendResult`
-- [x] Build parser-first MVP with representative fixtures and golden tests
-- [x] Support `parse`, `list`, `get`, `send`, and `reply` command skeletons
-- [x] Add local MIME composer for outbound drafts and replies
-- [x] Improve HTML noise filtering with stronger body extraction and URL cleaning
-- [x] Expand fixture corpus for newsletters, transactional mail, alerts, and edge cases
+Detailed planning lives in:
 
-### Phase 2: The Hands
-
-- [x] Add config-backed account selection
-- [x] Add baseline IMAP read path
-- [x] Add SMTP-backed send path for IMAP-style accounts
-- [x] Implement IMAP `FetchRaw` for sequence numbers, UIDs, and `Message-ID`
-- [x] Add a local file-backed indexing/search baseline for agent retrieval loops
-- [x] Map operational send failures into stable result codes
-
-### Phase 3: The Memory
-
-- [x] Add local indexing/search baseline
-- [x] Add local thread navigation
-- [x] Improve mailbox cache visibility and refresh semantics
-- [x] Add structured metadata for larger local agent workflows
-
-### Phase 4: The Ecosystem
-
-- [ ] Add more providers beyond IMAP/SMTP
-- [x] Document ecosystem integrations and driver extension patterns
-- [x] Document parser contribution workflow and heuristic boundaries
-- [ ] Stabilize RFC-driven extension points for contributors
-
-## Examples
-
-- Python parse example: `examples/python/parse_email.py`
-- Python reply dry-run example: `examples/python/reply_dry_run.py`
-- Python inbox agent example: `examples/python/agent_inbox_assistant.py`
-  Supports a built-in rule provider or an external command provider.
-- Python thread agent example: `examples/python/agent_thread_assistant.py`
-  Demonstrates local sync, thread selection, and reply dry-run generation.
-- External provider template: `examples/providers/template_external_provider.py`
-- Optional OpenAI provider example: `examples/providers/openai_external_provider.py`
-- Shell parse example: `examples/shell/parse_email.sh`
-- Shell reply dry-run example: `examples/shell/reply_dry_run.sh`
+- [Next Development Roadmap](docs/en/project/next-roadmap.md)
+- [Internal Development Priority](docs/en/project/internal-priority.md)
 
 ## Contributing
 
@@ -554,27 +519,27 @@ The project is community-open, but it is still directionally curated to stay foc
 - clean separation of concerns
 - stable machine-facing contracts
 
+## Docs Map
+
+- Start here:
+  [Examples Index](docs/en/examples/README.md),
+  [Local Thread Demo](docs/en/examples/local-thread-demo.md),
+  [Agent Workflows](docs/en/agent-workflows.md)
+- Specs:
+  [Outbound Message Spec](docs/en/spec/outbound-message.md),
+  [Agent Provider Contract](docs/en/spec/agent-provider.md),
+  [Driver Extension Spec](docs/en/spec/driver-extension.md),
+  [Config Spec](docs/en/spec/config.md),
+  [Local Index Spec](docs/en/spec/local-index.md)
+- Contribution:
+  [Contribution Guide](CONTRIBUTING.md),
+  [Parser Contributor Guide](docs/en/contributing/parser.md),
+  [Adding a Driver](docs/en/contributing/drivers.md)
+- Release and planning:
+  [v0.1 RC Release Notes](docs/en/release/v0.1-rc.md),
+  [Announcement Kit](docs/en/release/announcement-kit.md),
+  [Next Development Roadmap](docs/en/project/next-roadmap.md)
+
 ## License
 
 Apache-2.0
-
-## Related
-
-- [Agent Workflows](docs/en/agent-workflows.md)
-- [Agent Decision Spec](docs/en/spec/agent-decisions.md)
-- [Outbound Message Spec](docs/en/spec/outbound-message.md)
-- [Agent Provider Contract](docs/en/spec/agent-provider.md)
-- [Driver Extension Spec](docs/en/spec/driver-extension.md)
-- [Parser Contributor Guide](docs/en/contributing/parser.md)
-- [Adding a Driver](docs/en/contributing/drivers.md)
-- [Config Spec](docs/en/spec/config.md)
-- [Next Development Roadmap](docs/en/project/next-roadmap.md)
-- [Internal Development Priority](docs/en/project/internal-priority.md)
-- [v0.1 RC Release Notes](docs/en/release/v0.1-rc.md)
-- [Announcement Kit](docs/en/release/announcement-kit.md)
-- [Examples Index](docs/en/examples/README.md)
-- [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md)
-- [Agent Thread Example](docs/en/examples/agent-thread-assistant.md)
-- [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md)
-- [Contribution Guide](CONTRIBUTING.md)
-- [中文文档](README.zh-CN.md)
