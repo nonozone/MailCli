@@ -24,7 +24,7 @@ make demo-local-thread-check
 - [Agent 决策样例](agent-decision-patterns.md)
   适合查看 verification、bounce 和 unsubscribe 的决策样例。
 - [Outbound Draft Patterns](outbound-draft-patterns.md)
-  适合查看具体的 `ReplyDraft` 和 `DraftMessage` 交接模式。
+  适合查看具体的 `ReplyDraft` 和 `DraftMessage` 交接模式，也包含最小 `reply_to_id` 回复边界。
 - [OpenAI External Provider](openai-external-provider.md)
   适合把 OpenAI 驱动的分析器接到任一 agent 示例上。
 

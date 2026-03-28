@@ -230,6 +230,18 @@ mailcli reply --config ~/.config/mailcli/config.yaml reply.json
 mailcli reply --dry-run reply.json
 ```
 
+Smallest useful reply boundary:
+
+```json
+{
+  "account": "fixtures",
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}
+```
+
+This is the preferred handoff when the agent already chose the target message and MailCLI should derive the rest.
+
 ## The New Message Path
 
 Use this path when the agent is sending a brand new outbound email.
@@ -278,7 +290,7 @@ mailcli sync -> mailcli search -> choose id -> mailcli get/reply
 ### Support reply
 
 ```text
-mailcli get -> agent writes ReplyDraft -> mailcli reply
+mailcli get -> agent writes minimal ReplyDraft JSON -> mailcli reply
 ```
 
 ### Agent-triggered outbound notification

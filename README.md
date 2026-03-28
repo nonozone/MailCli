@@ -16,6 +16,43 @@ It is trying to be the stable boundary between agents and email systems:
 
 Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and machine-facing workflows.
 
+## Zero-Network First Run
+
+If you only want to understand the agent boundary, start here:
+
+```bash
+# 1. build mailcli
+go build -o mailcli ./cmd/mailcli
+
+# 2. inspect one local message as structured JSON
+./mailcli parse --format json testdata/emails/invoice.eml
+
+# 3. run the local thread loop
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+
+# 4. compile the smallest useful reply boundary
+./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/minimal-reply.reply.json
+```
+
+Minimal agent handoff:
+
+```json
+{
+  "account": "fixtures",
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}
+```
+
+MailCLI fills in the rest:
+
+- `from.address` from account config
+- default reply recipient from the source message
+- `In-Reply-To`
+- `References`
+- default reply subject
+
 ## In 10 Seconds
 
 ```bash
@@ -36,8 +73,14 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-```text
-Raw Email -> MailCLI -> StandardMessage / Thread Context -> Agent -> ReplyDraft -> MailCLI -> MIME
+```mermaid
+flowchart LR
+  A["Raw Email"] --> B["MailCLI"]
+  B --> C["StandardMessage / Thread Context"]
+  C --> D["Agent"]
+  D --> E["Minimal ReplyDraft JSON"]
+  E --> F["MailCLI"]
+  F --> G["Derived MIME + Transport"]
 ```
 
 ## Start Without IMAP
@@ -216,6 +259,8 @@ MailCLI solves that by providing a stable boundary:
   - `In-Reply-To`
   - `References`
   - default reply subject
+  - default reply recipient when `to` is omitted
+- for non-dry-run outbound commands, MailCLI can also derive `from.address` from configured `smtp_username` or `username`
 
 ## Architecture
 
@@ -260,8 +305,15 @@ Agent -> mailcli sync -> mailcli threads -> choose thread -> mailcli search/get/
 
 ### Reply loop
 
-```text
-Agent -> ReplyDraft -> mailcli reply -> Composer -> Raw MIME -> Driver -> Provider
+```mermaid
+flowchart LR
+  A["Agent"] --> B["Minimal ReplyDraft JSON"]
+  B --> C["mailcli reply"]
+  C --> D["MailCLI derives From / To / thread headers"]
+  D --> E["Composer"]
+  E --> F["Raw MIME"]
+  F --> G["Driver"]
+  G --> H["Provider"]
 ```
 
 ### New outbound message loop

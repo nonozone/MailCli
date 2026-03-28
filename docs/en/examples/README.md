@@ -24,7 +24,7 @@ make demo-local-thread-check
 - [Agent Decision Patterns](agent-decision-patterns.md)
   Best for verification, bounce, and unsubscribe decision examples.
 - [Outbound Draft Patterns](outbound-draft-patterns.md)
-  Best for concrete `ReplyDraft` and `DraftMessage` handoff patterns.
+  Best for concrete `ReplyDraft` and `DraftMessage` handoff patterns, including the smallest `reply_to_id` reply shape.
 - [OpenAI External Provider](openai-external-provider.md)
   Best for plugging an OpenAI-backed analyzer into either agent example.
 

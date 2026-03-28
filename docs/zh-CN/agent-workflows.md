@@ -230,6 +230,18 @@ mailcli reply --config ~/.config/mailcli/config.yaml reply.json
 mailcli reply --dry-run reply.json
 ```
 
+最小可用的回复边界：
+
+```json
+{
+  "account": "fixtures",
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}
+```
+
+当 agent 已经选定目标消息，而且希望把剩余发信细节交给 MailCLI 时，这是优先推荐的 handoff。
+
 ## 新邮件发送路径
 
 当 agent 需要发送全新的邮件时，走这条链路。
@@ -278,7 +290,7 @@ mailcli sync -> mailcli search -> 选中 id -> mailcli get/reply
 ### 客服回复
 
 ```text
-mailcli get -> agent 生成 ReplyDraft -> mailcli reply
+mailcli get -> agent 生成最小 ReplyDraft JSON -> mailcli reply
 ```
 
 ### agent 主动通知
