@@ -254,11 +254,11 @@ func classifyAction(label, href string) string {
 		return "pay_invoice"
 	case looksLikeViewInvoice(lowerLabel, lowerHref):
 		return "view_invoice"
-	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser") || strings.Contains(lowerLabel, "read in browser") || strings.Contains(lowerHref, "view-online"):
+	case looksLikeViewOnline(lowerLabel, lowerHref, label):
 		return "view_online"
 	case looksLikeConfirmSubscription(lowerLabel, lowerHref, label):
 		return "confirm_subscription"
-	case strings.Contains(lowerLabel, "report abuse") || strings.HasPrefix(lowerHref, "mailto:abuse@") || strings.Contains(lowerHref, "report-abuse"):
+	case looksLikeReportAbuse(lowerLabel, lowerHref, label):
 		return "report_abuse"
 	default:
 		return ""
@@ -286,6 +286,34 @@ func looksLikeConfirmSubscription(lowerLabel, lowerHref, rawLabel string) bool {
 
 	for _, token := range []string{"确认订阅", "确认邮件订阅"} {
 		if strings.Contains(rawLabel, token) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func looksLikeViewOnline(lowerLabel, lowerHref, rawLabel string) bool {
+	if strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser") || strings.Contains(lowerLabel, "read in browser") || strings.Contains(lowerHref, "view-online") {
+		return true
+	}
+
+	for _, token := range []string{"在线查看", "在网页中查看"} {
+		if rawLabel == token {
+			return true
+		}
+	}
+
+	return false
+}
+
+func looksLikeReportAbuse(lowerLabel, lowerHref, rawLabel string) bool {
+	if strings.Contains(lowerLabel, "report abuse") || strings.HasPrefix(lowerHref, "mailto:abuse@") || strings.Contains(lowerHref, "report-abuse") {
+		return true
+	}
+
+	for _, token := range []string{"举报滥用", "举报垃圾邮件"} {
+		if rawLabel == token {
 			return true
 		}
 	}

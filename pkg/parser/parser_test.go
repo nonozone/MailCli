@@ -73,6 +73,10 @@ func TestParseChineseAttachmentNoticeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice_cn.eml", "../../testdata/golden/attachment_notice_cn.json")
 }
 
+func TestParseChineseViewOnlineAndReportAbuseEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/view_online_abuse_cn.eml", "../../testdata/golden/view_online_abuse_cn.json")
+}
+
 func TestParseMixedUnsubscribeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/unsubscribe_mixed.eml", "../../testdata/golden/unsubscribe_mixed.json")
 }
@@ -844,6 +848,55 @@ func TestExtractActionsClassifiesReportAbuseLink(t *testing.T) {
 	}
 	if action.Label != "Report abuse" {
 		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseViewOnlineLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/campaign/preview/weekly">在线查看</a>`)
+	action := findAction(actions, "view_online")
+	if action == nil {
+		t.Fatalf("expected chinese view_online action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/campaign/preview/weekly" {
+		t.Fatalf("expected view_online url, got %q", action.URL)
+	}
+	if action.Label != "在线查看" {
+		t.Fatalf("expected preserved view_online label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseReportAbuseLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="mailto:postmaster@example.cn?subject=report">举报滥用</a>`)
+	action := findAction(actions, "report_abuse")
+	if action == nil {
+		t.Fatalf("expected chinese report_abuse action, got %+v", actions)
+	}
+	if action.URL != "mailto:postmaster@example.cn?subject=report" {
+		t.Fatalf("expected report_abuse url, got %q", action.URL)
+	}
+	if action.Label != "举报滥用" {
+		t.Fatalf("expected preserved report_abuse label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseContentViewLinkAsViewOnline(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/content/weekly">查看活动详情</a>`)
+	if action := findAction(actions, "view_online"); action != nil {
+		t.Fatalf("expected chinese content view link to avoid view_online classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseIssueReportLinkAsReportAbuse(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="mailto:support@example.cn">举报问题</a>`)
+	if action := findAction(actions, "report_abuse"); action != nil {
+		t.Fatalf("expected chinese issue report link to avoid report_abuse classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseSupportLinkAsReportAbuse(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="mailto:support@example.cn">联系客服</a>`)
+	if action := findAction(actions, "report_abuse"); action != nil {
+		t.Fatalf("expected chinese support link to avoid report_abuse classification, got %+v", actions)
 	}
 }
 

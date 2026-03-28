@@ -1,0 +1,37 @@
+{
+  "id": "<view-online-abuse-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "社区周报",
+      "address": "newsletter@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "本周更新摘要",
+    "date": "2026-03-28T06:10:00Z",
+    "message_id": "<view-online-abuse-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## 本周更新摘要\n\n如果邮件内容显示不正常，你可以在网页中查看完整内容。\n\n[在线查看](https://example.cn/campaign/preview/weekly)\n\n[举报滥用](mailto:postmaster@example.cn?subject=report)",
+    "snippet": "## 本周更新摘要 如果邮件内容显示不正常，你可以在网页中查看完整内容。 [在线查看](https://example.cn/campaign/preview/weekly) [举报滥用](mailto:postmaster@example.cn?subject=report)"
+  },
+  "actions": [
+    {
+      "type": "view_online",
+      "label": "在线查看",
+      "url": "https://example.cn/campaign/preview/weekly"
+    },
+    {
+      "type": "report_abuse",
+      "label": "举报滥用",
+      "url": "mailto:postmaster@example.cn?subject=report"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 5
+  }
+}
