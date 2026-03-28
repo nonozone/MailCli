@@ -48,7 +48,7 @@ At minimum, a new driver should include:
 - list behavior coverage
 - fetch behavior coverage
 - send behavior coverage, or explicit send-not-supported coverage
-- the shared contract suite in `pkg/driver/conformance_test.go`
+- the shared contract suite in `pkg/driver/drivertest`
 
 The shared contract suite is the minimum bar, not the complete test plan.
 
@@ -77,4 +77,4 @@ When reviewing a driver PR, check:
 
 - [Driver Extension Spec](driver-extension.md)
 - [Adding a Driver](../contributing/drivers.md)
-- `pkg/driver/conformance_test.go`
+- `pkg/driver/drivertest/drivertest.go`

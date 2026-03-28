@@ -12,7 +12,7 @@
 - [Driver 合规清单](../spec/driver-compliance.md)
 - [配置规范](../spec/config.md)
 - `pkg/driver/driver.go`
-- `pkg/driver/conformance_test.go`
+- `pkg/driver/drivertest/drivertest.go`
 - `pkg/driver/factory.go`
 - `pkg/driver/stub.go`
 - `pkg/driver/dir.go`
@@ -34,7 +34,42 @@
 4. 为 list、raw fetch、send 行为补测试
 5. 文档化必需配置字段和限制
 
-建议优先把新 driver 接到 `pkg/driver/conformance_test.go` 这套共享合同测试里，再额外补 provider 私有边界用例。
+建议优先把新 driver 接到 `pkg/driver/drivertest` 这套共享合同测试里，再额外补 provider 私有边界用例。
+
+## 共享合规测试支架
+
+MailCLI 现在把可复用的 driver 合同测试 helper 暴露在：
+
+- `pkg/driver/drivertest`
+
+建议先用它证明共享基线成立，再去补 provider 私有边界测试。
+
+最小示例：
+
+```go
+func TestExampleDriverContractSuite(t *testing.T) {
+	drivertest.RunContractSuite(t, drivertest.Harness{
+		NewDriver: func(t *testing.T) drivertest.Driver {
+			t.Helper()
+			return newExampleDriverForTest(t)
+		},
+		MissingFetchID: "missing-id",
+		NotFoundError:  driver.ErrMessageNotFound,
+		SendRaw:        []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Demo\r\n\r\nHello"),
+	})
+}
+```
+
+这个 helper 刻意保持很小。
+
+它只验证共享最低门槛：
+
+- `List` 至少返回一个后续可抓取的 id
+- `FetchRaw` 对已列出的 id 必须成功
+- 如果配置了 missing case，缺失 id 应映射到稳定的 not-found error
+- `SendRaw` 要么成功，要么返回预期的稳定操作级错误
+
+它不能替代 provider 私有测试，例如 auth 映射、mailbox 语义、分页边界或消息 id 形式。
 
 ## 设计规则
 
@@ -53,7 +88,7 @@
 - list 行为
 - fetch 行为
 - send 行为，或明确不支持 send 的行为
-- 通过 `pkg/driver/conformance_test.go` 的共享合同覆盖
+- 通过 `pkg/driver/drivertest` 的共享合同覆盖
 
 ## Factory 接入
 

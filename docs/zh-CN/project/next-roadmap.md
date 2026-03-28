@@ -184,7 +184,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 #### Issue: 为 driver 扩展贡献者增加 fake-driver 测试支架
 
-状态：基础版共享 driver 合同测试已完成，见 `pkg/driver/conformance_test.go`。
+状态：可复用的共享 driver 合同测试支架已完成，见 `pkg/driver/drivertest`。
 
 - Area: driver, tests, docs
 - Problem: 外部 driver 的验证门槛仍偏高
@@ -192,7 +192,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
   - 增加可复用的 driver 合规测试辅助或 fixture
   - 明确 list / fetch / send 的最小行为要求
   - 文档化最低接受门槛
-- Deliverable: 测试支架 + 贡献文档
+- Deliverable: 可复用测试支架 + 贡献文档
 
 #### Issue: 编写 parser contributor guide
 

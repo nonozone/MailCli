@@ -9,6 +9,7 @@ import (
 
 	"github.com/emersion/go-imap"
 	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/driver/drivertest"
 	"github.com/nonozone/MailCli/pkg/schema"
 )
 
@@ -221,8 +222,8 @@ func TestIMAPDriverContractSuite(t *testing.T) {
 		smtpSendFunc = restore
 	})
 
-	runDriverContractTests(t, driverContractHarness{
-		newDriver: func(t *testing.T) Driver {
+	drivertest.RunContractSuite(t, drivertest.Harness{
+		NewDriver: func(t *testing.T) drivertest.Driver {
 			t.Helper()
 
 			section, err := imap.ParseBodySectionName("BODY[]")
@@ -267,15 +268,16 @@ func TestIMAPDriverContractSuite(t *testing.T) {
 			}
 			return drv
 		},
-		newMissingDriver: func(t *testing.T) Driver {
+		NewMissingDriver: func(t *testing.T) drivertest.Driver {
 			t.Helper()
 			session := &fakeIMAPSession{}
 			return newTestIMAPDriver(session)
 		},
-		listQuery:      schema.SearchQuery{Limit: 1},
-		missingFetchID: "missing@example.com",
-		sendRaw:        []byte("From: support@example.com\r\nTo: user@example.com\r\nSubject: Contract send\r\n\r\nHello"),
-		assertList: func(t *testing.T, got []schema.MessageMetaSummary) {
+		ListQuery:      schema.SearchQuery{Limit: 1},
+		MissingFetchID: "missing@example.com",
+		NotFoundError:  ErrMessageNotFound,
+		SendRaw:        []byte("From: support@example.com\r\nTo: user@example.com\r\nSubject: Contract send\r\n\r\nHello"),
+		AssertList: func(t *testing.T, got []schema.MessageMetaSummary) {
 			t.Helper()
 			if len(got) != 1 {
 				t.Fatalf("expected one listed message, got %d", len(got))
@@ -284,7 +286,7 @@ func TestIMAPDriverContractSuite(t *testing.T) {
 				t.Fatalf("expected message-id backed list id, got %+v", got[0])
 			}
 		},
-		assertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
+		AssertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
 			t.Helper()
 			if !bytes.Contains(raw, []byte("Subject: Contract message")) {
 				t.Fatalf("expected fetched raw message content, got %q", raw)

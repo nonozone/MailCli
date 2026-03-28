@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/driver/drivertest"
 	"github.com/nonozone/MailCli/pkg/schema"
 )
 
@@ -69,8 +70,8 @@ func TestNewFromAccountBuildsStubDriver(t *testing.T) {
 func TestStubDriverListFetchAndSend(t *testing.T) {
 	outbound := []byte("From: sender@example.com\r\nTo: receiver@example.com\r\nSubject: Demo\r\n\r\nHello")
 
-	runDriverContractTests(t, driverContractHarness{
-		newDriver: func(t *testing.T) Driver {
+	drivertest.RunContractSuite(t, drivertest.Harness{
+		NewDriver: func(t *testing.T) drivertest.Driver {
 			t.Helper()
 
 			drv, err := NewFromAccount(config.AccountConfig{
@@ -82,10 +83,11 @@ func TestStubDriverListFetchAndSend(t *testing.T) {
 			}
 			return drv
 		},
-		listQuery:      schema.SearchQuery{Limit: 1},
-		missingFetchID: "missing-id",
-		sendRaw:        outbound,
-		assertList: func(t *testing.T, got []schema.MessageMetaSummary) {
+		ListQuery:      schema.SearchQuery{Limit: 1},
+		MissingFetchID: "missing-id",
+		NotFoundError:  ErrMessageNotFound,
+		SendRaw:        outbound,
+		AssertList: func(t *testing.T, got []schema.MessageMetaSummary) {
 			t.Helper()
 			if len(got) != 1 {
 				t.Fatalf("expected limited stub list result, got %d", len(got))
@@ -94,13 +96,13 @@ func TestStubDriverListFetchAndSend(t *testing.T) {
 				t.Fatalf("expected stub list item id")
 			}
 		},
-		assertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
+		AssertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
 			t.Helper()
 			if !strings.Contains(string(raw), "Subject:") {
 				t.Fatalf("expected raw stub message to look like RFC822 content")
 			}
 		},
-		assertAfterSend: func(t *testing.T, drv Driver) {
+		AssertAfterSend: func(t *testing.T, drv drivertest.Driver) {
 			t.Helper()
 			stub := drv.(*stubDriver)
 			if got := len(stub.sent); got != 1 {

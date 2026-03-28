@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/nonozone/MailCli/internal/config"
+	"github.com/nonozone/MailCli/pkg/driver/drivertest"
 	"github.com/nonozone/MailCli/pkg/schema"
 )
 
@@ -41,8 +42,8 @@ func TestNewFromAccountRejectsMissingDirPath(t *testing.T) {
 func TestDirDriverListFetchAndSendNotConfigured(t *testing.T) {
 	root := filepath.Join("..", "..", "testdata", "emails")
 
-	runDriverContractTests(t, driverContractHarness{
-		newDriver: func(t *testing.T) Driver {
+	drivertest.RunContractSuite(t, drivertest.Harness{
+		NewDriver: func(t *testing.T) drivertest.Driver {
 			t.Helper()
 
 			drv, err := NewFromAccount(config.AccountConfig{
@@ -55,11 +56,12 @@ func TestDirDriverListFetchAndSendNotConfigured(t *testing.T) {
 			}
 			return drv
 		},
-		listQuery:       schema.SearchQuery{Query: "April invoice", Limit: 1},
-		missingFetchID:  "missing.eml",
-		sendRaw:         []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Test\r\n\r\nHello"),
-		expectedSendErr: ErrTransportNotConfigured,
-		assertList: func(t *testing.T, got []schema.MessageMetaSummary) {
+		ListQuery:       schema.SearchQuery{Query: "April invoice", Limit: 1},
+		MissingFetchID:  "missing.eml",
+		NotFoundError:   ErrMessageNotFound,
+		SendRaw:         []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Test\r\n\r\nHello"),
+		ExpectedSendErr: ErrTransportNotConfigured,
+		AssertList: func(t *testing.T, got []schema.MessageMetaSummary) {
 			t.Helper()
 			if len(got) != 1 {
 				t.Fatalf("expected one filtered dir result, got %d", len(got))
@@ -71,7 +73,7 @@ func TestDirDriverListFetchAndSendNotConfigured(t *testing.T) {
 				t.Fatalf("expected parsed invoice subject, got %q", got[0].Subject)
 			}
 		},
-		assertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
+		AssertFetchRaw: func(t *testing.T, listed schema.MessageMetaSummary, raw []byte) {
 			t.Helper()
 			if listed.ID != "invoice.eml" {
 				t.Fatalf("expected listed id to be invoice.eml, got %q", listed.ID)

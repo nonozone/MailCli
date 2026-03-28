@@ -42,6 +42,12 @@
 7. Add a fake-driver test harness for extension contributors
 8. Write a parser contributor guide
 
+状态说明：
+
+- 第 7 项的基础版可复用 harness 已经在 `main` 上完成，入口是 `pkg/driver/drivertest`
+- 第 8 项现在已经由 `docs/zh-CN/contributing/parser.md` 覆盖
+- 这两份 issue 草案可以保留给后续扩展用，不必再按“首批必开”处理
+
 ## Issue 草案
 
 ## Issue 1

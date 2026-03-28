@@ -42,6 +42,12 @@ Create these first:
 7. Add a fake-driver test harness for extension contributors
 8. Write a parser contributor guide
 
+Status note:
+
+- item 7 now has a baseline reusable harness on `main` in `pkg/driver/drivertest`
+- item 8 is now covered by `docs/en/contributing/parser.md`
+- keep those drafts only if follow-up expansion work is needed
+
 ## Issue Drafts
 
 ## Issue 1

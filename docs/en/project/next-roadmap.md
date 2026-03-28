@@ -184,7 +184,7 @@ Goal: lower the effort required for outside developers to make useful PRs.
 
 #### Issue: Add a fake-driver test harness for extension contributors
 
-Status: baseline shared driver contract suite completed in `pkg/driver/conformance_test.go`.
+Status: baseline reusable driver contract harness completed in `pkg/driver/drivertest`.
 
 - Area: driver, tests, docs
 - Problem: contributor drivers are harder to validate than they need to be
@@ -192,7 +192,7 @@ Status: baseline shared driver contract suite completed in `pkg/driver/conforman
   - add reusable test helpers or fixtures for driver conformance
   - make list/fetch/send expectations explicit
   - document the minimum acceptance bar
-- Deliverable: test harness plus contributor docs
+- Deliverable: reusable test harness plus contributor docs
 
 #### Issue: Write a parser contributor guide
 

@@ -12,7 +12,7 @@ Read:
 - [Driver Compliance Checklist](../spec/driver-compliance.md)
 - [Config Spec](../spec/config.md)
 - `pkg/driver/driver.go`
-- `pkg/driver/conformance_test.go`
+- `pkg/driver/drivertest/drivertest.go`
 - `pkg/driver/factory.go`
 - `pkg/driver/stub.go`
 - `pkg/driver/dir.go`
@@ -34,7 +34,42 @@ If the change would affect a shared contract, open the `RFC contract change` iss
 4. Add tests for listing, raw fetch, and send behavior where applicable
 5. Document required config fields and limitations
 
-Prefer wiring the new driver into the shared contract suite in `pkg/driver/conformance_test.go` first, then add provider-specific edge-case tests around it.
+Prefer wiring the new driver into the shared contract suite in `pkg/driver/drivertest` first, then add provider-specific edge-case tests around it.
+
+## Shared Conformance Harness
+
+MailCLI now exposes a reusable driver contract helper in:
+
+- `pkg/driver/drivertest`
+
+Use it to prove the shared baseline before writing provider-specific edge-case tests.
+
+Minimal example:
+
+```go
+func TestExampleDriverContractSuite(t *testing.T) {
+	drivertest.RunContractSuite(t, drivertest.Harness{
+		NewDriver: func(t *testing.T) drivertest.Driver {
+			t.Helper()
+			return newExampleDriverForTest(t)
+		},
+		MissingFetchID: "missing-id",
+		NotFoundError:  driver.ErrMessageNotFound,
+		SendRaw:        []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Demo\r\n\r\nHello"),
+	})
+}
+```
+
+This helper is intentionally small.
+
+It checks the shared bar only:
+
+- `List` returns at least one fetchable id
+- `FetchRaw` succeeds for a listed id
+- missing ids map to a stable not-found error when configured
+- `SendRaw` succeeds or returns the expected stable operational error
+
+It does not replace provider-specific tests for auth mapping, mailbox semantics, pagination, or identifier forms.
 
 ## Design Rules
 
@@ -53,7 +88,7 @@ At minimum, add tests for:
 - list behavior
 - fetch behavior
 - send behavior or explicit send-not-supported behavior
-- shared contract coverage through `pkg/driver/conformance_test.go`
+- shared contract coverage through `pkg/driver/drivertest`
 
 ## Factory Integration
 
