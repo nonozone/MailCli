@@ -55,7 +55,7 @@ func TestDirDriverListFetchAndSendNotConfigured(t *testing.T) {
 			}
 			return drv
 		},
-		listQuery:       schema.SearchQuery{Query: "invoice", Limit: 1},
+		listQuery:       schema.SearchQuery{Query: "April invoice", Limit: 1},
 		missingFetchID:  "missing.eml",
 		sendRaw:         []byte("From: sender@example.com\r\nTo: user@example.com\r\nSubject: Test\r\n\r\nHello"),
 		expectedSendErr: ErrTransportNotConfigured,

@@ -1,0 +1,39 @@
+From: 账单中心 <billing@example.cn>
+To: nono@example.com
+Subject: 你的四月账单已生成
+Message-ID: <invoice-cn-123@example.cn>
+Date: Sat, 28 Mar 2026 11:30:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="mailcli-cn-invoice"
+
+--mailcli-cn-invoice
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+=E4=BD=A0=E7=9A=84=E5=9B=9B=E6=9C=88=E8=B4=A6=E5=8D=95=E5=B7=B2=E7=94=9F=E6=
+=88=90=E3=80=82
+
+=E8=AF=B7=E7=82=B9=E5=87=BB=E4=B8=8B=E6=96=B9=E9=93=BE=E6=8E=A5=E6=9F=A5=E7=
+=9C=8B=E5=8F=91=E7=A5=A8=E6=88=96=E6=94=AF=E4=BB=98=E8=B4=A6=E5=8D=95=E3=80=
+=82
+
+--mailcli-cn-invoice
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <body>
+    <main>
+      <h2>=E4=BD=A0=E7=9A=84=E5=9B=9B=E6=9C=88=E8=B4=A6=E5=8D=95=E5=B7=B2=E7=
+=94=9F=E6=88=90</h2>
+      <p>=E8=AF=B7=E5=B0=BD=E5=BF=AB=E5=A4=84=E7=90=86=E6=9C=AC=E6=9C=88=E8=
+=B4=A6=E5=8D=95=E3=80=82</p>
+      <p><a href=3D"https://example.cn/billing/document/123">=E6=9F=A5=E7=9C=
+=8B=E5=8F=91=E7=A5=A8</a></p>
+      <p><a href=3D"https://example.cn/billing/checkout/123">=E6=94=AF=E4=BB=
+=98=E8=B4=A6=E5=8D=95</a></p>
+    </main>
+  </body>
+</html>
+
+--mailcli-cn-invoice--

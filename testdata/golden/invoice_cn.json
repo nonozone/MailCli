@@ -1,0 +1,37 @@
+{
+  "id": "<invoice-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "账单中心",
+      "address": "billing@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "你的四月账单已生成",
+    "date": "2026-03-28T03:30:00Z",
+    "message_id": "<invoice-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## 你的四月账单已生成\n\n请尽快处理本月账单。\n\n[查看发票](https://example.cn/billing/document/123)\n\n[支付账单](https://example.cn/billing/checkout/123)",
+    "snippet": "## 你的四月账单已生成 请尽快处理本月账单。 [查看发票](https://example.cn/billing/document/123) [支付账单](https://example.cn/billing/checkout/123)"
+  },
+  "actions": [
+    {
+      "type": "view_invoice",
+      "label": "查看发票",
+      "url": "https://example.cn/billing/document/123"
+    },
+    {
+      "type": "pay_invoice",
+      "label": "支付账单",
+      "url": "https://example.cn/billing/checkout/123"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 5
+  }
+}

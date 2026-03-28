@@ -424,12 +424,24 @@ func looksLikePayInvoice(label, href string) bool {
 		return true
 	}
 
+	for _, token := range []string{"支付发票", "支付账单"} {
+		if label == token {
+			return true
+		}
+	}
+
 	return hasInvoicePath(href) && strings.Contains(href, "/pay")
 }
 
 func looksLikeViewInvoice(label, href string) bool {
 	if strings.Contains(label, "view invoice") || strings.Contains(label, "open invoice") || strings.Contains(label, "see invoice") {
 		return true
+	}
+
+	for _, token := range []string{"查看发票", "查看账单"} {
+		if label == token {
+			return true
+		}
 	}
 
 	return false

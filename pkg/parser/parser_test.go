@@ -45,6 +45,10 @@ func TestParseInvoiceEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/invoice.eml", "../../testdata/golden/invoice.json")
 }
 
+func TestParseChineseInvoiceEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/invoice_cn.eml", "../../testdata/golden/invoice_cn.json")
+}
+
 func TestParseSecurityResetEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset.eml", "../../testdata/golden/security_reset.json")
 }
@@ -1014,6 +1018,48 @@ func TestExtractActionsDoesNotClassifyGenericInvoiceSettingsLink(t *testing.T) {
 	actions := extractActions(schema.MessageMeta{}, `<a href="https://billing.example.com/invoice/settings">Open</a>`)
 	if action := findAction(actions, "view_invoice"); action != nil {
 		t.Fatalf("expected generic invoice settings link to avoid view_invoice classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsClassifiesChineseViewInvoiceLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/billing/document/123">查看发票</a>`)
+	action := findAction(actions, "view_invoice")
+	if action == nil {
+		t.Fatalf("expected chinese view_invoice action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/billing/document/123" {
+		t.Fatalf("expected view_invoice url, got %q", action.URL)
+	}
+	if action.Label != "查看发票" {
+		t.Fatalf("expected preserved view_invoice label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChinesePayInvoiceLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/billing/checkout/123">支付账单</a>`)
+	action := findAction(actions, "pay_invoice")
+	if action == nil {
+		t.Fatalf("expected chinese pay_invoice action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/billing/checkout/123" {
+		t.Fatalf("expected pay_invoice url, got %q", action.URL)
+	}
+	if action.Label != "支付账单" {
+		t.Fatalf("expected preserved pay_invoice label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseBillingSettingsLinkAsInvoice(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/billing/settings">查看账单设置</a>`)
+	if action := findAction(actions, "view_invoice"); action != nil {
+		t.Fatalf("expected chinese billing settings link to avoid view_invoice classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChinesePaymentCenterLinkAsInvoicePayment(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/payments">前往支付中心</a>`)
+	if action := findAction(actions, "pay_invoice"); action != nil {
+		t.Fatalf("expected chinese payment center link to avoid pay_invoice classification, got %+v", actions)
 	}
 }
 

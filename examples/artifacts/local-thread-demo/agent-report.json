@@ -65,6 +65,33 @@
         "invoice.eml"
       ],
       "score": 85
+    },
+    {
+      "account": "fixtures",
+      "mailbox": "INBOX",
+      "thread_id": "<invoice-cn-123@example.cn>",
+      "subject": "你的四月账单已生成",
+      "latest_date": "2026-03-28T03:30:00Z",
+      "last_message_id": "invoice_cn.eml",
+      "last_message_from": "账单中心 <billing@example.cn>",
+      "last_message_preview": "## 你的四月账单已生成 请尽快处理本月账单。 [查看发票](https://example.cn/billing/document/123) [支付账单](https://example.cn/billing/checkout/123)",
+      "action_types": [
+        "pay_invoice",
+        "view_invoice"
+      ],
+      "has_codes": false,
+      "code_count": 0,
+      "action_count": 2,
+      "message_count": 1,
+      "participant_count": 2,
+      "participants": [
+        "nono@example.com",
+        "账单中心 <billing@example.cn>"
+      ],
+      "message_ids": [
+        "invoice_cn.eml"
+      ],
+      "score": 16
     }
   ],
   "thread_messages": [
@@ -165,9 +192,9 @@
   "sync": {
     "account": "fixtures",
     "mailbox": "INBOX",
-    "listed_count": 15,
-    "fetched_count": 15,
-    "indexed_count": 15,
+    "listed_count": 16,
+    "fetched_count": 16,
+    "indexed_count": 16,
     "skipped_count": 0,
     "refreshed_count": 0,
     "index_path": "/tmp/mailcli-fixtures-index.json"
