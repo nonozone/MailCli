@@ -61,6 +61,12 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ```
 
+If you are maintaining the repository itself, the local demo artifacts now have a standard check entrypoint:
+
+```bash
+make demo-local-thread-check
+```
+
 ## Project Status
 
 MailCLI is currently in **pre-v0.1 release candidate** stage.

@@ -17,6 +17,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 - 更激进但仍有边界的追踪 URL 归一化
 - 更清晰的 `sync` 索引状态输出
 - 更丰富的 thread triage 信号，如 `code_count`、`action_count`、`participant_count`
+- 一套标准化的 maintainer 入口，用于刷新和校验 local thread demo 固定产物
 - 为契约敏感改动增加 RFC issue 模板
 
 如果你需要可直接复制到 GitHub 的 issue 草案，见 [GitHub Backlog 草案](github-backlog.md)。

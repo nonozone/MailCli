@@ -1507,6 +1507,39 @@ class OpenAI:
 	}
 }
 
+func TestRepositoryProvidesLocalThreadDemoMaintenanceEntrypoints(t *testing.T) {
+	repoRoot := repoRoot(t)
+
+	makefilePath := filepath.Join(repoRoot, "Makefile")
+	makefileBytes, err := os.ReadFile(makefilePath)
+	if err != nil {
+		t.Fatalf("expected repository Makefile: %v", err)
+	}
+	makefile := string(makefileBytes)
+	if !strings.Contains(makefile, "demo-local-thread-refresh:") {
+		t.Fatalf("expected Makefile to expose demo-local-thread-refresh target")
+	}
+	if !strings.Contains(makefile, "demo-local-thread-check:") {
+		t.Fatalf("expected Makefile to expose demo-local-thread-check target")
+	}
+	if !strings.Contains(makefile, "MAILCLI_BIN ?= /tmp/mailcli") {
+		t.Fatalf("expected Makefile to keep maintenance builds out of the repository root")
+	}
+	if !strings.Contains(makefile, "PYTHONDONTWRITEBYTECODE=1 python3") {
+		t.Fatalf("expected Makefile to avoid creating __pycache__ during demo maintenance")
+	}
+
+	workflowPath := filepath.Join(repoRoot, ".github", "workflows", "test.yml")
+	workflowBytes, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("expected workflow file: %v", err)
+	}
+	workflow := string(workflowBytes)
+	if !strings.Contains(workflow, "make demo-local-thread-check") {
+		t.Fatalf("expected CI to run make demo-local-thread-check")
+	}
+}
+
 func requirePython(t *testing.T) string {
 	t.Helper()
 

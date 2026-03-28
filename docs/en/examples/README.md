@@ -6,6 +6,12 @@ This page is the entry point for runnable MailCLI examples.
 
 Use it when you want to quickly decide which example matches your workflow.
 
+Maintainers can verify the checked-in local thread demo artifacts with:
+
+```bash
+make demo-local-thread-check
+```
+
 ## Start Here
 
 - For the fastest zero-network setup, use `examples/config/fixtures-dir.yaml` with the built-in `dir` driver.

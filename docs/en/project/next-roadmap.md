@@ -17,6 +17,7 @@ The original RC hardening pass already shipped several important pieces:
 - more aggressive but bounded tracked URL normalization
 - clearer `sync` index-state output
 - richer thread triage signals such as `code_count`, `action_count`, and `participant_count`
+- a standard maintainer workflow for refreshing and checking local thread demo artifacts
 - an RFC issue template for contract-sensitive changes
 
 For copy-ready GitHub issue drafts, see [GitHub Backlog Drafts](github-backlog.md).

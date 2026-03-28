@@ -24,7 +24,19 @@
 
 这个页面则直接解释整条链路里，机器侧输入输出到底长什么样。
 
-如果 fixture corpus 发生变化，可以用下面这条命令重新生成这组固定 demo 产物：
+如果 fixture corpus 发生变化，维护者优先使用这个统一入口：
+
+```bash
+make demo-local-thread-refresh
+```
+
+如果你只是想检查仓库里提交的 demo 产物是否仍然最新：
+
+```bash
+make demo-local-thread-check
+```
+
+如果你需要显式传参，底层脚本也可以直接运行：
 
 ```bash
 python3 examples/python/refresh_local_thread_demo.py \
@@ -181,3 +193,4 @@ Thanks, we have received the invoice notification.
 - [Agent Thread 示例](agent-thread-assistant.md)
 - [Examples 索引](README.md)
 - [Agent 协作流程](../agent-workflows.md)
+- [Parser 贡献指南](../contributing/parser.md)

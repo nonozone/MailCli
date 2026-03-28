@@ -61,6 +61,12 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ```
 
+如果你正在维护仓库本身，现在也有统一的 demo 产物校验入口：
+
+```bash
+make demo-local-thread-check
+```
+
 ## 项目状态
 
 MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。

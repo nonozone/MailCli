@@ -23,10 +23,13 @@ jobs:
           python-version: "3.x"
 
       - name: Run Go tests
-        run: go test ./...
+        run: make test
 
       - name: Build mailcli
-        run: go build ./cmd/mailcli
+        run: make build
+
+      - name: Check local thread demo artifacts
+        run: make demo-local-thread-check
 
       - name: Verify Python examples compile
         run: |

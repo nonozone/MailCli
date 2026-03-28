@@ -24,6 +24,8 @@ The original maintainer-led "core five" hardening sequence is now complete on `m
 4. clearer local sync/index state
 5. richer thread summary triage signals
 
+The follow-up maintenance loop for the stored local thread demo artifacts is also now wired into repository-level commands and CI checks.
+
 That means the next maintainer phase should move from boundary hardening toward corpus strength, contributor leverage, and shared quality bars.
 
 ## Working Assumption

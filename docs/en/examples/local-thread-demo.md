@@ -24,7 +24,19 @@ The normal example pages explain how to run commands.
 
 This page explains what the machine-facing inputs and outputs actually look like across the full loop.
 
-If the fixture corpus changes, regenerate the stored demo artifacts with:
+If the fixture corpus changes, the preferred maintainer entrypoint is:
+
+```bash
+make demo-local-thread-refresh
+```
+
+To verify that the checked-in artifacts are still current:
+
+```bash
+make demo-local-thread-check
+```
+
+The underlying script remains available when you need explicit arguments:
 
 ```bash
 python3 examples/python/refresh_local_thread_demo.py \
@@ -181,3 +193,4 @@ That file mirrors the output of `examples/python/agent_thread_assistant.py` for 
 - [Agent Thread Assistant](agent-thread-assistant.md)
 - [Examples Index](README.md)
 - [Agent Workflows](../agent-workflows.md)
+- [Contributing: Parser](../contributing/parser.md)

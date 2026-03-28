@@ -6,6 +6,12 @@
 
 当你想快速判断“我现在应该看哪个示例”时，从这里开始最合适。
 
+维护者可以用下面这条命令校验仓库里提交的 local thread demo 产物是否仍然最新：
+
+```bash
+make demo-local-thread-check
+```
+
 ## 从这里开始
 
 - 如果你想走最快的零网络路径，直接使用内置 `dir` driver 的 `examples/config/fixtures-dir.yaml`。
