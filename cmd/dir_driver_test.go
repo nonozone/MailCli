@@ -66,7 +66,7 @@ func TestSyncAndSearchCommandsSupportDirDriver(t *testing.T) {
 		t.Fatalf("expected dir-backed sync to succeed: %v", err)
 	}
 
-	if !strings.Contains(syncOut.String(), `"indexed_count": 11`) {
+	if !strings.Contains(syncOut.String(), `"indexed_count": 12`) {
 		t.Fatalf("expected dir-backed sync to index messages, got %s", syncOut.String())
 	}
 

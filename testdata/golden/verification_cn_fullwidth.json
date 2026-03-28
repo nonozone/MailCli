@@ -1,0 +1,33 @@
+{
+  "id": "<verification-cn-fullwidth-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "安全中心",
+      "address": "security@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "登录验证码",
+    "date": "2026-03-26T04:30:00Z",
+    "message_id": "<verification-cn-fullwidth-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "您的登录验证码：123 456，5 分钟内有效。",
+    "snippet": "您的登录验证码：123 456，5 分钟内有效。"
+  },
+  "codes": [
+    {
+      "type": "verification_code",
+      "value": "123456",
+      "label": "Verification code",
+      "expires_in_seconds": 300
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 3
+  }
+}

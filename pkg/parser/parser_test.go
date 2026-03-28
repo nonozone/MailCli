@@ -37,6 +37,10 @@ func TestParseVerificationEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/verification.eml", "../../testdata/golden/verification.json")
 }
 
+func TestParseChineseFullWidthVerificationEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/verification_cn_fullwidth.eml", "../../testdata/golden/verification_cn_fullwidth.json")
+}
+
 func TestParseInvoiceEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/invoice.eml", "../../testdata/golden/invoice.json")
 }
@@ -291,6 +295,25 @@ func TestParseExtractsChineseVerificationCode(t *testing.T) {
 	}
 	if got.Codes[0].ExpiresInSeconds != 300 {
 		t.Fatalf("expected chinese expiry in seconds, got %d", got.Codes[0].ExpiresInSeconds)
+	}
+}
+
+func TestParseExtractsChineseVerificationCodeWithFullWidthDigits(t *testing.T) {
+	raw := []byte("From: 安全中心 <security@example.com>\r\nTo: user@example.com\r\nSubject: 登录验证码\r\nMessage-ID: <verify-cn-fullwidth@example.com>\r\nDate: Thu, 26 Mar 2026 12:35:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n您的登录验证码：１２３ ４５６，请在 5 分钟内有效期内使用。")
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Codes) != 1 {
+		t.Fatalf("expected one extracted code from chinese full-width verification mail, got %+v", got.Codes)
+	}
+	if got.Codes[0].Value != "123456" {
+		t.Fatalf("expected normalized full-width code value, got %q", got.Codes[0].Value)
+	}
+	if got.Codes[0].ExpiresInSeconds != 300 {
+		t.Fatalf("expected chinese full-width expiry in seconds, got %d", got.Codes[0].ExpiresInSeconds)
 	}
 }
 

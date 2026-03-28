@@ -114,6 +114,7 @@ Current parser fixture coverage now includes:
 - delivery failure mail
 - postfix-style DSN / bounce mail
 - verification mail
+- multilingual verification mail with full-width digits
 - quoted-reply verification mail
 - invoice/payment mail
 - security reset mail
