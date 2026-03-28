@@ -1271,6 +1271,9 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 	if reportSync["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected generated agent report sync stats to match fixture corpus count, got %#v", reportSync["indexed_count"])
 	}
+	if reportSync["index_path"] != "/tmp/mailcli-fixtures-index.json" {
+		t.Fatalf("expected generated agent report sync path to be normalized, got %#v", reportSync["index_path"])
+	}
 
 	replyMimeBytes, err := os.ReadFile(filepath.Join(outputDir, "reply.mime.txt"))
 	if err != nil {
@@ -1290,6 +1293,38 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 	}
 	if !strings.Contains(string(threadBytes), `"indexed_at": "2026-03-27T15:11:13Z"`) {
 		t.Fatalf("expected generated thread artifact to normalize indexed_at, got %s", string(threadBytes))
+	}
+	source := mustMap(t, report["source"])
+	if source["index"] != "/tmp/mailcli-fixtures-index.json" {
+		t.Fatalf("expected generated agent report source index to be normalized, got %#v", source["index"])
+	}
+	if source["config"] != "examples/config/fixtures-dir.yaml" {
+		t.Fatalf("expected generated agent report config path to be normalized, got %#v", source["config"])
+	}
+}
+
+func TestRefreshLocalThreadDemoScriptCheckMode(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/refresh_local_thread_demo.py"),
+		"--mailcli-bin", mailcliBin,
+		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
+		"--account", "fixtures",
+		"--index", filepath.Join(t.TempDir(), "index.json"),
+		"--output-dir", filepath.Join(repoRoot, "examples/artifacts/local-thread-demo"),
+		"--query", "invoice",
+		"--check",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("expected check mode to succeed when artifacts are current: %v\n%s", err, string(output))
+	}
+	if !strings.Contains(string(output), "artifacts are up to date") {
+		t.Fatalf("expected check mode confirmation output, got %s", string(output))
 	}
 }
 

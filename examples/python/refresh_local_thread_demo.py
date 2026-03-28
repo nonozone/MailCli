@@ -1,19 +1,32 @@
 import argparse
+import filecmp
 import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 CANONICAL_INDEXED_AT = "2026-03-27T15:11:13Z"
 CANONICAL_MIME_DATE = "Fri, 27 Mar 2026 15:11:13 +0000"
 CANONICAL_MESSAGE_ID = "<generated@mailcli.local>"
+CANONICAL_INDEX_PATH = "/tmp/mailcli-fixtures-index.json"
+CANONICAL_CONFIG_PATH = "examples/config/fixtures-dir.yaml"
 
 
 def main() -> int:
     args = parse_args()
+    if args.check:
+        return run_check_mode(args)
+
     output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    generate_artifacts(args, output_dir)
+    return 0
+
+
+def generate_artifacts(args: argparse.Namespace, output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     reset_index_file(args.index)
@@ -21,7 +34,7 @@ def main() -> int:
         build_sync_command(args),
         cwd=args.workdir,
     )
-    write_json(output_dir / "sync.json", sync_result)
+    write_json(output_dir / "sync.json", normalize_demo_json(sync_result))
 
     threads = run_mailcli_json(
         build_threads_command(args),
@@ -66,6 +79,26 @@ def main() -> int:
     reply["mime"] = normalized_mime
     write_json(output_dir / "agent-report.json", report)
     write_text(output_dir / "reply.mime.txt", normalized_mime.rstrip() + "\n")
+
+
+def run_check_mode(args: argparse.Namespace) -> int:
+    with tempfile.TemporaryDirectory(prefix="mailcli-local-thread-demo-") as tmpdir:
+        temp_output_dir = Path(tmpdir) / "generated"
+        temp_index_path = str(Path(tmpdir) / "index.json")
+        temp_args = argparse.Namespace(**vars(args))
+        temp_args.output_dir = str(temp_output_dir)
+        temp_args.index = temp_index_path
+        temp_args.check = False
+        generate_artifacts(temp_args, temp_output_dir)
+
+        target_dir = Path(args.output_dir)
+        mismatches = compare_artifact_dirs(temp_output_dir, target_dir)
+        if mismatches:
+            for mismatch in mismatches:
+                print(mismatch, file=sys.stderr)
+            return 1
+
+    print("local-thread-demo artifacts are up to date")
     return 0
 
 
@@ -92,6 +125,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workdir",
         help="optional working directory for command execution",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="verify that the target artifact directory already matches freshly generated output",
     )
     return parser.parse_args()
 
@@ -229,6 +267,12 @@ def normalize_demo_json(value: Any) -> Any:
             if key == "indexed_at" and isinstance(item, str):
                 out[key] = CANONICAL_INDEXED_AT
                 continue
+            if key in {"index", "index_path"} and isinstance(item, str):
+                out[key] = CANONICAL_INDEX_PATH
+                continue
+            if key == "config" and isinstance(item, str):
+                out[key] = CANONICAL_CONFIG_PATH
+                continue
             out[key] = normalize_demo_json(item)
         return out
     if isinstance(value, list):
@@ -247,6 +291,27 @@ def normalize_reply_mime(mime: str) -> str:
             continue
         lines.append(line)
     return "\n".join(lines)
+
+
+def compare_artifact_dirs(generated: Path, target: Path) -> list[str]:
+    expected_files = sorted(path.name for path in generated.iterdir() if path.is_file())
+    mismatches: list[str] = []
+
+    for name in expected_files:
+        generated_path = generated / name
+        target_path = target / name
+        if not target_path.exists():
+            mismatches.append(f"missing artifact: {target_path}")
+            continue
+        if not filecmp.cmp(generated_path, target_path, shallow=False):
+            mismatches.append(f"artifact drift: {target_path}")
+
+    target_files = sorted(path.name for path in target.iterdir() if path.is_file())
+    for name in target_files:
+        if name not in expected_files:
+            mismatches.append(f"unexpected artifact: {target / name}")
+
+    return mismatches
 
 
 if __name__ == "__main__":
