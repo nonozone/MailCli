@@ -1,0 +1,32 @@
+{
+  "id": "<confirm-subscription-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "社区通知",
+      "address": "updates@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "请确认你的订阅",
+    "date": "2026-03-28T02:30:00Z",
+    "message_id": "<confirm-subscription-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "你正在订阅社区更新通知。\n\n请先确认这个订阅请求。\n\n[查看更多内容](https://example.cn/archive)\n\n[确认订阅](https://example.cn/welcome?token=42)",
+    "snippet": "你正在订阅社区更新通知。 请先确认这个订阅请求。 [查看更多内容](https://example.cn/archive) [确认订阅](https://example.cn/welcome?token=42)"
+  },
+  "actions": [
+    {
+      "type": "confirm_subscription",
+      "label": "确认订阅",
+      "url": "https://example.cn/welcome?token=42"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 4
+  }
+}

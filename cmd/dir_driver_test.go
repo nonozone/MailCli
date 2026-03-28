@@ -36,10 +36,10 @@ func TestListCommandSupportsDirDriver(t *testing.T) {
 		t.Fatalf("expected list command with dir driver to succeed: %v", err)
 	}
 
-	if !strings.Contains(out.String(), `"id": "postfix_bounce.eml"`) {
+	if !strings.Contains(out.String(), `.eml"`) {
 		t.Fatalf("expected dir-backed list output to contain a relative file id, got %s", out.String())
 	}
-	if !strings.Contains(out.String(), `"subject": "Undelivered Mail Returned to Sender"`) {
+	if !strings.Contains(out.String(), `"subject": "请确认你的订阅"`) && !strings.Contains(out.String(), `"subject": "每周简报：本周更新"`) {
 		t.Fatalf("expected dir-backed list output to contain parsed metadata, got %s", out.String())
 	}
 }

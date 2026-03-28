@@ -256,7 +256,7 @@ func classifyAction(label, href string) string {
 		return "view_invoice"
 	case strings.Contains(lowerLabel, "view online") || strings.Contains(lowerLabel, "open in browser") || strings.Contains(lowerLabel, "read in browser") || strings.Contains(lowerHref, "view-online"):
 		return "view_online"
-	case strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email"):
+	case looksLikeConfirmSubscription(lowerLabel, lowerHref, label):
 		return "confirm_subscription"
 	case strings.Contains(lowerLabel, "report abuse") || strings.HasPrefix(lowerHref, "mailto:abuse@") || strings.Contains(lowerHref, "report-abuse"):
 		return "report_abuse"
@@ -271,6 +271,20 @@ func looksLikeUnsubscribe(lowerLabel, lowerHref, rawLabel string) bool {
 	}
 
 	for _, token := range []string{"退订", "取消订阅", "取消邮件订阅"} {
+		if strings.Contains(rawLabel, token) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func looksLikeConfirmSubscription(lowerLabel, lowerHref, rawLabel string) bool {
+	if strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email") {
+		return true
+	}
+
+	for _, token := range []string{"确认订阅", "确认邮件订阅"} {
 		if strings.Contains(rawLabel, token) {
 			return true
 		}

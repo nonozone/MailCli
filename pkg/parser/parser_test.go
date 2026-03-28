@@ -65,6 +65,10 @@ func TestParseChineseUnsubscribeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/unsubscribe_cn.eml", "../../testdata/golden/unsubscribe_cn.json")
 }
 
+func TestParseChineseConfirmSubscriptionEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/confirm_subscription_cn.eml", "../../testdata/golden/confirm_subscription_cn.json")
+}
+
 func TestParseRelatedInlineImageEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/related_inline_image.eml", "../../testdata/golden/related_inline_image.json")
 }
@@ -854,6 +858,48 @@ func TestExtractActionsClassifiesConfirmSubscriptionFromHrefPattern(t *testing.T
 	action := findAction(actions, "confirm_subscription")
 	if action == nil {
 		t.Fatalf("expected href-driven confirm_subscription action, got %+v", actions)
+	}
+}
+
+func TestExtractActionsClassifiesChineseConfirmSubscriptionLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/welcome?token=42">确认订阅</a>`)
+	action := findAction(actions, "confirm_subscription")
+	if action == nil {
+		t.Fatalf("expected chinese confirm_subscription action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/welcome?token=42" {
+		t.Fatalf("expected confirm_subscription url, got %q", action.URL)
+	}
+	if action.Label != "确认订阅" {
+		t.Fatalf("expected preserved confirm_subscription label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseEmailConfirmSubscriptionLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/welcome?token=43">确认邮件订阅</a>`)
+	action := findAction(actions, "confirm_subscription")
+	if action == nil {
+		t.Fatalf("expected chinese email confirm_subscription action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/welcome?token=43" {
+		t.Fatalf("expected confirm_subscription url, got %q", action.URL)
+	}
+	if action.Label != "确认邮件订阅" {
+		t.Fatalf("expected preserved confirm_subscription label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseOrderConfirmationAsSubscription(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/orders/42">确认订单</a>`)
+	if action := findAction(actions, "confirm_subscription"); action != nil {
+		t.Fatalf("expected chinese order confirmation to avoid confirm_subscription classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseEmailAddressConfirmationAsSubscription(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/profile/email">确认邮件地址</a>`)
+	if action := findAction(actions, "confirm_subscription"); action != nil {
+		t.Fatalf("expected chinese email address confirmation to avoid confirm_subscription classification, got %+v", actions)
 	}
 }
 
