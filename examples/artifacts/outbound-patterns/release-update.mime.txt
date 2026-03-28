@@ -1,0 +1,60 @@
+From: MailCLI Bot <updates@mailcli.dev>
+To: MailCLI Contributors <team@example.com>
+Subject: Weekly parser status
+Message-ID: <generated@mailcli.local>
+Date: Sat, 28 Mar 2026 01:15:35 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary=mailcli-example-boundary-release
+
+--mailcli-example-boundary-release
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+
+Weekly parser status
+
+We shipped three improvements:
+1. Better thread examples
+2. Safer zero-network onboarding
+3. Cleaner outbound MIME docs
+
+Area / Status
+Parser fixtures / Stable
+Thread examples / Expanded
+Driver docs / Ready for review
+
+Examples index: https://github.com/nonozone/MailCli/tree/main/docs/en/examples/README.md
+--mailcli-example-boundary-release
+Content-Transfer-Encoding: 8bit
+Content-Type: text/html; charset=UTF-8
+
+<h2>Weekly parser status</h2>
+<p>We shipped three improvements:</p>
+<ol>
+<li>Better thread examples</li>
+<li>Safer zero-network onboarding</li>
+<li>Cleaner outbound MIME docs</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parser fixtures</td>
+<td>Stable</td>
+</tr>
+<tr>
+<td>Thread examples</td>
+<td>Expanded</td>
+</tr>
+<tr>
+<td>Driver docs</td>
+<td>Ready for review</td>
+</tr>
+</tbody>
+</table>
+<p>Read the <a href="https://github.com/nonozone/MailCli/tree/main/docs/en/examples/README.md">examples index</a> for runnable flows.</p>
+--mailcli-example-boundary-release--

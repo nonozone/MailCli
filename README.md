@@ -50,6 +50,7 @@ The repository already includes:
 - a zero-network config at `examples/config/fixtures-dir.yaml`
 - runnable Python examples
 - a full local round-trip demo at [Local Thread Demo](docs/en/examples/local-thread-demo.md)
+- fixed outbound JSON and MIME pairs at [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md)
 
 Recommended first commands:
 
@@ -265,6 +266,7 @@ Detailed workflow docs:
 
 - [Agent Workflows](docs/en/agent-workflows.md)
 - [Outbound Message Spec](docs/en/spec/outbound-message.md)
+- [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md)
 - [Local Index Spec](docs/en/spec/local-index.md)
 
 ## Build From Source
@@ -343,6 +345,8 @@ Recommended usage:
   Start with `mailcli parse` or `mailcli get`, then see [Agent Inbox Example](docs/en/examples/agent-inbox-assistant.md).
 - Thread-aware agent path:
   Start with `mailcli sync`, `mailcli threads`, and `mailcli thread`, then see [Agent Thread Example](docs/en/examples/agent-thread-assistant.md).
+- Outbound draft path:
+  Start with [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md) when you want concrete `ReplyDraft` and `DraftMessage` objects before wiring a real provider.
 - Model-backed analysis path:
   Keep MailCLI as the boundary and delegate reasoning to an external subprocess provider, then see [OpenAI External Provider Example](docs/en/examples/openai-external-provider.md) and [Examples Index](docs/en/examples/README.md).
 
@@ -370,6 +374,13 @@ python3 examples/python/agent_thread_assistant.py \
   --index /tmp/mailcli-fixtures-index.json \
   --sync-limit 20 \
   --query invoice
+```
+
+If you want fixed JSON and MIME pairs for outbound composition without reading Python code, use:
+
+```bash
+./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/ack-reply.draft.json
+./mailcli send --dry-run examples/artifacts/outbound-patterns/release-update.draft.json
 ```
 
 ### List messages from a configured account
@@ -524,6 +535,7 @@ The project is community-open, but it is still directionally curated to stay foc
 - Start here:
   [Examples Index](docs/en/examples/README.md),
   [Local Thread Demo](docs/en/examples/local-thread-demo.md),
+  [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md),
   [Agent Workflows](docs/en/agent-workflows.md)
 - Specs:
   [Outbound Message Spec](docs/en/spec/outbound-message.md),

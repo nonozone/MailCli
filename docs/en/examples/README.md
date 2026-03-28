@@ -17,6 +17,8 @@ Use it when you want to quickly decide which example matches your workflow.
   Best for understanding the exact JSON and MIME boundaries of the local thread loop.
 - [Agent Decision Patterns](agent-decision-patterns.md)
   Best for verification, bounce, and unsubscribe decision examples.
+- [Outbound Draft Patterns](outbound-draft-patterns.md)
+  Best for concrete `ReplyDraft` and `DraftMessage` handoff patterns.
 - [OpenAI External Provider](openai-external-provider.md)
   Best for plugging an OpenAI-backed analyzer into either agent example.
 
@@ -52,7 +54,8 @@ Use it when you want to quickly decide which example matches your workflow.
 
 1. Start with [Agent Inbox Assistant](agent-inbox-assistant.md) if you want the smallest possible agent loop.
 2. Move to [Agent Thread Assistant](agent-thread-assistant.md) when you need local memory and thread context.
-3. Add [OpenAI External Provider](openai-external-provider.md) when you want to replace rule-based analysis with a model-backed subprocess.
+3. Read [Outbound Draft Patterns](outbound-draft-patterns.md) when you need stable reply and new-message JSON boundaries.
+4. Add [OpenAI External Provider](openai-external-provider.md) when you want to replace rule-based analysis with a model-backed subprocess.
 
 ## Related
 

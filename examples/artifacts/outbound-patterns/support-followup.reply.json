@@ -1,0 +1,19 @@
+{
+  "from": {
+    "name": "Nono Support",
+    "address": "support@nono.im"
+  },
+  "to": [
+    {
+      "address": "sender@example.com",
+      "name": "Example Sender"
+    }
+  ],
+  "subject": "Re: Plaintext message",
+  "body_text": "Hi,\n\nWe checked your request and need one detail before we can proceed:\n\n- workspace name\n- expected delivery date\n\nYou can reply directly to this thread.\n\nOriginal request received and queued.",
+  "body_md": "Hi,\n\nWe checked your request and need one detail before we can proceed:\n\n- workspace name\n- expected delivery date\n\nYou can reply directly to this thread.\n\n> Original request received and queued.",
+  "reply_to_message_id": "<plain-123@example.com>",
+  "references": [
+    "<plain-123@example.com>"
+  ]
+}

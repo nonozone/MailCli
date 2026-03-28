@@ -17,6 +17,8 @@
   适合直接理解本地 thread 链路里的 JSON 和 MIME 边界。
 - [Agent 决策样例](agent-decision-patterns.md)
   适合查看 verification、bounce 和 unsubscribe 的决策样例。
+- [Outbound Draft Patterns](outbound-draft-patterns.md)
+  适合查看具体的 `ReplyDraft` 和 `DraftMessage` 交接模式。
 - [OpenAI External Provider](openai-external-provider.md)
   适合把 OpenAI 驱动的分析器接到任一 agent 示例上。
 
@@ -52,7 +54,8 @@
 
 1. 如果你想先看最小 agent 闭环，从 [Agent Inbox Assistant](agent-inbox-assistant.md) 开始。
 2. 如果你需要本地记忆和 thread 上下文，再看 [Agent Thread Assistant](agent-thread-assistant.md)。
-3. 如果你想把规则分析替换成模型子进程，再接 [OpenAI External Provider](openai-external-provider.md)。
+3. 如果你需要稳定的 reply / 新邮件 JSON 边界，再看 [Outbound Draft Patterns](outbound-draft-patterns.md)。
+4. 如果你想把规则分析替换成模型子进程，再接 [OpenAI External Provider](openai-external-provider.md)。
 
 ## 相关文档
 

@@ -1,0 +1,14 @@
+{
+  "account": "fixtures",
+  "from": {
+    "address": "support@nono.im"
+  },
+  "to": [
+    {
+      "address": "billing@example.com",
+      "name": "Billing Team"
+    }
+  ],
+  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
+  "reply_to_id": "invoice.eml"
+}

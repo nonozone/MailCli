@@ -1,0 +1,39 @@
+From: Nono Support <support@nono.im>
+To: Example Sender <sender@example.com>
+Subject: Re: Plaintext message
+Message-ID: <generated@mailcli.local>
+In-Reply-To: <plain-123@example.com>
+References: <plain-123@example.com>
+Date: Sat, 28 Mar 2026 01:15:35 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary=mailcli-example-boundary-support
+
+--mailcli-example-boundary-support
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+
+Hi,
+
+We checked your request and need one detail before we can proceed:
+
+- workspace name
+- expected delivery date
+
+You can reply directly to this thread.
+
+Original request received and queued.
+--mailcli-example-boundary-support
+Content-Transfer-Encoding: 8bit
+Content-Type: text/html; charset=UTF-8
+
+<p>Hi,</p>
+<p>We checked your request and need one detail before we can proceed:</p>
+<ul>
+<li>workspace name</li>
+<li>expected delivery date</li>
+</ul>
+<p>You can reply directly to this thread.</p>
+<blockquote>
+<p>Original request received and queued.</p>
+</blockquote>
+--mailcli-example-boundary-support--

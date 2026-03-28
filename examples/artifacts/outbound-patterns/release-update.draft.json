@@ -1,0 +1,15 @@
+{
+  "from": {
+    "name": "MailCLI Bot",
+    "address": "updates@mailcli.dev"
+  },
+  "to": [
+    {
+      "address": "team@example.com",
+      "name": "MailCLI Contributors"
+    }
+  ],
+  "subject": "Weekly parser status",
+  "body_text": "Weekly parser status\n\nWe shipped three improvements:\n1. Better thread examples\n2. Safer zero-network onboarding\n3. Cleaner outbound MIME docs\n\nArea / Status\nParser fixtures / Stable\nThread examples / Expanded\nDriver docs / Ready for review\n\nExamples index: https://github.com/nonozone/MailCli/tree/main/docs/en/examples/README.md",
+  "body_md": "## Weekly parser status\n\nWe shipped three improvements:\n\n1. Better thread examples\n2. Safer zero-network onboarding\n3. Cleaner outbound MIME docs\n\n| Area | Status |\n| --- | --- |\n| Parser fixtures | Stable |\n| Thread examples | Expanded |\n| Driver docs | Ready for review |\n\nRead the [examples index](https://github.com/nonozone/MailCli/tree/main/docs/en/examples/README.md) for runnable flows."
+}

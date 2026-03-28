@@ -50,6 +50,7 @@ Raw Email -> MailCLI -> StandardMessage / Thread Context -> Agent -> ReplyDraft 
 - 零网络配置 `examples/config/fixtures-dir.yaml`
 - 可直接运行的 Python 示例
 - 一份完整的本地往返说明：[Local Thread Demo](docs/zh-CN/examples/local-thread-demo.md)
+- 一组固定的出站 JSON / MIME 对照样例：[Outbound Draft Patterns](docs/zh-CN/examples/outbound-draft-patterns.md)
 
 推荐先跑这几条命令：
 
@@ -343,6 +344,8 @@ examples/config/fixtures-dir.yaml
   从 `mailcli parse` 或 `mailcli get` 开始，再看 [Agent Inbox 示例](docs/zh-CN/examples/agent-inbox-assistant.md)。
 - thread 感知 agent 路径：
   从 `mailcli sync`、`mailcli threads` 和 `mailcli thread` 开始，再看 [Agent Thread 示例](docs/zh-CN/examples/agent-thread-assistant.md)。
+- 出站草稿路径：
+  如果你想先看固定的 `ReplyDraft` 和 `DraftMessage` 对象，再接 provider，直接看 [Outbound Draft Patterns](docs/zh-CN/examples/outbound-draft-patterns.md)。
 - 模型驱动分析路径：
   保持 MailCLI 作为稳定边界，把推理委托给外部子进程 provider，再看 [OpenAI External Provider 示例](docs/zh-CN/examples/openai-external-provider.md) 和 [Examples 索引](docs/zh-CN/examples/README.md)。
 
@@ -370,6 +373,13 @@ python3 examples/python/agent_thread_assistant.py \
   --index /tmp/mailcli-fixtures-index.json \
   --sync-limit 20 \
   --query invoice
+```
+
+如果你想在不读 Python 示例的情况下直接查看固定的出站 JSON / MIME 对照，可以运行：
+
+```bash
+./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/ack-reply.draft.json
+./mailcli send --dry-run examples/artifacts/outbound-patterns/release-update.draft.json
 ```
 
 ### 从已配置账户列出邮件
@@ -524,6 +534,7 @@ MailCLI 还处在早期阶段，但方向已经明确。
 - 从这里开始：
   [Examples 索引](docs/zh-CN/examples/README.md)，
   [Local Thread Demo](docs/zh-CN/examples/local-thread-demo.md)，
+  [Outbound Draft Patterns](docs/zh-CN/examples/outbound-draft-patterns.md)，
   [Agent 协作流程](docs/zh-CN/agent-workflows.md)
 - 规范：
   [发送侧消息规范](docs/zh-CN/spec/outbound-message.md)，

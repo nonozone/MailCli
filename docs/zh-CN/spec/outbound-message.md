@@ -149,6 +149,10 @@
 - 简单 Markdown 表格
 - 可读的纯文本链接回退，例如 `Label: https://...`
 
+如果你想直接看固定的 JSON 与 MIME 对照样例，可以看：
+
+- [Outbound Draft Patterns](../examples/outbound-draft-patterns.md)
+
 ## 命令方向
 
 建议的未来命令形态：

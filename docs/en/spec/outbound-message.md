@@ -149,6 +149,10 @@ Current Markdown rendering baseline now preserves:
 - simple Markdown tables
 - readable plain-text link fallbacks such as `Label: https://...`
 
+Concrete JSON and MIME pairs are documented in:
+
+- [Outbound Draft Patterns](../examples/outbound-draft-patterns.md)
+
 ## Command Direction
 
 Recommended future commands:
