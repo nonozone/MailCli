@@ -1,0 +1,32 @@
+{
+  "id": "<unsubscribe-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "每周简报",
+      "address": "digest@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "每周简报：本周更新",
+    "date": "2026-03-28T01:00:00Z",
+    "message_id": "<unsubscribe-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "感谢你订阅每周简报。\n\n我们会每周向你发送新内容。\n\n[查看往期内容](https://example.cn/archive)\n\n[取消订阅](https://example.cn/preferences/email?user=42)",
+    "snippet": "感谢你订阅每周简报。 我们会每周向你发送新内容。 [查看往期内容](https://example.cn/archive) [取消订阅](https://example.cn/preferences/email?user=42)"
+  },
+  "actions": [
+    {
+      "type": "unsubscribe",
+      "label": "取消订阅",
+      "url": "https://example.cn/preferences/email?user=42"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 4
+  }
+}

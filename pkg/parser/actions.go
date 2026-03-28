@@ -240,7 +240,7 @@ func classifyAction(label, href string) string {
 	lowerHref := strings.ToLower(strings.TrimSpace(href))
 
 	switch {
-	case strings.Contains(lowerLabel, "unsubscribe") || strings.Contains(lowerHref, "unsubscribe"):
+	case looksLikeUnsubscribe(lowerLabel, lowerHref, label):
 		return "unsubscribe"
 	case looksLikeResetPassword(lowerLabel, lowerHref):
 		return "reset_password"
@@ -263,6 +263,20 @@ func classifyAction(label, href string) string {
 	default:
 		return ""
 	}
+}
+
+func looksLikeUnsubscribe(lowerLabel, lowerHref, rawLabel string) bool {
+	if strings.Contains(lowerLabel, "unsubscribe") || strings.Contains(lowerHref, "unsubscribe") {
+		return true
+	}
+
+	for _, token := range []string{"退订", "取消订阅", "取消邮件订阅"} {
+		if strings.Contains(rawLabel, token) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func actionLabel(actionType, label string) string {

@@ -61,6 +61,10 @@ func TestParseMixedUnsubscribeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/unsubscribe_mixed.eml", "../../testdata/golden/unsubscribe_mixed.json")
 }
 
+func TestParseChineseUnsubscribeEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/unsubscribe_cn.eml", "../../testdata/golden/unsubscribe_cn.json")
+}
+
 func TestParseRelatedInlineImageEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/related_inline_image.eml", "../../testdata/golden/related_inline_image.json")
 }
@@ -964,6 +968,27 @@ func TestExtractActionsDoesNotClassifyGenericInvoiceSettingsLink(t *testing.T) {
 	actions := extractActions(schema.MessageMeta{}, `<a href="https://billing.example.com/invoice/settings">Open</a>`)
 	if action := findAction(actions, "view_invoice"); action != nil {
 		t.Fatalf("expected generic invoice settings link to avoid view_invoice classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsClassifiesChineseUnsubscribeLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/preferences/email?user=42">取消订阅</a>`)
+	action := findAction(actions, "unsubscribe")
+	if action == nil {
+		t.Fatalf("expected chinese unsubscribe link to classify, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/preferences/email?user=42" {
+		t.Fatalf("expected unsubscribe url, got %q", action.URL)
+	}
+	if action.Label != "取消订阅" {
+		t.Fatalf("expected preserved unsubscribe label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericChinesePreferenceLinkAsUnsubscribe(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/preferences/email?user=42">查看邮件偏好设置</a>`)
+	if action := findAction(actions, "unsubscribe"); action != nil {
+		t.Fatalf("expected generic chinese preference link to avoid unsubscribe classification, got %+v", actions)
 	}
 }
 
