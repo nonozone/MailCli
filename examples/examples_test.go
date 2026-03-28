@@ -213,7 +213,8 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 	}
 
 	syncResult := mustMap(t, report["sync"])
-	if syncResult["indexed_count"] != float64(13) {
+	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
+	if syncResult["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected fixture sync to index all repository fixtures, got %#v", syncResult["indexed_count"])
 	}
 
@@ -1457,4 +1458,26 @@ func mustString(t *testing.T, value any) string {
 		t.Fatalf("expected string, got %#v", value)
 	}
 	return result
+}
+
+func countFixtureEmails(t *testing.T, root string) int {
+	t.Helper()
+
+	count := 0
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) == ".eml" {
+			count++
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("expected fixture email count to succeed: %v", err)
+	}
+	return count
 }

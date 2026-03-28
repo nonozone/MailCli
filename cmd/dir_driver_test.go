@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -66,7 +68,8 @@ func TestSyncAndSearchCommandsSupportDirDriver(t *testing.T) {
 		t.Fatalf("expected dir-backed sync to succeed: %v", err)
 	}
 
-	if !strings.Contains(syncOut.String(), `"indexed_count": 13`) {
+	expectedFixtures := countFixtureEmails(t, root)
+	if !strings.Contains(syncOut.String(), `"indexed_count": `+expectedFixtures) {
 		t.Fatalf("expected dir-backed sync to index messages, got %s", syncOut.String())
 	}
 
@@ -95,4 +98,26 @@ func mustFixtureMailRoot(t *testing.T) string {
 		t.Fatalf("expected fixture root to resolve: %v", err)
 	}
 	return root
+}
+
+func countFixtureEmails(t *testing.T, root string) string {
+	t.Helper()
+
+	count := 0
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if filepath.Ext(path) == ".eml" {
+			count++
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("expected fixture email count to succeed: %v", err)
+	}
+	return strconv.Itoa(count)
 }
