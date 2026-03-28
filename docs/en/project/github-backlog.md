@@ -44,9 +44,19 @@ Create these first:
 
 Status note:
 
+- item 1 is now baseline-complete on `main`; keep it only for future doc drift cleanup
+- item 5 is now baseline-complete on `main`; keep it only for follow-up cache-state improvements
+- item 6 is now baseline-complete on `main`; keep it only for additional triage-signal expansion
 - item 7 now has a baseline reusable harness on `main` in `pkg/driver/drivertest`
 - item 8 is now covered by `docs/en/contributing/parser.md`
 - keep those drafts only if follow-up expansion work is needed
+
+If starting from the current repository state, the higher-value open items are now:
+
+1. Strengthen HTML body extraction and noise filtering
+2. Improve URL normalization for agent-facing actions
+3. Expand parser corpus for real-world edge cases
+4. Add one more built-in provider only after the shared layers stay stable
 
 ## Issue Drafts
 
@@ -86,6 +96,8 @@ This issue should not change machine-facing contracts. It should clarify which e
 
 The narrower and better option is to align docs now, before more drift accumulates.
 ```
+
+Status: baseline completed on `main`.
 
 ## Issue 2
 
@@ -266,6 +278,8 @@ Potential additions:
 Docs alone are not enough, and unstructured logs are weak for agents.
 ```
 
+Status: baseline completed on `main`.
+
 ## Issue 6
 
 Title: `Enrich thread summaries for triage loops`
@@ -310,6 +324,8 @@ Useful candidate signals:
 
 The right path is a small number of additive, triage-focused fields.
 ```
+
+Status: baseline completed on `main`.
 
 ## Issue 7
 
@@ -356,6 +372,8 @@ The minimum bar should cover:
 Both options keep contribution cost higher than necessary.
 ```
 
+Status: baseline completed on `main`.
+
 ## Issue 8
 
 Title: `Write a parser contributor guide`
@@ -400,6 +418,8 @@ The guide should cover:
 
 A dedicated guide creates a much clearer entry path for outside contributors.
 ```
+
+Status: baseline completed on `main`.
 
 ## RFC Candidate
 

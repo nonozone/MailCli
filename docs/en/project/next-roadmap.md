@@ -19,6 +19,10 @@ The original RC hardening pass already shipped several important pieces:
 - richer thread triage signals such as `code_count`, `action_count`, and `participant_count`
 - a standard maintainer workflow for refreshing and checking local thread demo artifacts
 - an RFC issue template for contract-sensitive changes
+- reusable driver conformance harness in `pkg/driver/drivertest`
+- parser contributor workflow docs
+- more reliable local search and thread ranking semantics
+- zero-network-first README onboarding and a minimal reply artifact that shows MailCLI deriving outbound defaults
 
 For copy-ready GitHub issue drafts, see [GitHub Backlog Drafts](github-backlog.md).
 For the realistic maintainer-led sequence, see [Internal Development Priority](internal-priority.md).
@@ -53,7 +57,7 @@ Goal: make the current RC easier to trust, easier to document, and safer to buil
 
 #### Issue: Align docs with actual RC capabilities
 
-Status: mostly completed on `main`, but should be kept current as contracts evolve.
+Status: baseline alignment is completed on `main`, but should be kept current as contracts evolve.
 
 - Area: docs
 - Problem: roadmap and status text can drift from actual command and schema support
@@ -160,7 +164,7 @@ Status: baseline sync/index visibility improvements completed.
 
 #### Issue: Enrich thread summaries for triage loops
 
-Status: first triage-focused summary expansion completed.
+Status: baseline thread-summary expansion and local ranking refinement completed.
 
 - Area: internal/index, cmd, schema
 - Problem: agents still need too many full thread loads for common triage decisions
@@ -225,6 +229,8 @@ This milestone should start only after the previous milestones are in reasonable
 - Deliverable: new driver, tests, docs
 
 #### Issue: Define a driver compliance checklist
+
+Status: baseline checklist is completed in the current driver spec and contributor docs.
 
 - Area: docs, tests
 - Problem: community drivers need a shared quality bar

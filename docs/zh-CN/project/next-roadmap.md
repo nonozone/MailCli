@@ -19,6 +19,10 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 - 更丰富的 thread triage 信号，如 `code_count`、`action_count`、`participant_count`
 - 一套标准化的 maintainer 入口，用于刷新和校验 local thread demo 固定产物
 - 为契约敏感改动增加 RFC issue 模板
+- 可复用的 driver 合同测试支架 `pkg/driver/drivertest`
+- parser contributor workflow 文档
+- 更可靠的本地 search / thread 排序语义
+- 零网络优先的 README onboarding，以及展示出站默认推导的最小 reply 样例
 
 如果你需要可直接复制到 GitHub 的 issue 草案，见 [GitHub Backlog 草案](github-backlog.md)。
 如果你需要更现实的维护者主导开发顺序，见 [内部主导开发顺序](internal-priority.md)。
@@ -53,7 +57,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 #### Issue: 对齐 RC 文档与实际能力
 
-状态：当前 `main` 已基本完成，但后续仍需随着契约演进持续维护。
+状态：当前 `main` 的基线对齐已完成，但后续仍需随着契约演进持续维护。
 
 - Area: docs
 - Problem: roadmap 和状态说明容易与实际命令 / schema 支持脱节
@@ -160,7 +164,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 #### Issue: 为 triage 循环增强 thread 摘要
 
-状态：第一批面向 triage 的摘要增强已完成。
+状态：thread 摘要的基线增强和本地排序语义收紧已完成。
 
 - Area: internal/index, cmd, schema
 - Problem: agent 在常见分拣场景里仍需要加载过多完整 thread
@@ -225,6 +229,8 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 - Deliverable: 新 driver + 测试 + 文档
 
 #### Issue: 定义 driver 合规性检查清单
+
+状态：基线版清单已经在当前 driver spec 和 contributor docs 中完成。
 
 - Area: docs, tests
 - Problem: 社区 driver 需要共享质量门槛
