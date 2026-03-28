@@ -384,6 +384,12 @@ func looksLikeDownloadAttachment(label, href string) bool {
 		return true
 	}
 
+	for _, token := range []string{"下载附件", "下载文件"} {
+		if label == token {
+			return true
+		}
+	}
+
 	if strings.Contains(href, "/download/") && strings.Contains(href, "attachment") {
 		return true
 	}
@@ -394,6 +400,12 @@ func looksLikeDownloadAttachment(label, href string) bool {
 func looksLikeViewAttachment(label, href string) bool {
 	if strings.Contains(label, "view attachment") || strings.Contains(label, "open attachment") {
 		return true
+	}
+
+	for _, token := range []string{"查看附件", "打开附件"} {
+		if label == token {
+			return true
+		}
 	}
 
 	if strings.Contains(href, "attachment") && !strings.Contains(href, "/download/") && !strings.Contains(href, "download=1") {

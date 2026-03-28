@@ -1,0 +1,38 @@
+From: 文件中心 <files@example.cn>
+To: nono@example.com
+Subject: 你的季度报告已准备好
+Message-ID: <attachment-cn-123@example.cn>
+Date: Sat, 28 Mar 2026 13:20:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="mailcli-cn-attachment"
+
+--mailcli-cn-attachment
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+=E4=BD=A0=E7=9A=84=E5=AD=A3=E5=BA=A6=E6=8A=A5=E5=91=8A=E5=B7=B2=E5=87=86=E5=
+=A4=87=E5=A5=BD=E3=80=82
+
+=E8=AF=B7=E7=82=B9=E5=87=BB=E4=B8=8B=E6=96=B9=E9=93=BE=E6=8E=A5=E6=9F=A5=E7=
+=9C=8B=E6=88=96=E4=B8=8B=E8=BD=BD=E9=99=84=E4=BB=B6=E3=80=82
+
+--mailcli-cn-attachment
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <body>
+    <main>
+      <h2>=E4=BD=A0=E7=9A=84=E5=AD=A3=E5=BA=A6=E6=8A=A5=E5=91=8A=E5=B7=B2=E5=
+=87=86=E5=A4=87=E5=A5=BD</h2>
+      <p>=E8=AF=B7=E5=8F=8A=E6=97=B6=E5=A4=84=E7=90=86=E8=BF=99=E4=BB=BD=E6=
+=96=87=E4=BB=B6=E3=80=82</p>
+      <p><a href=3D"https://example.cn/files/view/quarterly-report">=E6=9F=
+=A5=E7=9C=8B=E9=99=84=E4=BB=B6</a></p>
+      <p><a href=3D"https://example.cn/files/fetch/quarterly-report">=E4=B8=
+=8B=E8=BD=BD=E9=99=84=E4=BB=B6</a></p>
+    </main>
+  </body>
+</html>
+
+--mailcli-cn-attachment--

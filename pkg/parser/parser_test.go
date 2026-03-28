@@ -69,6 +69,10 @@ func TestParseAttachmentNoticeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice.eml", "../../testdata/golden/attachment_notice.json")
 }
 
+func TestParseChineseAttachmentNoticeEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice_cn.eml", "../../testdata/golden/attachment_notice_cn.json")
+}
+
 func TestParseMixedUnsubscribeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/unsubscribe_mixed.eml", "../../testdata/golden/unsubscribe_mixed.json")
 }
@@ -940,6 +944,48 @@ func TestExtractActionsClassifiesDownloadAttachmentLink(t *testing.T) {
 	}
 	if action.Label != "Download file" {
 		t.Fatalf("expected preserved label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseViewAttachmentLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/files/view/quarterly-report">查看附件</a>`)
+	action := findAction(actions, "view_attachment")
+	if action == nil {
+		t.Fatalf("expected chinese view_attachment action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/files/view/quarterly-report" {
+		t.Fatalf("expected view_attachment url, got %q", action.URL)
+	}
+	if action.Label != "查看附件" {
+		t.Fatalf("expected preserved view_attachment label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseDownloadAttachmentLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/files/fetch/quarterly-report">下载附件</a>`)
+	action := findAction(actions, "download_attachment")
+	if action == nil {
+		t.Fatalf("expected chinese download_attachment action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/files/fetch/quarterly-report" {
+		t.Fatalf("expected download_attachment url, got %q", action.URL)
+	}
+	if action.Label != "下载附件" {
+		t.Fatalf("expected preserved download_attachment label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseFileCenterLinkAsAttachmentDownload(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/files">前往文件中心</a>`)
+	if action := findAction(actions, "download_attachment"); action != nil {
+		t.Fatalf("expected chinese file center link to avoid download_attachment classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseDocumentListLinkAsViewAttachment(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/files/list">查看文档列表</a>`)
+	if action := findAction(actions, "view_attachment"); action != nil {
+		t.Fatalf("expected chinese document list link to avoid view_attachment classification, got %+v", actions)
 	}
 }
 

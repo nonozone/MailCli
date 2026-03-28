@@ -1,0 +1,37 @@
+{
+  "id": "<attachment-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "文件中心",
+      "address": "files@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "你的季度报告已准备好",
+    "date": "2026-03-28T05:20:00Z",
+    "message_id": "<attachment-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## 你的季度报告已准备好\n\n请及时处理这份文件。\n\n[查看附件](https://example.cn/files/view/quarterly-report)\n\n[下载附件](https://example.cn/files/fetch/quarterly-report)",
+    "snippet": "## 你的季度报告已准备好 请及时处理这份文件。 [查看附件](https://example.cn/files/view/quarterly-report) [下载附件](https://example.cn/files/fetch/quarterly-report)"
+  },
+  "actions": [
+    {
+      "type": "view_attachment",
+      "label": "查看附件",
+      "url": "https://example.cn/files/view/quarterly-report"
+    },
+    {
+      "type": "download_attachment",
+      "label": "下载附件",
+      "url": "https://example.cn/files/fetch/quarterly-report"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 5
+  }
+}
