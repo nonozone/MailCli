@@ -1208,6 +1208,91 @@ func TestOutboundPatternArtifactsCompile(t *testing.T) {
 	}
 }
 
+func TestRefreshLocalThreadDemoScript(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	outputDir := filepath.Join(t.TempDir(), "local-thread-demo")
+	indexPath := filepath.Join(t.TempDir(), "index.json")
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/refresh_local_thread_demo.py"),
+		"--mailcli-bin", mailcliBin,
+		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
+		"--account", "fixtures",
+		"--index", indexPath,
+		"--output-dir", outputDir,
+		"--query", "invoice",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("refresh local thread demo script failed: %v\n%s", err, string(output))
+	}
+
+	for _, name := range []string{
+		"sync.json",
+		"threads.json",
+		"thread.json",
+		"reply.draft.json",
+		"reply.mime.txt",
+		"agent-report.json",
+	} {
+		if _, err := os.Stat(filepath.Join(outputDir, name)); err != nil {
+			t.Fatalf("expected generated artifact %s: %v", name, err)
+		}
+	}
+
+	syncBytes, err := os.ReadFile(filepath.Join(outputDir, "sync.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var syncResult map[string]any
+	if err := json.Unmarshal(syncBytes, &syncResult); err != nil {
+		t.Fatalf("expected sync artifact json: %v", err)
+	}
+	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
+	if syncResult["indexed_count"] != float64(expectedFixtures) {
+		t.Fatalf("expected generated sync artifact to match fixture corpus count, got %#v", syncResult["indexed_count"])
+	}
+	if syncResult["skipped_count"] != float64(0) {
+		t.Fatalf("expected generated sync artifact to start from a clean index, got %#v", syncResult["skipped_count"])
+	}
+
+	reportBytes, err := os.ReadFile(filepath.Join(outputDir, "agent-report.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var report map[string]any
+	if err := json.Unmarshal(reportBytes, &report); err != nil {
+		t.Fatalf("expected agent report json: %v", err)
+	}
+	reportSync := mustMap(t, report["sync"])
+	if reportSync["indexed_count"] != float64(expectedFixtures) {
+		t.Fatalf("expected generated agent report sync stats to match fixture corpus count, got %#v", reportSync["indexed_count"])
+	}
+
+	replyMimeBytes, err := os.ReadFile(filepath.Join(outputDir, "reply.mime.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	replyMime := string(replyMimeBytes)
+	if !strings.Contains(replyMime, "Message-ID: <generated@mailcli.local>") {
+		t.Fatalf("expected generated reply mime to normalize message id, got %s", replyMime)
+	}
+	if strings.Contains(replyMime, "mailcli.local>") && !strings.Contains(replyMime, "<generated@mailcli.local>") {
+		t.Fatalf("expected generated reply mime to avoid runtime-specific message ids, got %s", replyMime)
+	}
+
+	threadBytes, err := os.ReadFile(filepath.Join(outputDir, "thread.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(threadBytes), `"indexed_at": "2026-03-27T15:11:13Z"`) {
+		t.Fatalf("expected generated thread artifact to normalize indexed_at, got %s", string(threadBytes))
+	}
+}
+
 func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)

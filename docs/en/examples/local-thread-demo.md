@@ -24,6 +24,17 @@ The normal example pages explain how to run commands.
 
 This page explains what the machine-facing inputs and outputs actually look like across the full loop.
 
+If the fixture corpus changes, regenerate the stored demo artifacts with:
+
+```bash
+python3 examples/python/refresh_local_thread_demo.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --index /tmp/mailcli-fixtures-index.json \
+  --output-dir examples/artifacts/local-thread-demo
+```
+
 ## Command Sequence
 
 ```bash

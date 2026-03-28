@@ -24,6 +24,17 @@
 
 这个页面则直接解释整条链路里，机器侧输入输出到底长什么样。
 
+如果 fixture corpus 发生变化，可以用下面这条命令重新生成这组固定 demo 产物：
+
+```bash
+python3 examples/python/refresh_local_thread_demo.py \
+  --mailcli-bin ./mailcli \
+  --config examples/config/fixtures-dir.yaml \
+  --account fixtures \
+  --index /tmp/mailcli-fixtures-index.json \
+  --output-dir examples/artifacts/local-thread-demo
+```
+
 ## 命令序列
 
 ```bash

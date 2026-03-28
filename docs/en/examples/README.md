@@ -37,6 +37,8 @@ Use it when you want to quickly decide which example matches your workflow.
   Parse one local `.eml` file through `mailcli parse`.
 - `examples/python/reply_dry_run.py`
   Compile one `ReplyDraft` JSON file through `mailcli reply --dry-run`.
+- `examples/python/refresh_local_thread_demo.py`
+  Regenerate the stored local-thread-demo artifacts from the current fixture corpus.
 
 ### Provider Adapters
 

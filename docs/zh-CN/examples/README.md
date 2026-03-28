@@ -37,6 +37,8 @@
   通过 `mailcli parse` 解析单个本地 `.eml` 文件。
 - `examples/python/reply_dry_run.py`
   通过 `mailcli reply --dry-run` 编译单个 `ReplyDraft` JSON 文件。
+- `examples/python/refresh_local_thread_demo.py`
+  根据当前 fixture corpus 重新生成 local-thread-demo 的固定产物。
 
 ### Provider 适配器
 
