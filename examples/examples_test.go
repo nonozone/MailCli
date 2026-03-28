@@ -1037,6 +1037,105 @@ func TestAgentInboxAssistantWorksWithTemplateExternalProvider(t *testing.T) {
 	}
 }
 
+func TestAgentInboxAssistantTemplateProviderCapturesVerificationCodes(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/verification.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("template provider verification flow failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["decision"] != "capture_code" {
+		t.Fatalf("expected template provider to capture code, got %#v", analysis["decision"])
+	}
+	if !strings.Contains(mustString(t, analysis["summary"]), "expires in 600 seconds") {
+		t.Fatalf("expected verification summary to mention expiry, got %#v", analysis["summary"])
+	}
+}
+
+func TestAgentInboxAssistantTemplateProviderEscalatesBounceMail(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/bounce.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("template provider bounce flow failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["decision"] != "escalate_delivery_error" {
+		t.Fatalf("expected template provider to escalate bounce mail, got %#v", analysis["decision"])
+	}
+	if !strings.Contains(mustString(t, analysis["summary"]), "Authentication credentials invalid") {
+		t.Fatalf("expected bounce summary to include diagnostic code, got %#v", analysis["summary"])
+	}
+}
+
+func TestAgentInboxAssistantTemplateProviderSummarizesUnsubscribeActions(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+		"--mailcli-bin", mailcliBin,
+		"--email", filepath.Join(repoRoot, "testdata/emails/unsubscribe_mixed.eml"),
+		"--agent-provider", "external",
+		"--provider-command", python,
+		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("template provider unsubscribe flow failed: %v\n%s", err, string(output))
+	}
+
+	var report map[string]any
+	if err := json.Unmarshal(output, &report); err != nil {
+		t.Fatalf("expected json output: %v\n%s", err, string(output))
+	}
+
+	analysis := mustMap(t, report["analysis"])
+	if analysis["decision"] != "review" {
+		t.Fatalf("expected template provider to keep unsubscribe mail in review, got %#v", analysis["decision"])
+	}
+	if mustString(t, analysis["summary"]) != "Subscription email with 2 unsubscribe action(s)." {
+		t.Fatalf("expected unsubscribe-aware summary, got %#v", analysis["summary"])
+	}
+}
+
 func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
@@ -1275,6 +1374,16 @@ func mustSlice(t *testing.T, value any) []any {
 	result, ok := value.([]any)
 	if !ok {
 		t.Fatalf("expected array, got %#v", value)
+	}
+	return result
+}
+
+func mustString(t *testing.T, value any) string {
+	t.Helper()
+
+	result, ok := value.(string)
+	if !ok {
+		t.Fatalf("expected string, got %#v", value)
 	}
 	return result
 }

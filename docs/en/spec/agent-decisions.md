@@ -56,3 +56,7 @@ If a new decision is needed:
 4. document the new behavior in example docs
 
 Do not introduce ad-hoc decision strings in provider implementations without updating the shared contract.
+
+Decision examples:
+
+- [Agent Decision Patterns](../examples/agent-decision-patterns.md)

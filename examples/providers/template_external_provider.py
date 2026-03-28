@@ -18,6 +18,7 @@ def analyze(payload: dict[str, Any]) -> dict[str, Any]:
         if isinstance(latest, dict):
             message = latest.get("message") or {}
     content = message.get("content", {})
+    actions = message.get("actions") or []
     codes = message.get("codes") or []
     error_context = message.get("error_context")
     wants_reply = bool(payload.get("wants_reply"))
@@ -36,6 +37,17 @@ def analyze(payload: dict[str, Any]) -> dict[str, Any]:
         return {
             "decision": "escalate_delivery_error",
             "summary": error_context.get("diagnostic_code") or error_context.get("status_code") or "Delivery error detected.",
+        }
+
+    unsubscribe_actions = [
+        action
+        for action in actions
+        if isinstance(action, dict) and action.get("type") == "unsubscribe"
+    ]
+    if unsubscribe_actions and not wants_reply:
+        return {
+            "decision": "review",
+            "summary": f"Subscription email with {len(unsubscribe_actions)} unsubscribe action(s).",
         }
 
     if wants_reply:

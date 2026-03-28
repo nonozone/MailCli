@@ -15,6 +15,8 @@
   适合本地索引、thread 选择、thread 上下文和回复工作流。
 - [Local Thread Demo](local-thread-demo.md)
   适合直接理解本地 thread 链路里的 JSON 和 MIME 边界。
+- [Agent 决策样例](agent-decision-patterns.md)
+  适合查看 verification、bounce 和 unsubscribe 的决策样例。
 - [OpenAI External Provider](openai-external-provider.md)
   适合把 OpenAI 驱动的分析器接到任一 agent 示例上。
 

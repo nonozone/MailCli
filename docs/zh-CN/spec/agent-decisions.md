@@ -56,3 +56,7 @@ provider 希望示例工作流生成回复草稿，并继续进入 `mailcli repl
 4. 在示例文档中补充行为说明
 
 不要在 provider 实现里直接发明新的 decision 字符串而不更新共享契约。
+
+决策样例：
+
+- [Agent 决策样例](../examples/agent-decision-patterns.md)
