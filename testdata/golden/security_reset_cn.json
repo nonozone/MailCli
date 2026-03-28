@@ -1,0 +1,32 @@
+{
+  "id": "<security-reset-cn-123@example.cn>",
+  "meta": {
+    "from": {
+      "name": "安全中心",
+      "address": "security@example.cn"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "请立即更新你的账户密码",
+    "date": "2026-03-28T04:40:00Z",
+    "message_id": "<security-reset-cn-123@example.cn>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "## 请立即更新你的账户密码\n\n为了保障账户安全，请尽快执行下面操作。\n\n[重置密码](https://example.cn/security/password/abc123)\n\n[查看安全说明](https://example.cn/security/help)",
+    "snippet": "## 请立即更新你的账户密码 为了保障账户安全，请尽快执行下面操作。 [重置密码](https://example.cn/security/password/abc123) [查看安全说明](https://example.cn/security/help)"
+  },
+  "actions": [
+    {
+      "type": "reset_password",
+      "label": "重置密码",
+      "url": "https://example.cn/security/password/abc123"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 5
+  }
+}

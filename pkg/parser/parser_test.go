@@ -53,6 +53,10 @@ func TestParseSecurityResetEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset.eml", "../../testdata/golden/security_reset.json")
 }
 
+func TestParseChineseResetPasswordEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset_cn.eml", "../../testdata/golden/security_reset_cn.json")
+}
+
 func TestParseSecurityResetSafeLinksEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/security_reset_safelinks.eml", "../../testdata/golden/security_reset_safelinks.json")
 }
@@ -1113,6 +1117,34 @@ func TestExtractActionsClassifiesResetPasswordLink(t *testing.T) {
 	}
 }
 
+func TestExtractActionsClassifiesChineseResetPasswordLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/security/password/abc123">重置密码</a>`)
+	action := findAction(actions, "reset_password")
+	if action == nil {
+		t.Fatalf("expected chinese reset_password action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/security/password/abc123" {
+		t.Fatalf("expected reset_password url, got %q", action.URL)
+	}
+	if action.Label != "重置密码" {
+		t.Fatalf("expected preserved reset_password label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesChineseChangePasswordLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/security/password/xyz789">修改密码</a>`)
+	action := findAction(actions, "reset_password")
+	if action == nil {
+		t.Fatalf("expected chinese change password action, got %+v", actions)
+	}
+	if action.URL != "https://example.cn/security/password/xyz789" {
+		t.Fatalf("expected reset_password url, got %q", action.URL)
+	}
+	if action.Label != "修改密码" {
+		t.Fatalf("expected preserved reset_password label, got %q", action.Label)
+	}
+}
+
 func TestExtractActionsClassifiesVerifySignInLink(t *testing.T) {
 	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/verify-sign-in/session-456">Verify sign-in</a>`)
 	action := findAction(actions, "verify_sign_in")
@@ -1180,6 +1212,20 @@ func TestExtractActionsDoesNotClassifyGenericAccountResetLinkAsResetPassword(t *
 	actions := extractActions(schema.MessageMeta{}, `<a href="https://accounts.example.com/reset-preferences">Reset account settings</a>`)
 	if action := findAction(actions, "reset_password"); action != nil {
 		t.Fatalf("expected generic reset link to avoid reset_password classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseAccountPasswordLinkAsResetPassword(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/account/password">查看账户密码</a>`)
+	if action := findAction(actions, "reset_password"); action != nil {
+		t.Fatalf("expected chinese account password link to avoid reset_password classification, got %+v", actions)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyChineseSecuritySettingsLinkAsResetPassword(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/security/settings">查看安全设置</a>`)
+	if action := findAction(actions, "reset_password"); action != nil {
+		t.Fatalf("expected chinese security settings link to avoid reset_password classification, got %+v", actions)
 	}
 }
 

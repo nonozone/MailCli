@@ -408,6 +408,12 @@ func looksLikeResetPassword(label, href string) bool {
 		return true
 	}
 
+	for _, token := range []string{"重置密码", "修改密码"} {
+		if label == token {
+			return true
+		}
+	}
+
 	return strings.Contains(href, "/reset-password") || strings.Contains(href, "/password-reset")
 }
 
