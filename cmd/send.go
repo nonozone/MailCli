@@ -6,12 +6,12 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/spf13/cobra"
 	"github.com/nonozone/MailCli/internal/config"
 	"github.com/nonozone/MailCli/pkg/composer"
 	"github.com/nonozone/MailCli/pkg/driver"
 	"github.com/nonozone/MailCli/pkg/parser"
 	"github.com/nonozone/MailCli/pkg/schema"
+	"github.com/spf13/cobra"
 )
 
 var errSendFailure = errors.New("outbound command failed")
@@ -52,6 +52,25 @@ func newSendCmd() *cobra.Command {
 			}
 			accountName = firstNonEmpty(accountName, draft.Account)
 
+			var (
+				selectedAccount config.AccountConfig
+				drv             driver.Driver
+			)
+			if !dryRun {
+				selectedAccount, err = resolveSelectedAccount(configPath, account, draft.Account)
+				if err != nil {
+					return writeSendFailure(cmd, providerName, accountName, err)
+				}
+				accountName = selectedAccount.Name
+				providerName = selectedAccount.Driver
+				applyDefaultFromAddress(selectedAccount, &draft.From)
+
+				drv, err = driverFactoryFunc(selectedAccount)
+				if err != nil {
+					return writeSendFailure(cmd, providerName, accountName, err)
+				}
+			}
+
 			mime, err := composer.ComposeDraft(draft)
 			if err != nil {
 				if dryRun {
@@ -63,18 +82,6 @@ func newSendCmd() *cobra.Command {
 			if dryRun {
 				_, err := cmd.OutOrStdout().Write(mime)
 				return err
-			}
-
-			selectedAccount, err := resolveSelectedAccount(configPath, account, draft.Account)
-			if err != nil {
-				return writeSendFailure(cmd, providerName, accountName, err)
-			}
-			accountName = selectedAccount.Name
-			providerName = selectedAccount.Driver
-
-			drv, err := driverFactoryFunc(selectedAccount)
-			if err != nil {
-				return writeSendFailure(cmd, providerName, accountName, err)
 			}
 
 			if err := drv.SendRaw(cmd.Context(), mime); err != nil {
@@ -139,6 +146,7 @@ func newReplyCmd() *cobra.Command {
 				}
 				accountName = selectedAccount.Name
 				providerName = selectedAccount.Driver
+				applyDefaultFromAddress(selectedAccount, &draft.From)
 
 				drv, err = driverFactoryFunc(selectedAccount)
 				if err != nil {
@@ -233,7 +241,75 @@ func enrichReplyDraft(ctx context.Context, drv driver.Driver, draft *schema.Repl
 		draft.Subject = msg.Meta.Subject
 	}
 
+	if len(draft.To) == 0 {
+		draft.To = deriveReplyRecipients(msg, draft.From)
+	}
+
 	return nil
+}
+
+func applyDefaultFromAddress(account config.AccountConfig, current **schema.Address) {
+	if current != nil && *current != nil && strings.TrimSpace((*current).Address) != "" {
+		return
+	}
+
+	address := firstNonEmpty(account.SMTPUsername, account.Username)
+	if address == "" {
+		return
+	}
+
+	if current != nil && *current != nil {
+		(*current).Address = address
+		return
+	}
+
+	if current != nil {
+		*current = &schema.Address{Address: address}
+	}
+}
+
+func deriveReplyRecipients(msg *schema.StandardMessage, sender *schema.Address) []schema.Address {
+	if msg == nil {
+		return nil
+	}
+
+	senderAddress := ""
+	if sender != nil {
+		senderAddress = strings.TrimSpace(sender.Address)
+	}
+
+	if msg.Meta.From != nil && !sameAddress(msg.Meta.From.Address, senderAddress) {
+		return []schema.Address{*msg.Meta.From}
+	}
+
+	recipients := make([]schema.Address, 0, len(msg.Meta.To))
+	for _, addr := range msg.Meta.To {
+		if sameAddress(addr.Address, senderAddress) {
+			continue
+		}
+		if strings.TrimSpace(addr.Address) == "" && strings.TrimSpace(addr.Name) == "" {
+			continue
+		}
+		recipients = append(recipients, addr)
+	}
+	if len(recipients) > 0 {
+		return recipients
+	}
+
+	if msg.Meta.From != nil && (strings.TrimSpace(msg.Meta.From.Address) != "" || strings.TrimSpace(msg.Meta.From.Name) != "") {
+		return []schema.Address{*msg.Meta.From}
+	}
+
+	return nil
+}
+
+func sameAddress(left, right string) bool {
+	left = strings.ToLower(strings.TrimSpace(left))
+	right = strings.ToLower(strings.TrimSpace(right))
+	if left == "" || right == "" {
+		return false
+	}
+	return left == right
 }
 
 func writeSendFailure(cmd *cobra.Command, provider, account string, err error) error {

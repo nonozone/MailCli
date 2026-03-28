@@ -48,6 +48,7 @@ mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dr
 这个形态的价值：
 
 - `reply_to_id` 允许 MailCLI 回抓原邮件并自动推导线程头
+- 当 `to` 省略时，MailCLI 也可以从原邮件里补默认回复收件人
 - agent 不需要自己拼 `In-Reply-To` 或 `References`
 - 它非常适合零网络 demo 和本地检索闭环
 

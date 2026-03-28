@@ -129,6 +129,44 @@ func TestSendCommandUsesConfiguredDriver(t *testing.T) {
 	}
 }
 
+func TestSendCommandDefaultsFromAddressFromAccountConfig(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+
+	fake := &fakeSendDriver{}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"send", "--config", configPath, draftPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected send command with derived from address to succeed: %v", err)
+	}
+
+	if !strings.Contains(string(fake.lastRaw), "From: support@nono.im") {
+		t.Fatalf("expected configured account username to fill missing From header, got %s", string(fake.lastRaw))
+	}
+}
+
 func TestSendCommandReturnsStructuredAuthFailure(t *testing.T) {
 	restoreLoad := loadConfigFunc
 	restoreDriver := driverFactoryFunc
@@ -465,6 +503,50 @@ func TestReplyCommandResolvesReplyToIDViaFetch(t *testing.T) {
 	}
 	if !strings.Contains(raw, "Subject: Re: Original subject") {
 		t.Fatalf("expected subject to derive from original message")
+	}
+}
+
+func TestReplyCommandDerivesRecipientAndSenderFromContext(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+
+	drv := &replyResolveDriver{
+		fakeSendDriver: &fakeSendDriver{},
+		raw:            []byte("From: sender@example.com\r\nTo: support@nono.im\r\nSubject: Original subject\r\nMessage-ID: <orig-123@example.com>\r\nReferences: <older-1@example.com>\r\nDate: Wed, 26 Mar 2026 11:00:00 +0800\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nOriginal body"),
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return drv, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "body_text": "Thanks for the email.",
+  "reply_to_id": "imap:uid:123"
+}`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "--config", configPath, replyPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected reply command with derived recipients to succeed: %v", err)
+	}
+
+	raw := string(drv.lastRaw)
+	if !strings.Contains(raw, "From: support@nono.im") {
+		t.Fatalf("expected configured account username to fill reply From header, got %s", raw)
+	}
+	if !strings.Contains(raw, "To: sender@example.com") {
+		t.Fatalf("expected original sender to fill reply recipient, got %s", raw)
 	}
 }
 

@@ -221,6 +221,7 @@ When `reply_to_id` is used, `mailcli` may fetch the original message and derive:
 - original `Message-ID`
 - `References`
 - default reply subject
+- default reply recipient when `to` is omitted
 
 ### Example
 

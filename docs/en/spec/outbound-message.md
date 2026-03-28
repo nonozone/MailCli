@@ -68,6 +68,7 @@ When `reply_to_id` is used, `mailcli` may fetch the original message through the
 - `reply_to_message_id`
 - `references`
 - default reply subject
+- default reply recipient when `to` is omitted
 
 ### `SendResult`
 
@@ -132,6 +133,8 @@ Current baseline behavior:
 - `body_md` plus optional `body_text`: emits `multipart/alternative`
 - `attachments`: emits `multipart/mixed`, with the body as the first part
 - `reply_to_message_id` and `references`: emitted into reply headers
+- non-dry-run outbound commands may fill `from.address` from configured `smtp_username` or `username`
+- `reply_to_id` may also derive a default reply recipient from the original message when `to` is omitted
 
 Current limitations:
 

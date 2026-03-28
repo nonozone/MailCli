@@ -156,6 +156,7 @@ Why `reply_to_id` matters:
 
 - the agent does not need to reconstruct `In-Reply-To`
 - the agent does not need to rebuild `References`
+- the agent can omit `to` and let MailCLI derive the default reply recipient
 - MailCLI can re-fetch the original message and derive thread headers itself
 
 ## Step 5: Compiled MIME

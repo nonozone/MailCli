@@ -221,6 +221,7 @@ agent 应该生成 `ReplyDraft`，而不是原始邮件。
 - 原始 `Message-ID`
 - `References`
 - 默认回复主题
+- 当 `to` 省略时，默认回复收件人
 
 ### 示例
 

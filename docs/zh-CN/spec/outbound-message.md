@@ -68,6 +68,7 @@
 - `reply_to_message_id`
 - `references`
 - 默认回复主题
+- 当 `to` 省略时，默认回复收件人
 
 ### `SendResult`
 
@@ -132,6 +133,8 @@
 - 有 `body_md`，并可选带 `body_text`：输出 `multipart/alternative`
 - 有 `attachments`：输出 `multipart/mixed`，正文作为第一部分
 - `reply_to_message_id` 和 `references`：写入回复头部
+- 对非 dry-run 的发送命令，如果配置里有 `smtp_username` 或 `username`，可用于补全缺失的 `from.address`
+- 当 `reply_to_id` 存在且 `to` 省略时，可从原邮件推导默认回复收件人
 
 当前限制：
 

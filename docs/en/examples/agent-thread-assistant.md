@@ -107,6 +107,7 @@ When `--config` is present, the example prefers `reply_to_id` using the latest l
 - `In-Reply-To`
 - `References`
 - default reply subject
+- default reply recipient when `to` is omitted
 
 When `--skip-sync` is used without `--config`, the example falls back to a local-only draft using:
 

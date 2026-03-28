@@ -107,6 +107,7 @@ external provider 会收到一个 JSON payload，其中包含：
 - `In-Reply-To`
 - `References`
 - 默认回复主题
+- 当 `to` 省略时，默认回复收件人
 
 当使用 `--skip-sync` 且没有 `--config` 时，示例会退回为纯本地 draft：
 

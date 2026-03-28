@@ -156,6 +156,7 @@ agent 在这里会拿到：
 
 - agent 不必自己重建 `In-Reply-To`
 - agent 不必自己重建 `References`
+- agent 可以省略 `to`，由 MailCLI 推导默认回复收件人
 - MailCLI 可以重新抓原始邮件，自己推导线程头
 
 ## 第五步：编译后的 MIME

@@ -48,6 +48,7 @@ mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dr
 Why this shape matters:
 
 - `reply_to_id` lets MailCLI re-fetch the original message and derive thread headers
+- MailCLI can also derive a default reply recipient from the original message when `to` is omitted
 - the agent does not need to construct `In-Reply-To` or `References`
 - this is the best fit for zero-network demos and local retrieval loops
 
