@@ -148,7 +148,7 @@ func extractWrappedTarget(parsed *url.URL) string {
 		return ""
 	}
 
-	for _, key := range []string{"url", "u", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
+	for _, key := range []string{"url", "u", "a", "target", "redirect", "redirect_url", "redirect_uri", "dest", "destination"} {
 		if target := decodeURLCandidate(parsed.Query().Get(key)); target != "" {
 			return target
 		}
