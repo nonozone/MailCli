@@ -139,6 +139,7 @@ parser 可以是 heuristic。
 仓库里已经有一些可以直接参考的代表性样本：
 
 - `mercury.eml`：大型 HTML newsletter / 推广邮件
+- `confirm_subscription.eml`：验证邮箱地址以确认订阅，而不是确认登录的场景
 - `verification.eml`：标准验证码 / 验证流程
 - `reply_quoted_verification.eml`：验证码内容被引用回复噪音包裹的场景
 - `invoice.eml`：账单 / 发票类 transactional 邮件

@@ -139,6 +139,7 @@ Good fixture categories:
 Representative fixtures already in the repo:
 
 - `mercury.eml`: large HTML-heavy newsletter or promo mail
+- `confirm_subscription.eml`: email-address verification that confirms a subscription, not a sign-in
 - `verification.eml`: straightforward verification flow
 - `reply_quoted_verification.eml`: verification content inside quoted thread noise
 - `invoice.eml`: transactional billing or invoice flow

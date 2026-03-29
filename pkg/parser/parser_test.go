@@ -89,6 +89,10 @@ func TestParseChineseConfirmSubscriptionEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/confirm_subscription_cn.eml", "../../testdata/golden/confirm_subscription_cn.json")
 }
 
+func TestParseEnglishConfirmSubscriptionEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/confirm_subscription.eml", "../../testdata/golden/confirm_subscription.json")
+}
+
 func TestParseRelatedInlineImageEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/related_inline_image.eml", "../../testdata/golden/related_inline_image.json")
 }
@@ -955,6 +959,27 @@ func TestExtractActionsClassifiesChineseEmailConfirmSubscriptionLink(t *testing.
 	}
 	if action.Label != "确认邮件订阅" {
 		t.Fatalf("expected preserved confirm_subscription label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsClassifiesVerifyEmailAddressLinkAsConfirmSubscription(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/newsletter/verify-email?token=abc123">Verify email address</a>`)
+	action := findAction(actions, "confirm_subscription")
+	if action == nil {
+		t.Fatalf("expected verify-email confirm_subscription action, got %+v", actions)
+	}
+	if action.URL != "https://example.com/newsletter/verify-email?token=abc123" {
+		t.Fatalf("expected confirm_subscription url, got %q", action.URL)
+	}
+	if action.Label != "Verify email address" {
+		t.Fatalf("expected preserved confirm_subscription label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericEmailAddressVerificationAsSubscription(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/account/email/verify?token=abc123">Verify email address</a>`)
+	if action := findAction(actions, "confirm_subscription"); action != nil {
+		t.Fatalf("expected account email verification to avoid confirm_subscription classification, got %+v", actions)
 	}
 }
 

@@ -55,6 +55,7 @@ func TestSyncAndSearchCommandsSupportDirDriver(t *testing.T) {
 	root := mustFixtureMailRoot(t)
 	configPath := writeTempFile(t, "config.yaml", "current_account: fixtures\naccounts:\n  - name: fixtures\n    driver: dir\n    path: "+root+"\n    mailbox: INBOX\n")
 	indexPath := writeTempFile(t, "index.json", "{}\n")
+	expectedFixtures := countFixtureEmails(t, root)
 
 	loadConfigFunc = config.Load
 	driverFactoryFunc = driver.NewFromAccount
@@ -63,12 +64,11 @@ func TestSyncAndSearchCommandsSupportDirDriver(t *testing.T) {
 	var syncOut bytes.Buffer
 	syncCmd.SetOut(&syncOut)
 	syncCmd.SetErr(&syncOut)
-	syncCmd.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "20"})
+	syncCmd.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", expectedFixtures})
 	if err := syncCmd.Execute(); err != nil {
 		t.Fatalf("expected dir-backed sync to succeed: %v", err)
 	}
 
-	expectedFixtures := countFixtureEmails(t, root)
 	if !strings.Contains(syncOut.String(), `"indexed_count": `+expectedFixtures) {
 		t.Fatalf("expected dir-backed sync to index messages, got %s", syncOut.String())
 	}

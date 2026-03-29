@@ -113,7 +113,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", required=True, help="directory where artifacts should be written")
     parser.add_argument("--query", default="invoice", help="thread query used for demo selection")
     parser.add_argument("--mailbox", help="optional mailbox override")
-    parser.add_argument("--sync-limit", type=int, default=20, help="sync limit for the demo refresh")
+    parser.add_argument(
+        "--sync-limit",
+        type=int,
+        help="sync limit for the demo refresh; defaults to the full fixture corpus when the config points to a local dir driver",
+    )
     parser.add_argument("--thread-limit", type=int, default=10, help="thread summary limit")
     parser.add_argument("--thread-message-limit", type=int, default=50, help="thread message limit")
     parser.add_argument("--from-address", default="support@nono.im", help="from address for reply dry-run")
@@ -135,6 +139,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def build_sync_command(args: argparse.Namespace) -> list[str]:
+    sync_limit = resolve_sync_limit(args)
     command = [
         args.mailcli_bin,
         "sync",
@@ -147,7 +152,7 @@ def build_sync_command(args: argparse.Namespace) -> list[str]:
         "--index",
         args.index,
         "--limit",
-        str(args.sync_limit),
+        str(sync_limit),
     ]
     if args.mailbox:
         command.extend(["--mailbox", args.mailbox])
@@ -193,6 +198,7 @@ def build_thread_command(args: argparse.Namespace, thread_id: str) -> list[str]:
 
 
 def build_agent_command(args: argparse.Namespace) -> list[str]:
+    sync_limit = resolve_sync_limit(args)
     command = [
         sys.executable,
         str(Path(__file__).with_name("agent_thread_assistant.py")),
@@ -205,7 +211,7 @@ def build_agent_command(args: argparse.Namespace) -> list[str]:
         "--index",
         args.index,
         "--sync-limit",
-        str(args.sync_limit),
+        str(sync_limit),
         "--thread-limit",
         str(args.thread_limit),
         "--thread-message-limit",
@@ -220,6 +226,53 @@ def build_agent_command(args: argparse.Namespace) -> list[str]:
     if args.mailbox:
         command.extend(["--mailbox", args.mailbox])
     return command
+
+
+def resolve_sync_limit(args: argparse.Namespace) -> int:
+    if args.sync_limit is not None:
+        return args.sync_limit
+
+    fixture_root = discover_fixture_root(args.config, args.workdir)
+    if fixture_root is None:
+        return 20
+
+    return count_eml_files(fixture_root)
+
+
+def discover_fixture_root(config_path: str, workdir: str | None) -> Path | None:
+    config_file = resolve_path(config_path, workdir)
+    try:
+        raw = config_file.read_text(encoding="utf-8")
+    except OSError:
+        return None
+
+    for line in raw.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("path:"):
+            continue
+        value = stripped.split(":", 1)[1].strip()
+        if not value:
+            return None
+        candidate = Path(value)
+        if not candidate.is_absolute():
+            candidate = (config_file.parent / candidate).resolve()
+        if candidate.is_dir():
+            return candidate
+        return None
+
+    return None
+
+
+def resolve_path(raw_path: str, workdir: str | None) -> Path:
+    path = Path(raw_path)
+    if path.is_absolute():
+        return path
+    base = Path(workdir) if workdir else Path.cwd()
+    return (base / path).resolve()
+
+
+def count_eml_files(root: Path) -> int:
+    return sum(1 for path in root.rglob("*.eml") if path.is_file())
 
 
 def run_mailcli_json(command: list[str], cwd: str | None) -> Any:

@@ -1,0 +1,32 @@
+{
+  "id": "<confirm-subscription-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Example Community",
+      "address": "updates@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Verify your email address",
+    "date": "2026-03-29T08:15:00Z",
+    "message_id": "<confirm-subscription-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "Thanks for subscribing to the Example Community digest.\n\nPlease verify your email address to confirm your subscription request.\n\n[View archive](https://example.com/archive)\n\n[Verify email address](https://example.com/newsletter/verify-email?token=abc123)",
+    "snippet": "Thanks for subscribing to the Example Community digest. Please verify your email address to confirm your subscription request. [View archive](https://example.co..."
+  },
+  "actions": [
+    {
+      "type": "confirm_subscription",
+      "label": "Verify email address",
+      "url": "https://example.com/newsletter/verify-email?token=abc123"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 23
+  }
+}

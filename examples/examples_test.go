@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -189,6 +190,7 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	indexPath := filepath.Join(t.TempDir(), "index.json")
+	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
 
 	cmd := exec.Command(
 		python,
@@ -197,7 +199,7 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
 		"--account", "fixtures",
 		"--index", indexPath,
-		"--sync-limit", "20",
+		"--sync-limit", strconv.Itoa(expectedFixtures),
 		"--query", "invoice",
 	)
 	cmd.Dir = t.TempDir()
@@ -213,7 +215,6 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 	}
 
 	syncResult := mustMap(t, report["sync"])
-	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
 	if syncResult["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected fixture sync to index all repository fixtures, got %#v", syncResult["indexed_count"])
 	}

@@ -1,0 +1,34 @@
+From: Example Community <updates@example.com>
+To: nono@example.com
+Subject: Verify your email address
+Message-ID: <confirm-subscription-123@example.com>
+Date: Sun, 29 Mar 2026 08:15:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="mailcli-confirm-en"
+
+--mailcli-confirm-en
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Thanks for subscribing to the Example Community digest.
+
+Please verify your email address to confirm your subscription request.
+
+https://example.com/newsletter/verify-email?token=3Dabc123
+
+--mailcli-confirm-en
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+<html>
+  <body>
+    <main>
+      <p>Thanks for subscribing to the Example Community digest.</p>
+      <p>Please verify your email address to confirm your subscription request.</p>
+      <p><a href=3D"https://example.com/archive">View archive</a></p>
+      <p><a href=3D"https://example.com/newsletter/verify-email?token=3Dabc123">Verify email address</a></p>
+    </main>
+  </body>
+</html>
+
+--mailcli-confirm-en--

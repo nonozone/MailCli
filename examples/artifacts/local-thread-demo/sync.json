@@ -1,9 +1,9 @@
 {
   "account": "fixtures",
   "mailbox": "INBOX",
-  "listed_count": 20,
-  "fetched_count": 20,
-  "indexed_count": 20,
+  "listed_count": 21,
+  "fetched_count": 21,
+  "indexed_count": 21,
   "skipped_count": 0,
   "refreshed_count": 0,
   "index_path": "/tmp/mailcli-fixtures-index.json"

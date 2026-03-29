@@ -280,12 +280,36 @@ func looksLikeUnsubscribe(lowerLabel, lowerHref, rawLabel string) bool {
 }
 
 func looksLikeConfirmSubscription(lowerLabel, lowerHref, rawLabel string) bool {
-	if strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm email") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email") {
+	if strings.Contains(lowerLabel, "confirm subscription") || strings.Contains(lowerLabel, "confirm your subscription") || strings.Contains(lowerHref, "confirm-subscription") || strings.Contains(lowerHref, "confirm-email") {
+		return true
+	}
+
+	if looksLikeEmailVerificationLabel(lowerLabel) && looksLikeSubscriptionVerificationHref(lowerHref) {
 		return true
 	}
 
 	for _, token := range []string{"确认订阅", "确认邮件订阅"} {
 		if strings.Contains(rawLabel, token) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func looksLikeEmailVerificationLabel(lowerLabel string) bool {
+	for _, token := range []string{"verify email", "verify your email", "verify email address", "confirm your email"} {
+		if strings.Contains(lowerLabel, token) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func looksLikeSubscriptionVerificationHref(lowerHref string) bool {
+	for _, token := range []string{"newsletter", "subscription", "subscribe", "confirm-email", "verify-email"} {
+		if strings.Contains(lowerHref, token) {
 			return true
 		}
 	}
