@@ -232,35 +232,91 @@ def resolve_sync_limit(args: argparse.Namespace) -> int:
     if args.sync_limit is not None:
         return args.sync_limit
 
-    fixture_root = discover_fixture_root(args.config, args.workdir)
+    fixture_root = discover_fixture_root(args.config, args.account, args.workdir)
     if fixture_root is None:
         return 20
 
     return count_eml_files(fixture_root)
 
 
-def discover_fixture_root(config_path: str, workdir: str | None) -> Path | None:
+def discover_fixture_root(config_path: str, account_name: str, workdir: str | None) -> Path | None:
     config_file = resolve_path(config_path, workdir)
+    account = load_account_config(config_file, account_name)
+    if account is None:
+        return None
+
+    if account.get("driver") != "dir":
+        return None
+
+    value = account.get("path", "").strip()
+    if not value:
+        return None
+
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = (config_file.parent / candidate).resolve()
+    if candidate.is_dir():
+        return candidate
+    return None
+
+
+def load_account_config(config_file: Path, account_name: str) -> dict[str, str] | None:
     try:
         raw = config_file.read_text(encoding="utf-8")
     except OSError:
         return None
 
+    accounts: list[dict[str, str]] = []
+    current: dict[str, str] | None = None
+    in_accounts = False
+
     for line in raw.splitlines():
         stripped = line.strip()
-        if not stripped.startswith("path:"):
+        if not stripped or stripped.startswith("#"):
             continue
-        value = stripped.split(":", 1)[1].strip()
-        if not value:
-            return None
-        candidate = Path(value)
-        if not candidate.is_absolute():
-            candidate = (config_file.parent / candidate).resolve()
-        if candidate.is_dir():
-            return candidate
-        return None
 
+        if stripped == "accounts:":
+            in_accounts = True
+            continue
+        if not in_accounts:
+            continue
+
+        lstripped = line.lstrip()
+        indent = len(line) - len(lstripped)
+        if indent == 2 and lstripped.startswith("- "):
+            if current:
+                accounts.append(current)
+            current = {}
+            inline = lstripped[2:].strip()
+            if inline:
+                key, value = split_yaml_field(inline)
+                if key:
+                    current[key] = value
+            continue
+
+        if current is None:
+            continue
+        if indent < 4:
+            continue
+
+        key, value = split_yaml_field(stripped)
+        if key:
+            current[key] = value
+
+    if current:
+        accounts.append(current)
+
+    for account in accounts:
+        if account.get("name") == account_name:
+            return account
     return None
+
+
+def split_yaml_field(line: str) -> tuple[str, str]:
+    if ":" not in line:
+        return "", ""
+    key, value = line.split(":", 1)
+    return key.strip(), value.strip()
 
 
 def resolve_path(raw_path: str, workdir: str | None) -> Path:

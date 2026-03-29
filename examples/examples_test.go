@@ -1344,6 +1344,53 @@ func TestRefreshLocalThreadDemoScriptCheckMode(t *testing.T) {
 	}
 }
 
+func TestRefreshLocalThreadDemoScriptUsesSelectedDirAccountForDefaultSyncLimit(t *testing.T) {
+	python := requirePython(t)
+	repoRoot := repoRoot(t)
+	mailcliBin := buildMailcliBinary(t, repoRoot)
+	outputDir := filepath.Join(t.TempDir(), "local-thread-demo")
+	indexPath := filepath.Join(t.TempDir(), "index.json")
+
+	bogusRoot := filepath.Join(t.TempDir(), "bogus-fixtures")
+	if err := os.MkdirAll(bogusRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bogusMail := "From: Bogus <bogus@example.com>\nTo: nono@example.com\nSubject: Bogus\nMessage-ID: <bogus@example.com>\nDate: Sun, 29 Mar 2026 01:00:00 +0000\nContent-Type: text/plain; charset=UTF-8\n\nBogus corpus entry.\n"
+	if err := os.WriteFile(filepath.Join(bogusRoot, "aaa-first.eml"), []byte(bogusMail), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	configPath := writeTempFile(t, "fixtures-multi.yaml", "current_account: other\naccounts:\n  - name: other\n    driver: dir\n    path: "+bogusRoot+"\n    mailbox: INBOX\n  - name: fixtures\n    driver: dir\n    path: "+filepath.Join(repoRoot, "testdata", "emails")+"\n    mailbox: INBOX\n")
+
+	cmd := exec.Command(
+		python,
+		filepath.Join(repoRoot, "examples/python/refresh_local_thread_demo.py"),
+		"--mailcli-bin", mailcliBin,
+		"--config", configPath,
+		"--account", "fixtures",
+		"--index", indexPath,
+		"--output-dir", outputDir,
+		"--query", "invoice",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("refresh local thread demo script with multi-account config failed: %v\n%s", err, string(output))
+	}
+
+	syncBytes, err := os.ReadFile(filepath.Join(outputDir, "sync.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var syncResult map[string]any
+	if err := json.Unmarshal(syncBytes, &syncResult); err != nil {
+		t.Fatalf("expected sync artifact json: %v", err)
+	}
+	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
+	if syncResult["indexed_count"] != float64(expectedFixtures) {
+		t.Fatalf("expected selected account fixture corpus count, got %#v", syncResult["indexed_count"])
+	}
+}
+
 func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)

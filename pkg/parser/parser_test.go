@@ -983,6 +983,27 @@ func TestExtractActionsDoesNotClassifyGenericEmailAddressVerificationAsSubscript
 	}
 }
 
+func TestExtractActionsClassifiesSubscriptionConfirmEmailLink(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/newsletter/confirm-email?token=abc123">Confirm your email</a>`)
+	action := findAction(actions, "confirm_subscription")
+	if action == nil {
+		t.Fatalf("expected subscription confirm-email action, got %+v", actions)
+	}
+	if action.URL != "https://example.com/newsletter/confirm-email?token=abc123" {
+		t.Fatalf("expected confirm_subscription url, got %q", action.URL)
+	}
+	if action.Label != "Confirm your email" {
+		t.Fatalf("expected preserved confirm_subscription label, got %q", action.Label)
+	}
+}
+
+func TestExtractActionsDoesNotClassifyGenericConfirmEmailAsSubscription(t *testing.T) {
+	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.com/account/confirm-email?token=abc123">Confirm your email</a>`)
+	if action := findAction(actions, "confirm_subscription"); action != nil {
+		t.Fatalf("expected generic confirm-email link to avoid confirm_subscription classification, got %+v", actions)
+	}
+}
+
 func TestExtractActionsDoesNotClassifyChineseOrderConfirmationAsSubscription(t *testing.T) {
 	actions := extractActions(schema.MessageMeta{}, `<a href="https://example.cn/orders/42">确认订单</a>`)
 	if action := findAction(actions, "confirm_subscription"); action != nil {
