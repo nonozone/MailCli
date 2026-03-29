@@ -110,20 +110,20 @@ func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]sche
 	}
 
 	limit := query.Limit
-	if limit <= 0 {
-		limit = 10
-	}
-
 	from := uint32(1)
 	to := mbox.Messages
-	if mbox.Messages > uint32(limit-1) {
+	if limit > 0 && mbox.Messages > uint32(limit-1) {
 		from = mbox.Messages - uint32(limit-1)
 	}
 
 	seqset := new(imap.SeqSet)
 	seqset.AddRange(from, to)
 	items := []imap.FetchItem{imap.FetchEnvelope}
-	messages := make(chan *imap.Message, limit)
+	bufferSize := 1
+	if limit > 0 {
+		bufferSize = limit
+	}
+	messages := make(chan *imap.Message, bufferSize)
 	done := make(chan error, 1)
 
 	go func() {

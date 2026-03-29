@@ -46,11 +46,11 @@ python3 examples/python/agent_thread_assistant.py \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
   --index /tmp/mailcli-fixtures-index.json \
-  --sync-limit 20 \
+  --sync-limit 0 \
   --query invoice
 ```
 
-This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus.
+This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus. In MailCLI, `--sync-limit 0` means "do not truncate the remote or local listing."
 
 ## Existing Local Index Example
 

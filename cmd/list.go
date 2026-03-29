@@ -58,7 +58,7 @@ func newListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
 	cmd.Flags().StringVar(&account, "account", "", "account name override")
 	cmd.Flags().StringVar(&mailbox, "mailbox", "", "mailbox override")
-	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to list")
+	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to list (0 means no limit)")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }

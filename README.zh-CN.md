@@ -28,7 +28,7 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/invoice.eml
 
 # 3. 跑本地 thread 闭环
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 
 # 4. 编译最小可用的 reply 边界
@@ -60,7 +60,7 @@ go build -o mailcli ./cmd/mailcli
 go build -o mailcli ./cmd/mailcli
 
 # 2. 跑零网络的本地 thread 闭环
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 
 # 3. 查看完整的 agent 边界
@@ -69,7 +69,7 @@ python3 examples/python/agent_thread_assistant.py \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
   --index /tmp/mailcli-fixtures-index.json \
-  --sync-limit 20 \
+  --sync-limit 0 \
   --query invoice
 ```
 
@@ -100,7 +100,7 @@ flowchart LR
 ```bash
 go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/verification.eml
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ```
 
@@ -418,7 +418,7 @@ cat test.eml | mailcli parse --format json -
 ### 零网络本地 thread 闭环
 
 ```bash
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ./mailcli thread --index /tmp/mailcli-fixtures-index.json "<invoice-123@example.com>"
 ```
@@ -431,7 +431,7 @@ python3 examples/python/agent_thread_assistant.py \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
   --index /tmp/mailcli-fixtures-index.json \
-  --sync-limit 20 \
+  --sync-limit 0 \
   --query invoice
 ```
 

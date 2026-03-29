@@ -50,7 +50,7 @@ python3 examples/python/refresh_local_thread_demo.py \
 ## 命令序列
 
 ```bash
-mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 mailcli thread --index /tmp/mailcli-fixtures-index.json "<invoice-123@example.com>"
 mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/local-thread-demo/reply.draft.json
@@ -73,9 +73,9 @@ mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dr
 {
   "account": "fixtures",
   "mailbox": "INBOX",
-  "listed_count": 13,
-  "fetched_count": 13,
-  "indexed_count": 13,
+  "listed_count": 21,
+  "fetched_count": 21,
+  "indexed_count": 21,
   "skipped_count": 0,
   "refreshed_count": 0,
   "index_path": "/tmp/mailcli-fixtures-index.json"

@@ -208,3 +208,44 @@ func TestListCommandPassesMailboxAndLimitToDriver(t *testing.T) {
 		t.Fatalf("expected limit to be propagated, got %d", fake.lastQuery.Limit)
 	}
 }
+
+func TestListCommandPropagatesZeroLimitToDriver(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	err := os.WriteFile(configPath, []byte("current_account: local\naccounts:\n  - name: local\n    driver: fake\n"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	loadConfigFunc = config.Load
+	fake := &captureListDriver{
+		items: []schema.MessageMetaSummary{
+			{ID: "1", Subject: "Hello"},
+		},
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"list", "--config", configPath, "--limit", "0"})
+
+	err = cmd.Execute()
+	if err != nil {
+		t.Fatalf("expected zero-limit list to succeed: %v", err)
+	}
+
+	if fake.lastQuery.Limit != 0 {
+		t.Fatalf("expected zero limit to be propagated unchanged, got %d", fake.lastQuery.Limit)
+	}
+}

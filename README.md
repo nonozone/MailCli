@@ -28,7 +28,7 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/invoice.eml
 
 # 3. run the local thread loop
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 
 # 4. compile the smallest useful reply boundary
@@ -60,7 +60,7 @@ MailCLI fills in the rest:
 go build -o mailcli ./cmd/mailcli
 
 # 2. run the zero-network local thread loop
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 
 # 3. inspect the full agent boundary
@@ -69,7 +69,7 @@ python3 examples/python/agent_thread_assistant.py \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
   --index /tmp/mailcli-fixtures-index.json \
-  --sync-limit 20 \
+  --sync-limit 0 \
   --query invoice
 ```
 
@@ -100,7 +100,7 @@ Recommended first commands:
 ```bash
 go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/verification.eml
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ```
 
@@ -419,7 +419,7 @@ cat test.eml | mailcli parse --format json -
 ### Zero-network local thread loop
 
 ```bash
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 20
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
 ./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
 ./mailcli thread --index /tmp/mailcli-fixtures-index.json "<invoice-123@example.com>"
 ```
@@ -432,7 +432,7 @@ python3 examples/python/agent_thread_assistant.py \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
   --index /tmp/mailcli-fixtures-index.json \
-  --sync-limit 20 \
+  --sync-limit 0 \
   --query invoice
 ```
 

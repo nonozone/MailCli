@@ -126,7 +126,7 @@ func newSyncCmd() *cobra.Command {
 	cmd.Flags().StringVar(&account, "account", "", "account name override")
 	cmd.Flags().StringVar(&mailbox, "mailbox", "", "mailbox override")
 	cmd.Flags().StringVar(&indexPath, "index", "", "local index file path")
-	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to sync")
+	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to sync (0 means no limit)")
 	cmd.Flags().BoolVar(&refresh, "refresh", false, "re-fetch and reindex messages even if they already exist locally")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd

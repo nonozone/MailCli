@@ -122,6 +122,28 @@ func TestSyncCommandRefreshesExistingMessagesWhenRequested(t *testing.T) {
 	}
 }
 
+func TestSyncCommandTreatsZeroLimitAsUnbounded(t *testing.T) {
+	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+
+	root := NewRootCmd()
+	var syncOut bytes.Buffer
+	root.SetOut(&syncOut)
+	root.SetErr(&syncOut)
+	root.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "0"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("expected zero-limit sync to succeed: %v", err)
+	}
+
+	if !strings.Contains(syncOut.String(), `"indexed_count": 2`) {
+		t.Fatalf("expected zero-limit sync to index every stub message, got %s", syncOut.String())
+	}
+	if !strings.Contains(syncOut.String(), `"listed_count": 2`) {
+		t.Fatalf("expected zero-limit sync to list every stub message, got %s", syncOut.String())
+	}
+}
+
 func TestSearchCommandSupportsFullResults(t *testing.T) {
 	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
 	indexPath := writeTempFile(t, "index.json", "{}\n")

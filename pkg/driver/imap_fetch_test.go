@@ -216,6 +216,36 @@ func TestIMAPDriverListUsesSessionFetch(t *testing.T) {
 	}
 }
 
+func TestIMAPDriverListTreatsZeroLimitAsUnbounded(t *testing.T) {
+	messages := make([]*imap.Message, 0, 11)
+	for i := 1; i <= 11; i++ {
+		messages = append(messages, &imap.Message{
+			SeqNum: uint32(i),
+			Envelope: &imap.Envelope{
+				Subject:   "Message",
+				MessageId: "<message-" + string(rune('a'+i-1)) + "@example.com>",
+			},
+		})
+	}
+	session := &fakeIMAPSession{
+		mailboxStatus: &imap.MailboxStatus{Name: "INBOX", Messages: 11},
+		messages:      messages,
+	}
+	drv := newTestIMAPDriver(session)
+
+	items, err := drv.List(context.Background(), schema.SearchQuery{Limit: 0})
+	if err != nil {
+		t.Fatalf("expected zero-limit list to succeed: %v", err)
+	}
+
+	if session.fetchSeqSet == nil || !session.fetchSeqSet.Contains(1) || !session.fetchSeqSet.Contains(11) {
+		t.Fatalf("expected zero-limit list to fetch the full mailbox range, got %+v", session.fetchSeqSet)
+	}
+	if len(items) != 11 {
+		t.Fatalf("expected zero-limit list to return every fetched message, got %d", len(items))
+	}
+}
+
 func TestIMAPDriverContractSuite(t *testing.T) {
 	restore := smtpSendFunc
 	t.Cleanup(func() {
