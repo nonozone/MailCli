@@ -60,15 +60,15 @@ MailCLI fills in the rest:
 go build -o mailcli ./cmd/mailcli
 
 # 2. run the zero-network local thread loop
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 
 # 3. inspect the full agent boundary
 python3 examples/python/agent_thread_assistant.py \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
-  --index /tmp/mailcli-fixtures-index.json \
+  --index /tmp/mailcli-fixtures-index.db \
   --sync-limit 0 \
   --query invoice
 ```
@@ -100,8 +100,8 @@ Recommended first commands:
 ```bash
 go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/verification.eml
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 ```
 
 If you are maintaining the repository itself, the local demo artifacts now have a standard check entrypoint:
@@ -119,14 +119,14 @@ Working today:
 - parse local `.eml` input or stdin into `StandardMessage`
 - list messages from configured IMAP accounts (with `--since`/`--before` date filters)
 - fetch and parse messages by sequence number, UID, or `Message-ID`
-- sync recent messages into a local searchable index (BulkFetcher, error isolation, atomic writes)
-- search a local message index without re-fetching remote mail
+- sync recent messages into a local searchable index (BulkFetcher, BulkUpsert single-transaction, error isolation)
+- search a local message index with FTS5 full-text search and field-weighted ranking
 - inspect local conversation/thread summaries from indexed messages
 - compile outbound drafts and replies (RFC 2047 encoded headers)
 - send through SMTP-backed IMAP-style accounts (returns `message_id`)
 - delete, move, mark-read/unread on remote mailboxes
 - export the local index as JSONL, JSON, or CSV
-- **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed)
+- **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed, persistent seen state across restarts)
 - manage config with `mailcli config show` / `mailcli config test`
 - integrate with Python or shell agent workflows through stable JSON contracts
 - LLM tool-use schemas for OpenAI and Anthropic (`tools/` directory)
@@ -160,7 +160,6 @@ Still evolving:
 - richer list/search semantics for inbox workflows
 - richer outbound HTML rendering and attachment ergonomics
 - broader provider coverage and extension guidance
-- SQLite + FTS5 index (planned, replacing current JSON index for scale)
 
 Current built-in driver types:
 
@@ -263,9 +262,13 @@ MailCLI solves that by providing a stable boundary:
   Streams JSONL events to stdout: `watching`, `new_message` (full `StandardMessage`), `heartbeat`, `error`.
   Uses IMAP IDLE when available; falls back to polling otherwise.
 
+  When `--index` is provided, maintains a persistent **seen set** in SQLite so
+  restarts never re-emit already-processed messages.
+
   ```bash
-  # Pipe to AI agent:
-  mailcli watch --account work | python3 tools/agent_example.py
+  # Pipe to AI agent with persistent deduplication:
+  mailcli watch --account work --index ~/.config/mailcli/index.db \
+    | python3 tools/agent_example.py
   ```
 
 ### Config management
@@ -450,9 +453,9 @@ cat test.eml | mailcli parse --format json -
 ### Zero-network local thread loop
 
 ```bash
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
-./mailcli thread --index /tmp/mailcli-fixtures-index.json "<invoice-123@example.com>"
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
+./mailcli thread --index /tmp/mailcli-fixtures-index.db "<invoice-123@example.com>"
 ```
 
 If you want the full agent-side JSON and reply boundary, use:
@@ -462,7 +465,7 @@ python3 examples/python/agent_thread_assistant.py \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
-  --index /tmp/mailcli-fixtures-index.json \
+  --index /tmp/mailcli-fixtures-index.db \
   --sync-limit 0 \
   --query invoice
 ```
@@ -570,7 +573,7 @@ python3 examples/python/agent_thread_assistant.py \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \
-  --index /tmp/mailcli-index.json \
+  --index /tmp/mailcli-index.db \
   --query invoice \
   --from-address support@nono.im \
   --reply-text "Thanks for your email."
@@ -633,7 +636,8 @@ The project is community-open, but it is still directionally curated to stay foc
   [Agent Provider Contract](docs/en/spec/agent-provider.md),
   [Driver Extension Spec](docs/en/spec/driver-extension.md),
   [Config Spec](docs/en/spec/config.md),
-  [Local Index Spec](docs/en/spec/local-index.md)
+  [Local Index Spec](docs/en/spec/local-index.md),
+  [Watch Spec](docs/en/spec/watch.md)
 - Contribution:
   [Contribution Guide](CONTRIBUTING.md),
   [Parser Contributor Guide](docs/en/contributing/parser.md),

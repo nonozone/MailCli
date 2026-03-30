@@ -28,8 +28,8 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/invoice.eml
 
 # 3. 跑本地 thread 闭环
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 
 # 4. 编译最小可用的 reply 边界
 ./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/minimal-reply.reply.json
@@ -60,15 +60,15 @@ go build -o mailcli ./cmd/mailcli
 go build -o mailcli ./cmd/mailcli
 
 # 2. 跑零网络的本地 thread 闭环
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 
 # 3. 查看完整的 agent 边界
 python3 examples/python/agent_thread_assistant.py \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
-  --index /tmp/mailcli-fixtures-index.json \
+  --index /tmp/mailcli-fixtures-index.db \
   --sync-limit 0 \
   --query invoice
 ```
@@ -100,8 +100,8 @@ flowchart LR
 ```bash
 go build -o mailcli ./cmd/mailcli
 ./mailcli parse --format json testdata/emails/verification.eml
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 ```
 
 如果你正在维护仓库本身，现在也有统一的 demo 产物校验入口：
@@ -119,12 +119,17 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 将本地 `.eml` 或 stdin 解析为 `StandardMessage`
 - 从已配置的 IMAP 账户列出邮件
 - 通过序号、UID 或 `Message-ID` 抓取并解析邮件
-- 将近期邮件同步到本地可检索索引
-- 在不重复远程抓取的前提下检索本地邮件索引
+- 将近期邮件同步到本地 SQLite 索引（BulkFetcher + BulkUpsert 单事务，错误隔离）
+- 通过 FTS5 全文检索本地索引，附带字段权重重排序
 - 查看本地索引中的会话 / thread 摘要
 - 编译出站草稿和回复草稿
 - 通过 SMTP 为 IMAP 风格账户发信
+- 删除、移动、读/未读标记远端邮件
+- 将本地索引导出为 JSONL、JSON 或 CSV
+- **watch** 一个或多个邮箱（IMAP IDLE 推送事件流，重启后持久化去重）
+- `mailcli config show` / `mailcli config test` 管理配置
 - 通过稳定 JSON 契约与 Python / shell agent 工作流协作
+- OpenAI 和 Anthropic 格式的 LLM Tool Use Schema（`tools/` 目录）
 
 在 `v0.1 RC` 阶段，已经足够作为稳定集成边界的部分：
 
@@ -137,10 +142,17 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - `mailcli thread`
 - `mailcli send`
 - `mailcli reply`
+- `mailcli delete`
+- `mailcli move`
+- `mailcli mark`
+- `mailcli export`
+- `mailcli watch`
+- `mailcli config show|test`
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult`
+- `OperationResult`
 
 仍在持续完善的部分：
 
@@ -418,9 +430,9 @@ cat test.eml | mailcli parse --format json -
 ### 零网络本地 thread 闭环
 
 ```bash
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
-./mailcli thread --index /tmp/mailcli-fixtures-index.json "<invoice-123@example.com>"
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
+./mailcli thread --index /tmp/mailcli-fixtures-index.db "<invoice-123@example.com>"
 ```
 
 如果你想直接看 agent 侧完整 JSON 和 reply 边界，可以运行：
@@ -430,7 +442,7 @@ python3 examples/python/agent_thread_assistant.py \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
-  --index /tmp/mailcli-fixtures-index.json \
+  --index /tmp/mailcli-fixtures-index.db \
   --sync-limit 0 \
   --query invoice
 ```
@@ -538,7 +550,7 @@ python3 examples/python/agent_thread_assistant.py \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \
-  --index /tmp/mailcli-index.json \
+  --index /tmp/mailcli-index.db \
   --query invoice \
   --from-address support@nono.im \
   --reply-text "Thanks for your email."
@@ -601,7 +613,8 @@ MailCLI 还处在早期阶段，但方向已经明确。
   [Agent Provider 契约](docs/zh-CN/spec/agent-provider.md)，
   [Driver 扩展规范](docs/zh-CN/spec/driver-extension.md)，
   [配置规范](docs/zh-CN/spec/config.md)，
-  [本地索引规范](docs/zh-CN/spec/local-index.md)
+  [本地索引规范](docs/zh-CN/spec/local-index.md)，
+  [Watch 规范](docs/zh-CN/spec/watch.md)
 - 贡献：
   [贡献指南](CONTRIBUTING.zh-CN.md)，
   [Parser 贡献指南](docs/zh-CN/contributing/parser.md)，
