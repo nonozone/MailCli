@@ -45,3 +45,17 @@ CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
     body_text,
     tokenize = "unicode61 remove_diacritics 2"
 );
+
+-- ── watch_seen ───────────────────────────────────────────────────────────────
+-- Tracks message IDs that have already been emitted by `mailcli watch`.
+-- Persists across process restarts so watch never re-emits old messages.
+
+CREATE TABLE IF NOT EXISTS watch_seen (
+    account  TEXT NOT NULL,
+    mailbox  TEXT NOT NULL,
+    msg_id   TEXT NOT NULL,
+    seen_at  TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (account, mailbox, msg_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_watch_seen_lookup ON watch_seen(account, mailbox);

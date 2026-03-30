@@ -681,3 +681,73 @@ func ensureThreadID(item IndexedMessage) IndexedMessage {
 	}
 	return item
 }
+
+// ── Watch state ───────────────────────────────────────────────────────────────
+
+// WatchSeen returns all message IDs that have previously been marked as seen
+// for the given account+mailbox combination. Used to restore the deduplication
+// set when `mailcli watch` restarts.
+func (s *Store) WatchSeen(account, mailbox string) (map[string]bool, error) {
+	db, err := s.openDB()
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.Query(
+		`SELECT msg_id FROM watch_seen WHERE account=? AND mailbox=?`,
+		strings.TrimSpace(account), strings.TrimSpace(mailbox),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("watch_seen query: %w", err)
+	}
+	defer rows.Close()
+
+	seen := map[string]bool{}
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		seen[id] = true
+	}
+	return seen, rows.Err()
+}
+
+// WatchMarkSeen records a batch of message IDs as "seen" for the given
+// account+mailbox. Idempotent — safe to call multiple times for the same IDs.
+func (s *Store) WatchMarkSeen(account, mailbox string, ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	db, err := s.openDB()
+	if err != nil {
+		return err
+	}
+	account = strings.TrimSpace(account)
+	mailbox = strings.TrimSpace(mailbox)
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	stmt, err := tx.Prepare(`
+		INSERT INTO watch_seen(account, mailbox, msg_id, seen_at)
+		VALUES (?,?,?,?)
+		ON CONFLICT(account, mailbox, msg_id) DO NOTHING`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	for _, id := range ids {
+		if _, err := stmt.Exec(account, mailbox, id, now); err != nil {
+			return fmt.Errorf("watch_seen insert %s: %w", id, err)
+		}
+	}
+	return tx.Commit()
+}

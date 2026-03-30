@@ -90,9 +90,12 @@ Pipe the output to any AI agent or script:
 				mailboxes = []string{mb}
 			}
 
-			var store *mailindex.FileStore
-			if autoSync && strings.TrimSpace(indexPath) != "" {
+			var store *mailindex.Store
+			if strings.TrimSpace(indexPath) != "" {
 				store = mailindex.NewFileStore(indexPath)
+			}
+			if autoSync && store == nil {
+				return fmt.Errorf("--auto-sync requires --index")
 			}
 
 			combined := make(chan watchMsg, 128)
@@ -101,7 +104,7 @@ Pipe the output to any AI agent or script:
 				wg.Add(1)
 				go func(mailbox string) {
 					defer wg.Done()
-					watchMailbox(ctx, drv, mailbox, pollInterval, since, combined)
+					watchMailbox(ctx, drv, mailbox, pollInterval, since, store, selectedAccount.Name, combined)
 				}(mb)
 			}
 			go func() {
@@ -196,6 +199,10 @@ Pipe the output to any AI agent or script:
 							ID:      msg.id,
 							Message: *parsed,
 						})
+						// Mark as seen so restarts don't re-emit this message.
+						_ = store.WatchMarkSeen(selectedAccount.Name, msg.mailbox, []string{msg.id})
+					} else if autoSync {
+						// autoSync without store: skip (store required check above handles this)
 					}
 
 					_ = enc.Encode(watchOutputEvent{
@@ -225,7 +232,7 @@ Pipe the output to any AI agent or script:
 // watchMailbox monitors a single mailbox, using IMAP IDLE if the driver
 // supports it, otherwise polling at the given interval.
 // since, if non-empty, suppresses events for messages older than that RFC3339 timestamp.
-func watchMailbox(ctx context.Context, drv driver.Driver, mailbox string, poll time.Duration, since string, out chan<- watchMsg) {
+func watchMailbox(ctx context.Context, drv driver.Driver, mailbox string, poll time.Duration, since string, store *mailindex.Store, account string, out chan<- watchMsg) {
 	if w, ok := drv.(driver.Watcher); ok {
 		ch, err := w.Watch(ctx, mailbox)
 		if err == nil {
@@ -250,14 +257,26 @@ func watchMailbox(ctx context.Context, drv driver.Driver, mailbox string, poll t
 		}
 	}
 	// Polling fallback.
-	pollWatch(ctx, drv, mailbox, poll, since, out)
+	pollWatch(ctx, drv, mailbox, poll, since, store, account, out)
 }
 
 // pollWatch emits IDs of messages that weren't present in the previous poll.
 // since, if set to a valid RFC3339 string, suppresses events for messages
 // whose Date header predates it — preventing an old-mail flood on startup.
-func pollWatch(ctx context.Context, drv driver.Driver, mailbox string, interval time.Duration, since string, out chan<- watchMsg) {
-	seen := map[string]bool{}
+// When store is non-nil, the seen set is loaded from and persisted to SQLite
+// so it survives process restarts.
+func pollWatch(ctx context.Context, drv driver.Driver, mailbox string, interval time.Duration, since string, store *mailindex.Store, account string, out chan<- watchMsg) {
+	// Restore seen set from SQLite if available; otherwise start empty.
+	var seen map[string]bool
+	if store != nil {
+		loaded, err := store.WatchSeen(account, mailbox)
+		if err == nil {
+			seen = loaded
+		}
+	}
+	if seen == nil {
+		seen = map[string]bool{}
+	}
 	sinceTime, _ := time.Parse(time.RFC3339, since)
 
 	doCheck := func() {
@@ -269,6 +288,7 @@ func pollWatch(ctx context.Context, drv driver.Driver, mailbox string, interval 
 			}
 			return
 		}
+		var newIDs []string
 		for _, item := range items {
 			// Client-side date guard when driver doesn't filter.
 			if !sinceTime.IsZero() {
@@ -278,19 +298,36 @@ func pollWatch(ctx context.Context, drv driver.Driver, mailbox string, interval 
 			}
 			if !seen[item.ID] {
 				seen[item.ID] = true
-				select {
-				case out <- watchMsg{mailbox: mailbox, id: item.ID}:
-				case <-ctx.Done():
-					return
-				}
+				newIDs = append(newIDs, item.ID)
+			}
+		}
+		// Persist newly seen IDs before emitting events.
+		if store != nil && len(newIDs) > 0 {
+			_ = store.WatchMarkSeen(account, mailbox, newIDs)
+		}
+		for _, id := range newIDs {
+			select {
+			case out <- watchMsg{mailbox: mailbox, id: id}:
+			case <-ctx.Done():
+				return
 			}
 		}
 	}
 
-	// Seed the seen set without emitting events.
-	seedItems, _ := drv.List(ctx, schema.SearchQuery{Mailbox: mailbox, Limit: 50})
-	for _, item := range seedItems {
-		seen[item.ID] = true
+	// On first startup: seed seen from the live mailbox AND from persisted state
+	// (already loaded above). Only seed live IDs if seen is empty (fresh start).
+	if len(seen) == 0 {
+		seedItems, _ := drv.List(ctx, schema.SearchQuery{Mailbox: mailbox, Limit: 50})
+		var seedIDs []string
+		for _, item := range seedItems {
+			if !seen[item.ID] {
+				seen[item.ID] = true
+				seedIDs = append(seedIDs, item.ID)
+			}
+		}
+		if store != nil && len(seedIDs) > 0 {
+			_ = store.WatchMarkSeen(account, mailbox, seedIDs)
+		}
 	}
 
 	if interval <= 0 {

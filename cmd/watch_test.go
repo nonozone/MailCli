@@ -10,10 +10,16 @@ import (
 	"testing"
 	"time"
 
+	mailindex "github.com/nonozone/MailCli/internal/index"
 	"github.com/nonozone/MailCli/internal/config"
 	"github.com/nonozone/MailCli/pkg/driver"
 	"github.com/nonozone/MailCli/pkg/schema"
 )
+
+func newWatchTestStore(t *testing.T) *mailindex.Store {
+	t.Helper()
+	return mailindex.NewFileStore(filepath.Join(t.TempDir(), "watch.db"))
+}
 
 // ─── pollableDriver ──────────────────────────────────────────────────────────
 // A fake driver that returns a fixed list — used to verify polling-based watch.
@@ -166,7 +172,7 @@ func TestPollWatchDetectsNewMessages(t *testing.T) {
 	}
 
 	out := make(chan watchMsg, 32)
-	go pollWatch(ctx, drv, "INBOX", 100*time.Millisecond, "", out)
+	go pollWatch(ctx, drv, "INBOX", 100*time.Millisecond, "", nil, "", out)
 
 	for {
 		select {
@@ -212,3 +218,49 @@ func nonEmptyLines(s string) []string {
 	}
 	return out
 }
+
+func TestPollWatchRestoresSeenStateFromSQLite(t *testing.T) {
+	seenID := "<already-seen@example.com>"
+	newID := "<brand-new@example.com>"
+
+	// Both messages are visible in the mailbox.
+	drv := &capturePollDriver{
+		laterItems: []schema.MessageMetaSummary{
+			{ID: seenID, Subject: "Old message"},
+			{ID: newID, Subject: "New message"},
+		},
+	}
+
+	// Pre-seed the SQLite watch state with seenID.
+	store := newWatchTestStore(t)
+	if err := store.WatchMarkSeen("testaccount", "INBOX", []string{seenID}); err != nil {
+		t.Fatalf("WatchMarkSeen: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	out := make(chan watchMsg, 32)
+	go pollWatch(ctx, drv, "INBOX", 50*time.Millisecond, "", store, "testaccount", out)
+
+	received := map[string]bool{}
+	deadline := time.After(3 * time.Second)
+	for {
+		select {
+		case <-deadline:
+			goto done
+		case msg := <-out:
+			if msg.id != "" {
+				received[msg.id] = true
+			}
+		}
+	}
+done:
+	if received[seenID] {
+		t.Fatalf("expected already-seen ID %q NOT to be emitted, but it was", seenID)
+	}
+	if !received[newID] {
+		t.Fatalf("expected new ID %q to be emitted, but it was not (received: %v)", newID, received)
+	}
+}
+
