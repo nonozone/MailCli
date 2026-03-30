@@ -50,7 +50,7 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus. In MailCLI, `--sync-limit 0` means "do not truncate the remote or local listing."
+This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus. Here `--sync-limit 0` is the Python example's sync setting, and it tells the script to call `mailcli sync --limit 0` instead of truncating the initial sync pass.
 
 ## Existing Local Index Example
 

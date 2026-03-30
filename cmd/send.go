@@ -75,7 +75,7 @@ func newSendCmd() *cobra.Command {
 				}
 			}
 
-			mime, err := composer.ComposeDraft(draft)
+			mime, messageID, err := composer.ComposeDraft(draft)
 			if err != nil {
 				if dryRun {
 					return err
@@ -93,9 +93,10 @@ func newSendCmd() *cobra.Command {
 			}
 
 			result := schema.SendResult{
-				OK:       true,
-				Provider: providerName,
-				Account:  accountName,
+				OK:        true,
+				MessageID: messageID,
+				Provider:  providerName,
+				Account:   accountName,
 			}
 			return writeJSON(cmd.OutOrStdout(), &result)
 		},
@@ -171,7 +172,7 @@ func newReplyCmd() *cobra.Command {
 				}
 			}
 
-			mime, err := composer.ComposeReply(draft)
+			mime, messageID, err := composer.ComposeReply(draft)
 			if err != nil {
 				if dryRun {
 					return err
@@ -189,9 +190,10 @@ func newReplyCmd() *cobra.Command {
 			}
 
 			result := schema.SendResult{
-				OK:       true,
-				Provider: providerName,
-				Account:  accountName,
+				OK:        true,
+				MessageID: messageID,
+				Provider:  providerName,
+				Account:   accountName,
 			}
 			return writeJSON(cmd.OutOrStdout(), &result)
 		},
@@ -379,8 +381,16 @@ func mapSendError(err error) *schema.SendError {
 		code = "transport_not_configured"
 	case errors.Is(err, driver.ErrDriverConfigInvalid):
 		code = "transport_failed"
-	case errors.Is(err, driver.ErrAuthFailed) || strings.Contains(lower, "auth") || strings.Contains(lower, "authentication") || strings.Contains(lower, "credentials invalid") || strings.Contains(lower, "535"):
+	case errors.Is(err, driver.ErrAuthFailed) ||
+		strings.Contains(lower, "auth") ||
+		strings.Contains(lower, "authentication") ||
+		strings.Contains(lower, "credentials invalid") ||
+		strings.Contains(lower, "535"):
 		code = "auth_failed"
+	case strings.Contains(lower, "550") || strings.Contains(lower, "553") || strings.Contains(lower, "user unknown") || strings.Contains(lower, "no such user"):
+		code = "recipient_rejected"
+	case strings.Contains(lower, "421") || strings.Contains(lower, "service not available"):
+		code = "service_unavailable"
 	case strings.Contains(lower, "missing from header") ||
 		strings.Contains(lower, "missing recipients") ||
 		strings.Contains(lower, "invalid character") ||

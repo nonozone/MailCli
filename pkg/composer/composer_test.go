@@ -11,7 +11,7 @@ import (
 )
 
 func TestComposeDraftIncludesCoreHeaders(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Name:    "Nono",
 			Address: "support@nono.im",
@@ -43,7 +43,7 @@ func TestComposeDraftIncludesCoreHeaders(t *testing.T) {
 }
 
 func TestComposeReplyAddsThreadHeaders(t *testing.T) {
-	raw, err := ComposeReply(schema.ReplyDraft{
+	raw, _, err := ComposeReply(schema.ReplyDraft{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -73,7 +73,7 @@ func TestComposeReplyAddsThreadHeaders(t *testing.T) {
 }
 
 func TestComposeDraftUsesMultipartAlternativeWhenMarkdownBodyIsPresent(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -109,7 +109,7 @@ func TestComposeReplyPackagesAttachments(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	raw, err := ComposeReply(schema.ReplyDraft{
+	raw, _, err := ComposeReply(schema.ReplyDraft{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -145,7 +145,7 @@ func TestComposeReplyPackagesAttachments(t *testing.T) {
 }
 
 func TestComposeDraftRendersMarkdownLinksIntoHTMLAndPlainText(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -172,7 +172,7 @@ func TestComposeDraftRendersMarkdownLinksIntoHTMLAndPlainText(t *testing.T) {
 }
 
 func TestComposeDraftRendersMarkdownBulletListsIntoHTML(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -199,7 +199,7 @@ func TestComposeDraftRendersMarkdownBulletListsIntoHTML(t *testing.T) {
 }
 
 func TestComposeDraftRendersMarkdownOrderedListsIntoHTML(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -226,7 +226,7 @@ func TestComposeDraftRendersMarkdownOrderedListsIntoHTML(t *testing.T) {
 }
 
 func TestComposeDraftRendersMarkdownBlockquotesIntoHTML(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},
@@ -254,7 +254,7 @@ func TestComposeDraftRendersMarkdownBlockquotesIntoHTML(t *testing.T) {
 }
 
 func TestComposeDraftRendersMarkdownTablesIntoHTML(t *testing.T) {
-	raw, err := ComposeDraft(schema.DraftMessage{
+	raw, _, err := ComposeDraft(schema.DraftMessage{
 		From: &schema.Address{
 			Address: "support@nono.im",
 		},

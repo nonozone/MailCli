@@ -8,6 +8,7 @@ import (
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 
+	"github.com/nonozone/MailCli/pkg/driver"
 	mailindex "github.com/nonozone/MailCli/internal/index"
 	"github.com/nonozone/MailCli/pkg/parser"
 	"github.com/nonozone/MailCli/pkg/schema"
@@ -21,6 +22,7 @@ type syncResult struct {
 	IndexedCount   int    `json:"indexed_count"`
 	SkippedCount   int    `json:"skipped_count"`
 	RefreshedCount int    `json:"refreshed_count"`
+	ErrorCount     int    `json:"error_count,omitempty"`
 	IndexPath      string `json:"index_path,omitempty"`
 }
 
@@ -33,6 +35,8 @@ func newSyncCmd() *cobra.Command {
 		format     string
 		limit      int
 		refresh    bool
+		since      string
+		before     string
 	)
 
 	cmd := &cobra.Command{
@@ -40,6 +44,9 @@ func newSyncCmd() *cobra.Command {
 		Short: "Fetch recent messages and store them in the local index",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if limit < 0 {
+				return fmt.Errorf("limit must be >= 0")
+			}
 			selectedAccount, err := resolveSelectedAccount(configPath, account, "")
 			if err != nil {
 				return err
@@ -61,6 +68,8 @@ func newSyncCmd() *cobra.Command {
 			items, err := drv.List(cmd.Context(), schema.SearchQuery{
 				Mailbox: queryMailbox,
 				Limit:   limit,
+				Since:   since,
+				Before:  before,
 			})
 			if err != nil {
 				return err
@@ -72,6 +81,10 @@ func newSyncCmd() *cobra.Command {
 			indexedCount := 0
 			skippedCount := 0
 			refreshedCount := 0
+			errorCount := 0
+
+			// Collect IDs that need fetching.
+			idsToFetch := make([]string, 0, len(items))
 			for _, item := range items {
 				if !refresh {
 					has, err := store.Has(selectedAccount.Name, item.ID)
@@ -83,25 +96,57 @@ func newSyncCmd() *cobra.Command {
 						continue
 					}
 				}
+				idsToFetch = append(idsToFetch, item.ID)
+			}
 
-				raw, err := drv.FetchRaw(cmd.Context(), item.ID)
+			// Use BulkFetcher when the driver supports it (single IMAP connection).
+			type rawEntry struct {
+				id  string
+				raw []byte
+				err error
+			}
+			rawEntries := make([]rawEntry, 0, len(idsToFetch))
+
+			if bf, ok := drv.(driver.BulkFetcher); ok && len(idsToFetch) > 0 {
+				bulk, err := bf.FetchRawBulk(cmd.Context(), idsToFetch)
 				if err != nil {
 					return err
 				}
+				for _, bm := range bulk {
+					rawEntries = append(rawEntries, rawEntry{id: bm.ID, raw: bm.Raw, err: bm.Err})
+				}
+			} else {
+				for _, id := range idsToFetch {
+					raw, err := drv.FetchRaw(cmd.Context(), id)
+					rawEntries = append(rawEntries, rawEntry{id: id, raw: raw, err: err})
+				}
+			}
+
+			// Parse and index each fetched message; isolate per-message errors.
+			for _, entry := range rawEntries {
+				if entry.err != nil {
+					fmt.Fprintf(cmd.ErrOrStderr(), "warn: fetch %s: %v\n", entry.id, entry.err)
+					errorCount++
+					continue
+				}
 				fetchedCount++
 
-				msg, err := parser.Parse(raw)
+				msg, err := parser.Parse(entry.raw)
 				if err != nil {
-					return err
+					fmt.Fprintf(cmd.ErrOrStderr(), "warn: parse %s: %v\n", entry.id, err)
+					errorCount++
+					continue
 				}
 
 				if err := store.Upsert(mailindex.IndexedMessage{
 					Account: selectedAccount.Name,
 					Mailbox: queryMailbox,
-					ID:      item.ID,
+					ID:      entry.id,
 					Message: *msg,
 				}); err != nil {
-					return err
+					fmt.Fprintf(cmd.ErrOrStderr(), "warn: index %s: %v\n", entry.id, err)
+					errorCount++
+					continue
 				}
 				if refresh {
 					refreshedCount++
@@ -117,6 +162,7 @@ func newSyncCmd() *cobra.Command {
 				IndexedCount:   indexedCount,
 				SkippedCount:   skippedCount,
 				RefreshedCount: refreshedCount,
+				ErrorCount:     errorCount,
 				IndexPath:      store.Path(),
 			}, format)
 		},
@@ -128,6 +174,8 @@ func newSyncCmd() *cobra.Command {
 	cmd.Flags().StringVar(&indexPath, "index", "", "local index file path")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to sync (0 means no limit)")
 	cmd.Flags().BoolVar(&refresh, "refresh", false, "re-fetch and reindex messages even if they already exist locally")
+	cmd.Flags().StringVar(&since, "since", "", "only sync messages on or after this RFC3339 timestamp")
+	cmd.Flags().StringVar(&before, "before", "", "only sync messages before this RFC3339 timestamp")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }
@@ -141,6 +189,8 @@ func newSearchCmd() *cobra.Command {
 		format    string
 		limit     int
 		full      bool
+		since     string
+		before    string
 	)
 
 	cmd := &cobra.Command{
@@ -155,6 +205,8 @@ func newSearchCmd() *cobra.Command {
 				Mailbox:  mailbox,
 				ThreadID: threadID,
 				Limit:    limit,
+				Since:    since,
+				Before:   before,
 			}
 
 			if full {
@@ -179,6 +231,8 @@ func newSearchCmd() *cobra.Command {
 	cmd.Flags().StringVar(&threadID, "thread", "", "filter local results by thread id")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of search results")
 	cmd.Flags().BoolVar(&full, "full", false, "return full indexed messages instead of compact search results")
+	cmd.Flags().StringVar(&since, "since", "", "only return messages on or after this RFC3339 timestamp")
+	cmd.Flags().StringVar(&before, "before", "", "only return messages before this RFC3339 timestamp")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }

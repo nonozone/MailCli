@@ -144,6 +144,25 @@ func TestSyncCommandTreatsZeroLimitAsUnbounded(t *testing.T) {
 	}
 }
 
+func TestSyncCommandRejectsNegativeLimit(t *testing.T) {
+	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+
+	root := NewRootCmd()
+	var syncOut bytes.Buffer
+	root.SetOut(&syncOut)
+	root.SetErr(&syncOut)
+	root.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "-1"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatalf("expected negative-limit sync to fail")
+	}
+	if !strings.Contains(err.Error(), "limit must be >= 0") {
+		t.Fatalf("expected negative limit error, got %v", err)
+	}
+}
+
 func TestSearchCommandSupportsFullResults(t *testing.T) {
 	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
 	indexPath := writeTempFile(t, "index.json", "{}\n")
@@ -173,52 +192,48 @@ func TestSearchCommandSupportsFullResults(t *testing.T) {
 	}
 }
 
-func TestSearchCommandFullResultsExposeThreadIDForLegacyIndex(t *testing.T) {
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>"
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    },
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-reply",
-      "indexed_at": "2026-03-27T09:00:00Z",
-      "message": {
-        "id": "msg-reply",
-        "meta": {
-          "subject": "Re: Project update",
-          "date": "2026-03-27T09:00:00Z",
-          "message_id": "<reply@example.com>",
-          "in_reply_to": "<root@example.com>",
-          "references": [
-            "<root@example.com>"
-          ]
-        },
-        "content": {
-          "snippet": "Looks good",
-          "body_md": "Looks good"
-        }
-      }
-    }
-  ]
-}`)
+func TestSearchCommandFullResultsExposeThreadIDForStoredMessages(t *testing.T) {
+	indexPath := writeTempFile(t, "index.db", "")
+	store := mailindex.NewFileStore(indexPath)
+
+	for _, item := range []mailindex.IndexedMessage{
+		{
+			Account:   "demo",
+			Mailbox:   "INBOX",
+			ID:        "msg-root",
+			IndexedAt: "2026-03-27T08:00:00Z",
+			Message: schema.StandardMessage{
+				ID: "msg-root",
+				Meta: schema.MessageMeta{
+					Subject:   "Project update",
+					Date:      "2026-03-27T08:00:00Z",
+					MessageID: "<root@example.com>",
+				},
+				Content: schema.Content{Snippet: "Initial update", BodyMD: "Initial update"},
+			},
+		},
+		{
+			Account:   "demo",
+			Mailbox:   "INBOX",
+			ID:        "msg-reply",
+			IndexedAt: "2026-03-27T09:00:00Z",
+			Message: schema.StandardMessage{
+				ID: "msg-reply",
+				Meta: schema.MessageMeta{
+					Subject:   "Re: Project update",
+					Date:      "2026-03-27T09:00:00Z",
+					MessageID: "<reply@example.com>",
+					InReplyTo: "<root@example.com>",
+					References: []string{"<root@example.com>"},
+				},
+				Content: schema.Content{Snippet: "Looks good", BodyMD: "Looks good"},
+			},
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("expected upsert to succeed: %v", err)
+		}
+	}
 
 	searchCmd := NewRootCmd()
 	var out bytes.Buffer
@@ -226,11 +241,11 @@ func TestSearchCommandFullResultsExposeThreadIDForLegacyIndex(t *testing.T) {
 	searchCmd.SetErr(&out)
 	searchCmd.SetArgs([]string{"search", "--index", indexPath, "--full", "project"})
 	if err := searchCmd.Execute(); err != nil {
-		t.Fatalf("expected full search on legacy index to succeed: %v", err)
+		t.Fatalf("expected full search to succeed: %v", err)
 	}
 
 	if !strings.Contains(out.String(), `"thread_id": "\u003croot@example.com\u003e"`) {
-		t.Fatalf("expected legacy full search output to derive thread id, got %s", out.String())
+		t.Fatalf("expected full search output to derive thread id, got %s", out.String())
 	}
 }
 

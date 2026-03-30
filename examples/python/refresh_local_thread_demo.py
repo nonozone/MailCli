@@ -367,6 +367,12 @@ def reset_index_file(path: str) -> None:
     target = Path(path)
     if target.exists():
         target.unlink()
+    # The SQLite backend remaps .json paths to .db; clean both so the demo
+    # always starts from an empty index regardless of which extension was used.
+    if target.suffix == ".json":
+        db_sibling = target.with_suffix(".db")
+        if db_sibling.exists():
+            db_sibling.unlink()
 
 
 def normalize_demo_json(value: Any) -> Any:

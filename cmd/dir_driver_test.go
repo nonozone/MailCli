@@ -90,6 +90,39 @@ func TestSyncAndSearchCommandsSupportDirDriver(t *testing.T) {
 	}
 }
 
+func TestSyncCommandWithDirDriverTreatsZeroLimitAsUnbounded(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	root := mustFixtureMailRoot(t)
+	configPath := writeTempFile(t, "config.yaml", "current_account: fixtures\naccounts:\n  - name: fixtures\n    driver: dir\n    path: "+root+"\n    mailbox: INBOX\n")
+	indexPath := writeTempFile(t, "index.json", "{}\n")
+	expectedFixtures := countFixtureEmails(t, root)
+
+	loadConfigFunc = config.Load
+	driverFactoryFunc = driver.NewFromAccount
+
+	syncCmd := NewRootCmd()
+	var syncOut bytes.Buffer
+	syncCmd.SetOut(&syncOut)
+	syncCmd.SetErr(&syncOut)
+	syncCmd.SetArgs([]string{"sync", "--config", configPath, "--index", indexPath, "--limit", "0"})
+	if err := syncCmd.Execute(); err != nil {
+		t.Fatalf("expected zero-limit dir-backed sync to succeed: %v", err)
+	}
+
+	if !strings.Contains(syncOut.String(), `"indexed_count": `+expectedFixtures) {
+		t.Fatalf("expected zero-limit dir-backed sync to index all fixtures, got %s", syncOut.String())
+	}
+	if !strings.Contains(syncOut.String(), `"listed_count": `+expectedFixtures) {
+		t.Fatalf("expected zero-limit dir-backed sync to list all fixtures, got %s", syncOut.String())
+	}
+}
+
 func mustFixtureMailRoot(t *testing.T) string {
 	t.Helper()
 

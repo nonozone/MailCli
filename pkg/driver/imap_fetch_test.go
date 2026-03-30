@@ -246,6 +246,36 @@ func TestIMAPDriverListTreatsZeroLimitAsUnbounded(t *testing.T) {
 	}
 }
 
+func TestIMAPDriverListTreatsNegativeLimitAsBoundedWindow(t *testing.T) {
+	messages := make([]*imap.Message, 0, 11)
+	for i := 1; i <= 11; i++ {
+		messages = append(messages, &imap.Message{
+			SeqNum: uint32(i),
+			Envelope: &imap.Envelope{
+				Subject:   "Message",
+				MessageId: "<message-" + string(rune('a'+i-1)) + "@example.com>",
+			},
+		})
+	}
+	session := &fakeIMAPSession{
+		mailboxStatus: &imap.MailboxStatus{Name: "INBOX", Messages: 11},
+		messages:      messages,
+	}
+	drv := newTestIMAPDriver(session)
+
+	items, err := drv.List(context.Background(), schema.SearchQuery{Limit: -1})
+	if err != nil {
+		t.Fatalf("expected negative-limit list to succeed with bounded fallback: %v", err)
+	}
+
+	if session.fetchSeqSet == nil || session.fetchSeqSet.Contains(1) || !session.fetchSeqSet.Contains(2) || !session.fetchSeqSet.Contains(11) {
+		t.Fatalf("expected negative-limit list to use bounded fallback window, got %+v", session.fetchSeqSet)
+	}
+	if len(items) != 11 {
+		t.Fatalf("expected fake fetch stream to stay intact, got %d", len(items))
+	}
+}
+
 func TestIMAPDriverContractSuite(t *testing.T) {
 	restore := smtpSendFunc
 	t.Cleanup(func() {
@@ -391,6 +421,18 @@ func (f *fakeIMAPSession) UidFetch(seqset *imap.SeqSet, items []imap.FetchItem, 
 }
 
 func (f *fakeIMAPSession) Logout() error {
+	return nil
+}
+
+func (f *fakeIMAPSession) UidStore(_ *imap.SeqSet, _ imap.StoreItem, _ interface{}, _ chan *imap.Message) error {
+	return nil
+}
+
+func (f *fakeIMAPSession) UidCopy(_ *imap.SeqSet, _ string) error {
+	return nil
+}
+
+func (f *fakeIMAPSession) Expunge(_ chan uint32) error {
 	return nil
 }
 

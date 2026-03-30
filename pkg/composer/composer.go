@@ -21,11 +21,14 @@ var markdownLinkRe = regexp.MustCompile(`\[(.*?)\]\((https?://[^)\s]+)\)`)
 var markdownOrderedListRe = regexp.MustCompile(`^\d+\.\s+`)
 var markdownTableSeparatorRe = regexp.MustCompile(`^:?-{3,}:?$`)
 
-func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {
+// ComposeDraft renders a new message draft as a MIME byte slice and returns
+// the generated Message-ID alongside it.
+func ComposeDraft(draft schema.DraftMessage) (raw []byte, messageID string, err error) {
+	messageID = fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano())
 	headers := map[string]string{
-		"Message-ID":   fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano()),
+		"Message-ID":   messageID,
 		"Date":         time.Now().UTC().Format(time.RFC1123Z),
-		"Subject":      draft.Subject,
+		"Subject":      encodeHeaderValue(draft.Subject),
 		"MIME-Version": "1.0",
 	}
 
@@ -47,17 +50,20 @@ func ComposeDraft(draft schema.DraftMessage) ([]byte, error) {
 
 	contentType, body, err := composeMessageBody(draft.BodyText, draft.BodyMD, draft.Attachments)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	headers["Content-Type"] = contentType
-	return renderMessage(headers, body), nil
+	return renderMessage(headers, body), messageID, nil
 }
 
-func ComposeReply(draft schema.ReplyDraft) ([]byte, error) {
+// ComposeReply renders a reply draft as a MIME byte slice and returns the
+// generated Message-ID alongside it.
+func ComposeReply(draft schema.ReplyDraft) (raw []byte, messageID string, err error) {
+	messageID = fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano())
 	headers := map[string]string{
-		"Message-ID":   fmt.Sprintf("<%d@mailcli.local>", time.Now().UnixNano()),
+		"Message-ID":   messageID,
 		"Date":         time.Now().UTC().Format(time.RFC1123Z),
-		"Subject":      ensureReplySubject(draft.Subject),
+		"Subject":      encodeHeaderValue(ensureReplySubject(draft.Subject)),
 		"MIME-Version": "1.0",
 	}
 
@@ -82,10 +88,10 @@ func ComposeReply(draft schema.ReplyDraft) ([]byte, error) {
 
 	contentType, body, err := composeMessageBody(draft.BodyText, draft.BodyMD, draft.Attachments)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	headers["Content-Type"] = contentType
-	return renderMessage(headers, body), nil
+	return renderMessage(headers, body), messageID, nil
 }
 
 func renderMessage(headers map[string]string, body []byte) []byte {
@@ -153,7 +159,24 @@ func formatAddress(addr schema.Address) string {
 	if addr.Name == "" {
 		return addr.Address
 	}
-	return fmt.Sprintf("%s <%s>", addr.Name, addr.Address)
+	// Encode display name so non-ASCII characters (CJK, emoji, etc.) are
+	// transmitted correctly per RFC 2047.
+	encodedName := mime.QEncoding.Encode("utf-8", addr.Name)
+	return fmt.Sprintf("%s <%s>", encodedName, addr.Address)
+}
+
+// encodeHeaderValue encodes a header field value that may contain non-ASCII
+// characters using RFC 2047 Q-encoding so that all mail clients can display it.
+func encodeHeaderValue(value string) string {
+	if value == "" {
+		return ""
+	}
+	for _, r := range value {
+		if r > 127 {
+			return mime.QEncoding.Encode("utf-8", value)
+		}
+	}
+	return value
 }
 
 func composeMessageBody(bodyText, bodyMD string, attachments []schema.Attachment) (string, []byte, error) {

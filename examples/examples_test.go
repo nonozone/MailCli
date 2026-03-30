@@ -8,6 +8,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	mailindex "github.com/nonozone/MailCli/internal/index"
+	"github.com/nonozone/MailCli/pkg/schema"
 )
 
 func TestAgentInboxAssistantCapturesVerificationCode(t *testing.T) {
@@ -229,33 +232,7 @@ func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 
 	cmd := exec.Command(
 		python,
@@ -306,59 +283,44 @@ func TestAgentThreadAssistantReloadsLatestMessageWhenThreadLimitTruncates(t *tes
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Older Sender",
-            "address": "older@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    },
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-reply",
-      "indexed_at": "2026-03-27T09:00:00Z",
-      "message": {
-        "id": "msg-reply",
-        "meta": {
-          "subject": "Re: Project update",
-          "date": "2026-03-27T09:00:00Z",
-          "message_id": "<reply@example.com>",
-          "in_reply_to": "<root@example.com>",
-          "references": [
-            "<root@example.com>"
-          ],
-          "from": {
-            "name": "Latest Sender",
-            "address": "latest@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Latest update",
-          "body_md": "Latest update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := filepath.Join(t.TempDir(), "index.db")
+	{
+		store := mailindex.NewFileStore(indexPath)
+		for _, item := range []mailindex.IndexedMessage{
+			{
+				Account: "demo", Mailbox: "INBOX", ID: "msg-root",
+				IndexedAt: "2026-03-27T08:00:00Z",
+				Message: schema.StandardMessage{
+					ID: "msg-root",
+					Meta: schema.MessageMeta{
+						Subject: "Project update", Date: "2026-03-27T08:00:00Z",
+						MessageID: "<root@example.com>",
+						From:      &schema.Address{Name: "Older Sender", Address: "older@example.com"},
+					},
+					Content: schema.Content{Snippet: "Initial update", BodyMD: "Initial update"},
+				},
+			},
+			{
+				Account: "demo", Mailbox: "INBOX", ID: "msg-reply",
+				IndexedAt: "2026-03-27T09:00:00Z",
+				Message: schema.StandardMessage{
+					ID: "msg-reply",
+					Meta: schema.MessageMeta{
+						Subject: "Re: Project update", Date: "2026-03-27T09:00:00Z",
+						MessageID: "<reply@example.com>",
+						InReplyTo: "<root@example.com>",
+						References: []string{"<root@example.com>"},
+						From:       &schema.Address{Name: "Latest Sender", Address: "latest@example.com"},
+					},
+					Content: schema.Content{Snippet: "Latest update", BodyMD: "Latest update"},
+				},
+			},
+		} {
+			if err := store.Upsert(item); err != nil {
+				t.Fatalf("agentThreadTestIndexWithReply: upsert failed: %v", err)
+			}
+		}
+	}
 
 	cmd := exec.Command(
 		python,
@@ -407,33 +369,7 @@ func TestAgentThreadAssistantUsesExternalProvider(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 	payloadPath := filepath.Join(t.TempDir(), "thread_payload.json")
 	providerPath := writeTempFile(t, "thread_provider.py", `import json
 import os
@@ -516,33 +452,7 @@ func TestAgentThreadAssistantWorksWithTemplateExternalProvider(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 
 	cmd := exec.Command(
 		python,
@@ -579,33 +489,7 @@ func TestAgentThreadAssistantTemplateProviderSupportsReplyBranch(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 
 	cmd := exec.Command(
 		python,
@@ -640,33 +524,7 @@ func TestAgentThreadAssistantRejectsInvalidExternalProviderResponse(t *testing.T
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 	providerPath := writeTempFile(t, "thread_provider_invalid.py", `import json
 print(json.dumps({"summary": "missing decision"}))
 `)
@@ -695,33 +553,7 @@ func TestAgentThreadAssistantRejectsInvalidExternalProviderJSON(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 	providerPath := writeTempFile(t, "thread_provider_bad_json.py", `print("not-json")`)
 
 	cmd := exec.Command(
@@ -748,33 +580,7 @@ func TestAgentThreadAssistantRejectsUnknownExternalDecision(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 	providerPath := writeTempFile(t, "thread_provider_unknown.py", `import json
 print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
 `)
@@ -803,33 +609,7 @@ func TestAgentThreadAssistantRejectsInvalidReplyTextType(t *testing.T) {
 	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := writeTempFile(t, "index.json", `{
-  "version": 1,
-  "messages": [
-    {
-      "account": "demo",
-      "mailbox": "INBOX",
-      "id": "msg-root",
-      "indexed_at": "2026-03-27T08:00:00Z",
-      "message": {
-        "id": "msg-root",
-        "meta": {
-          "subject": "Project update",
-          "date": "2026-03-27T08:00:00Z",
-          "message_id": "<root@example.com>",
-          "from": {
-            "name": "Example Sender",
-            "address": "sender@example.com"
-          }
-        },
-        "content": {
-          "snippet": "Initial update",
-          "body_md": "Initial update"
-        }
-      }
-    }
-  ]
-}`)
+	indexPath := agentThreadTestIndex(t)
 	providerPath := writeTempFile(t, "thread_provider_bad_reply_text.py", `import json
 print(json.dumps({"decision": "draft_reply", "summary": "bad", "reply_text": 123}))
 `)
@@ -1696,4 +1476,39 @@ func countFixtureEmails(t *testing.T, root string) int {
 		t.Fatalf("expected fixture email count to succeed: %v", err)
 	}
 	return count
+}
+
+// agentThreadTestIndex creates a temporary SQLite index pre-seeded with a
+// single 'msg-root' message in thread <root@example.com>, which is the
+// fixture thread_id used by the agent contract tests.
+func agentThreadTestIndex(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "index.db")
+	store := mailindex.NewFileStore(path)
+	err := store.Upsert(mailindex.IndexedMessage{
+		Account:   "demo",
+		Mailbox:   "INBOX",
+		ID:        "msg-root",
+		IndexedAt: "2026-03-27T08:00:00Z",
+		Message: schema.StandardMessage{
+			ID: "msg-root",
+			Meta: schema.MessageMeta{
+				Subject:   "Project update",
+				Date:      "2026-03-27T08:00:00Z",
+				MessageID: "<root@example.com>",
+				From: &schema.Address{
+					Name:    "Example Sender",
+					Address: "sender@example.com",
+				},
+			},
+			Content: schema.Content{
+				Snippet: "Initial update",
+				BodyMD:  "Initial update",
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("agentThreadTestIndex: upsert failed: %v", err)
+	}
+	return path
 }

@@ -15,6 +15,8 @@ type ThreadQuery struct {
 	Action   string
 	HasCodes bool
 	Limit    int
+	Since    string // RFC3339
+	Before   string // RFC3339
 }
 
 type ThreadSummary struct {
@@ -56,7 +58,7 @@ type threadAccumulator struct {
 }
 
 func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
-	data, err := s.load()
+	msgs, err := s.allMessages()
 	if err != nil {
 		return nil, err
 	}
@@ -68,12 +70,25 @@ func (s *FileStore) Threads(query ThreadQuery) ([]ThreadSummary, error) {
 	action := strings.TrimSpace(query.Action)
 	threads := map[string]*threadAccumulator{}
 
-	for _, item := range data.Messages {
+	for _, item := range msgs {
 		if account != "" && item.Account != account {
 			continue
 		}
 		if mailbox != "" && !strings.EqualFold(item.Mailbox, mailbox) {
 			continue
+		}
+
+		// Apply date filter before accumulating into threads.
+		since := strings.TrimSpace(query.Since)
+		before := strings.TrimSpace(query.Before)
+		if since != "" || before != "" {
+			effDate := effectiveMessageDate(item)
+			if since != "" && effDate != "" && effDate < since {
+				continue
+			}
+			if before != "" && effDate != "" && effDate >= before {
+				continue
+			}
 		}
 
 		threadID := deriveThreadID(item)
@@ -198,7 +213,7 @@ func containsThreadValue(values []string, target string) bool {
 }
 
 func (s *FileStore) ThreadMessages(query ThreadMessageQuery) ([]IndexedMessage, error) {
-	data, err := s.load()
+	msgs, err := s.allMessages()
 	if err != nil {
 		return nil, err
 	}
@@ -206,9 +221,9 @@ func (s *FileStore) ThreadMessages(query ThreadMessageQuery) ([]IndexedMessage, 
 	threadID := normalizeMessageRef(query.ThreadID)
 	account := strings.TrimSpace(query.Account)
 	mailbox := strings.TrimSpace(query.Mailbox)
-	results := make([]IndexedMessage, 0, len(data.Messages))
+	results := make([]IndexedMessage, 0, len(msgs))
 
-	for _, item := range data.Messages {
+	for _, item := range msgs {
 		if threadID != "" && deriveThreadID(item) != threadID {
 			continue
 		}

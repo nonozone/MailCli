@@ -18,12 +18,17 @@ func newListCmd() *cobra.Command {
 		format     string
 		mailbox    string
 		limit      int
+		since      string
+		before     string
 	)
 
 	cmd := &cobra.Command{
 		Use:   "list",
 		Short: "List messages from the selected account",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if limit < 0 {
+				return fmt.Errorf("limit must be >= 0")
+			}
 			if configPath == "" {
 				configPath = config.DefaultPath()
 			}
@@ -46,6 +51,8 @@ func newListCmd() *cobra.Command {
 			items, err := drv.List(cmd.Context(), schema.SearchQuery{
 				Mailbox: mailbox,
 				Limit:   limit,
+				Since:   since,
+				Before:  before,
 			})
 			if err != nil {
 				return err
@@ -59,6 +66,8 @@ func newListCmd() *cobra.Command {
 	cmd.Flags().StringVar(&account, "account", "", "account name override")
 	cmd.Flags().StringVar(&mailbox, "mailbox", "", "mailbox override")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of messages to list (0 means no limit)")
+	cmd.Flags().StringVar(&since, "since", "", "only list messages on or after this RFC3339 timestamp")
+	cmd.Flags().StringVar(&before, "before", "", "only list messages before this RFC3339 timestamp")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }

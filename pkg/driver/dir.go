@@ -236,3 +236,97 @@ func (d *dirDriver) resolveMessagePath(id string) (string, error) {
 
 	return path, nil
 }
+
+// ── Writer interface ──────────────────────────────────────────────────────────
+
+// Delete removes the matching .eml file from the directory.
+func (d *dirDriver) Delete(ctx context.Context, id string) error {
+	path, err := d.locatePath(ctx, id)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(path); err != nil {
+		if os.IsNotExist(err) {
+			return fmt.Errorf("%w: %s", ErrMessageNotFound, id)
+		}
+		return err
+	}
+	return nil
+}
+
+// Move copies the .eml file to <root>/<dest>/ and removes the original.
+// dest is treated as a subdirectory name relative to the driver root.
+func (d *dirDriver) Move(ctx context.Context, id, dest string) error {
+	src, err := d.locatePath(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	destDir := filepath.Join(d.root, filepath.Clean(dest))
+	if err := os.MkdirAll(destDir, 0o755); err != nil {
+		return fmt.Errorf("create dest dir: %w", err)
+	}
+
+	raw, err := os.ReadFile(src)
+	if err != nil {
+		return err
+	}
+
+	destPath := filepath.Join(destDir, filepath.Base(src))
+	if err := os.WriteFile(destPath, raw, 0o644); err != nil {
+		return fmt.Errorf("write to dest: %w", err)
+	}
+
+	return os.Remove(src)
+}
+
+// MarkRead renames the file with a "seen." or "unseen." prefix to signal
+// read status — a lightweight convention for directory-based stores.
+func (d *dirDriver) MarkRead(ctx context.Context, id string, read bool) error {
+	path, err := d.locatePath(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	dir := filepath.Dir(path)
+	base := filepath.Base(path)
+
+	// Strip any existing seen/unseen prefix.
+	base = strings.TrimPrefix(base, "seen.")
+	base = strings.TrimPrefix(base, "unseen.")
+
+	prefix := "unseen."
+	if read {
+		prefix = "seen."
+	}
+
+	newPath := filepath.Join(dir, prefix+base)
+	if path == newPath {
+		return nil // already in the desired state
+	}
+	return os.Rename(path, newPath)
+}
+
+// locatePath resolves an ID (Message-ID or relative path) to an absolute path.
+func (d *dirDriver) locatePath(ctx context.Context, id string) (string, error) {
+	trimmed := strings.TrimSpace(id)
+	if trimmed == "" {
+		return "", fmt.Errorf("message id is required")
+	}
+
+	// Message-ID format: search by header.
+	if strings.HasPrefix(trimmed, "<") && strings.HasSuffix(trimmed, ">") {
+		msgs, err := d.loadMessages(ctx)
+		if err != nil {
+			return "", err
+		}
+		for _, m := range msgs {
+			if m.messageID == trimmed {
+				return m.path, nil
+			}
+		}
+		return "", fmt.Errorf("%w: %s", ErrMessageNotFound, id)
+	}
+
+	return d.resolveMessagePath(trimmed)
+}

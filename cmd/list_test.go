@@ -249,3 +249,39 @@ func TestListCommandPropagatesZeroLimitToDriver(t *testing.T) {
 		t.Fatalf("expected zero limit to be propagated unchanged, got %d", fake.lastQuery.Limit)
 	}
 }
+
+func TestListCommandRejectsNegativeLimit(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.yaml")
+	err := os.WriteFile(configPath, []byte("current_account: local\naccounts:\n  - name: local\n    driver: fake\n"), 0o644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	loadConfigFunc = config.Load
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("driver factory should not be called when limit validation fails")
+		return nil, nil
+	}
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"list", "--config", configPath, "--limit", "-1"})
+
+	err = cmd.Execute()
+	if err == nil {
+		t.Fatalf("expected negative limit to fail")
+	}
+	if !strings.Contains(err.Error(), "limit must be >= 0") {
+		t.Fatalf("expected negative limit error, got %v", err)
+	}
+}

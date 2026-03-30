@@ -1,0 +1,232 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_sync",
+      "description": "Fetch recent messages from the mail account and write them to the local index. Call this before searching or threading to ensure the index is up to date.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account": { "type": "string", "description": "Account name (uses current_account if omitted)" },
+          "mailbox": { "type": "string", "description": "Mailbox to sync (default: INBOX)" },
+          "limit":   { "type": "integer", "description": "Max messages to sync (default: 10, 0 = no limit)" },
+          "since":   { "type": "string", "description": "Only sync messages on or after this RFC3339 timestamp" },
+          "before":  { "type": "string", "description": "Only sync messages before this RFC3339 timestamp" },
+          "refresh": { "type": "boolean", "description": "Re-fetch messages already in the index" }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_list",
+      "description": "List message metadata directly from the mail server (no local index required). Returns id, from, subject, date for each message.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account": { "type": "string" },
+          "mailbox": { "type": "string", "description": "Mailbox to list (default: INBOX)" },
+          "limit":   { "type": "integer", "description": "Max messages to return (default: 10)" },
+          "since":   { "type": "string", "description": "RFC3339 start date filter" },
+          "before":  { "type": "string", "description": "RFC3339 end date filter" }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_get",
+      "description": "Fetch and parse a single message by ID. Returns the full StandardMessage including body, attachments, extracted codes and action links.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id":      { "type": "string", "description": "Message-ID (<abc@example.com>), IMAP UID (uid:42), or sequence number (42)" },
+          "account": { "type": "string" },
+          "mailbox": { "type": "string" }
+        },
+        "required": ["id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_search",
+      "description": "Full-text search across the local indexed messages. Returns matching messages ranked by relevance. Run mailcli_sync first to populate the index.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query":   { "type": "string", "description": "Search terms (searches subject, body, from, to)" },
+          "account": { "type": "string" },
+          "mailbox": { "type": "string" },
+          "since":   { "type": "string", "description": "RFC3339 start date" },
+          "before":  { "type": "string", "description": "RFC3339 end date" },
+          "limit":   { "type": "integer", "description": "Max results (default: 10)" },
+          "full":    { "type": "boolean", "description": "Return full message content (default: compact summary)" }
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_threads",
+      "description": "List email thread summaries from the local index. Each thread groups related messages and includes aggregated category, action types, and participant info.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query":     { "type": "string", "description": "Filter threads by keyword" },
+          "account":   { "type": "string" },
+          "mailbox":   { "type": "string" },
+          "category":  { "type": "string", "description": "Filter by category (e.g. transactional, notification)" },
+          "action":    { "type": "string", "description": "Filter by action type (e.g. confirm, verify, track)" },
+          "has_codes": { "type": "boolean", "description": "Only return threads with extracted verification codes" },
+          "since":     { "type": "string", "description": "RFC3339 start date" },
+          "before":    { "type": "string", "description": "RFC3339 end date" },
+          "limit":     { "type": "integer", "description": "Max threads (default: 10)" }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_thread",
+      "description": "Return all messages belonging to a specific email thread from the local index.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "thread_id": { "type": "string", "description": "Thread ID (from mailcli_threads output)" },
+          "account":   { "type": "string" },
+          "mailbox":   { "type": "string" },
+          "limit":     { "type": "integer", "description": "Max messages in thread (default: 50)" }
+        },
+        "required": ["thread_id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_send",
+      "description": "Send a new email via SMTP. Returns the generated Message-ID on success.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account": { "type": "string" },
+          "draft": {
+            "type": "object",
+            "description": "Email draft content",
+            "properties": {
+              "from":     { "type": "object", "properties": { "name": { "type": "string" }, "address": { "type": "string" } }, "required": ["address"] },
+              "to":       { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "address": { "type": "string" } }, "required": ["address"] } },
+              "cc":       { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" } } } },
+              "subject":  { "type": "string" },
+              "body_md":  { "type": "string", "description": "Email body in Markdown (will be rendered to HTML + plain text)" },
+              "body_text":{ "type": "string", "description": "Plain text body (used when body_md is absent)" }
+            },
+            "required": ["to", "subject"]
+          }
+        },
+        "required": ["draft"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_reply",
+      "description": "Send a reply to an existing email thread. Sets In-Reply-To and References headers automatically.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "account": { "type": "string" },
+          "draft": {
+            "type": "object",
+            "properties": {
+              "reply_to_message_id": { "type": "string", "description": "Message-ID of the message being replied to" },
+              "references":          { "type": "array", "items": { "type": "string" }, "description": "Full reference chain from the original thread" },
+              "to":      { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" } } } },
+              "subject": { "type": "string" },
+              "body_md": { "type": "string", "description": "Reply body in Markdown" }
+            },
+            "required": ["reply_to_message_id", "to", "body_md"]
+          }
+        },
+        "required": ["draft"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_export",
+      "description": "Export messages from the local index as JSONL (default), JSON array, or CSV. Useful for feeding large batches to LLMs or data pipelines.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query":   { "type": "string", "description": "Optional keyword filter" },
+          "account": { "type": "string" },
+          "mailbox": { "type": "string" },
+          "since":   { "type": "string" },
+          "before":  { "type": "string" },
+          "format":  { "type": "string", "enum": ["jsonl", "json", "csv"], "default": "jsonl" },
+          "limit":   { "type": "integer", "description": "Max messages to export (0 = all)" }
+        }
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_delete",
+      "description": "Permanently delete a message from the remote mailbox by setting \\Deleted and expunging.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id":      { "type": "string", "description": "Message-ID, IMAP UID (uid:42), or sequence number" },
+          "account": { "type": "string" },
+          "mailbox": { "type": "string" }
+        },
+        "required": ["id"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_move",
+      "description": "Move a message to another mailbox (copy + expunge original).",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id":            { "type": "string", "description": "Message-ID or IMAP UID" },
+          "dest_mailbox":  { "type": "string", "description": "Destination mailbox name (e.g. Archive, Trash, Spam)" },
+          "account":       { "type": "string" },
+          "mailbox":       { "type": "string", "description": "Source mailbox" }
+        },
+        "required": ["id", "dest_mailbox"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "mailcli_mark",
+      "description": "Mark a message as read or unread by setting/clearing the \\Seen flag.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id":      { "type": "string", "description": "Message-ID or IMAP UID" },
+          "unread":  { "type": "boolean", "description": "Set to true to mark as unread (default: false = mark as read)" },
+          "account": { "type": "string" },
+          "mailbox": { "type": "string" }
+        },
+        "required": ["id"]
+      }
+    }
+  }
+]

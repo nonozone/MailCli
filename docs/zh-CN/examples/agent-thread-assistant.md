@@ -50,7 +50,7 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-这个示例通过内置 `dir` driver，把仓库内置的 fixture 语料跑进正常的 `sync -> threads -> thread` 工作流。在 MailCLI 里，`--sync-limit 0` 表示“不截断，尽量取全量”。
+这个示例通过内置 `dir` driver，把仓库内置的 fixture 语料跑进正常的 `sync -> threads -> thread` 工作流。这里的 `--sync-limit 0` 是 Python 示例自己的 sync 参数，表示脚本会调用 `mailcli sync --limit 0`，不截断初始同步阶段。
 
 ## 复用已有本地索引示例
 

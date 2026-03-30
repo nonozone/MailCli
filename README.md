@@ -117,14 +117,19 @@ MailCLI is currently in **pre-v0.1 release candidate** stage.
 Working today:
 
 - parse local `.eml` input or stdin into `StandardMessage`
-- list messages from configured IMAP accounts
+- list messages from configured IMAP accounts (with `--since`/`--before` date filters)
 - fetch and parse messages by sequence number, UID, or `Message-ID`
-- sync recent messages into a local searchable index
+- sync recent messages into a local searchable index (BulkFetcher, error isolation, atomic writes)
 - search a local message index without re-fetching remote mail
 - inspect local conversation/thread summaries from indexed messages
-- compile outbound drafts and replies
-- send through SMTP-backed IMAP-style accounts
+- compile outbound drafts and replies (RFC 2047 encoded headers)
+- send through SMTP-backed IMAP-style accounts (returns `message_id`)
+- delete, move, mark-read/unread on remote mailboxes
+- export the local index as JSONL, JSON, or CSV
+- **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed)
+- manage config with `mailcli config show` / `mailcli config test`
 - integrate with Python or shell agent workflows through stable JSON contracts
+- LLM tool-use schemas for OpenAI and Anthropic (`tools/` directory)
 
 Stable enough to build against for `v0.1 RC`:
 
@@ -137,10 +142,17 @@ Stable enough to build against for `v0.1 RC`:
 - `mailcli thread`
 - `mailcli send`
 - `mailcli reply`
+- `mailcli delete`
+- `mailcli move`
+- `mailcli mark`
+- `mailcli export`
+- `mailcli watch`
+- `mailcli config show|test`
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`
-- `SendResult`
+- `SendResult` (now includes `message_id`)
+- `OperationResult` (delete / move / mark)
 
 Still evolving:
 
@@ -148,6 +160,7 @@ Still evolving:
 - richer list/search semantics for inbox workflows
 - richer outbound HTML rendering and attachment ergonomics
 - broader provider coverage and extension guidance
+- SQLite + FTS5 index (planned, replacing current JSON index for scale)
 
 Current built-in driver types:
 
@@ -227,20 +240,38 @@ MailCLI solves that by providing a stable boundary:
 ### Read path
 
 - `mailcli parse --format json|yaml|table <file|->`
-- `mailcli list --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--format json|table]`
-- `mailcli get --config ~/.config/mailcli/config.yaml [--account <name>] <id>`
-- `mailcli sync --config ~/.config/mailcli/config.yaml [--account <name>] [--mailbox <name>] [--limit <n>] [--index <path>]`
-- `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>] [--full] <query>`
-- `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--thread <thread_id>] [--limit <n>] [--full] <query>`
-- `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
-- `mailcli thread <thread_id> [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
+- `mailcli list [--account] [--mailbox] [--limit] [--since] [--before] [--format json|table]`
+- `mailcli get [--account] [--mailbox] <id>`
+- `mailcli sync [--account] [--mailbox] [--limit] [--since] [--before] [--refresh] [--index]`
+- `mailcli search [--index] [--account] [--mailbox] [--since] [--before] [--thread] [--limit] [--full] <query>`
+- `mailcli threads [query] [--index] [--account] [--mailbox] [--since] [--before] [--category] [--action] [--has-codes] [--limit]`
+- `mailcli thread <thread_id> [--index] [--account] [--mailbox] [--limit]`
+- `mailcli export [query] [--index] [--account] [--mailbox] [--since] [--before] [--format jsonl|json|csv] [--output] [--limit]`
 
 ### Write path
 
-- `mailcli send --dry-run <draft.json>`
-- `mailcli send --config ~/.config/mailcli/config.yaml <draft.json>`
-- `mailcli reply --dry-run <reply.json>`
-- `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
+- `mailcli send [--account] [--dry-run] <draft.json>`
+- `mailcli reply [--account] [--dry-run] <reply.json>`
+- `mailcli delete [--account] [--mailbox] <id>`
+- `mailcli move [--account] [--mailbox] <id> <dest-mailbox>`
+- `mailcli mark [--account] [--mailbox] [--unread] <id>`
+
+### Watch (streaming events)
+
+- `mailcli watch [--account] [--mailbox ...] [--poll 30s] [--since] [--auto-sync] [--index] [--heartbeat 5m]`
+
+  Streams JSONL events to stdout: `watching`, `new_message` (full `StandardMessage`), `heartbeat`, `error`.
+  Uses IMAP IDLE when available; falls back to polling otherwise.
+
+  ```bash
+  # Pipe to AI agent:
+  mailcli watch --account work | python3 tools/agent_example.py
+  ```
+
+### Config management
+
+- `mailcli config show [--config]` — print accounts (passwords redacted)
+- `mailcli config test [--config] [--account]` — test live connection
 
 ### Outbound Markdown baseline
 

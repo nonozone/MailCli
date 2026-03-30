@@ -47,3 +47,12 @@ type SendError struct {
 	Code    string `json:"code,omitempty" yaml:"code,omitempty"`
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
 }
+
+// OperationResult is the JSON output of mailbox-mutation commands
+// (delete, move, mark). Extra holds command-specific key/value metadata.
+type OperationResult struct {
+	OK      bool              `json:"ok" yaml:"ok"`
+	ID      string            `json:"id,omitempty" yaml:"id,omitempty"`
+	Account string            `json:"account,omitempty" yaml:"account,omitempty"`
+	Extra   map[string]string `json:"extra,omitempty" yaml:"extra,omitempty"`
+}

@@ -9,6 +9,7 @@ import (
 	"net/smtp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/emersion/go-imap"
 	imapclient "github.com/emersion/go-imap/client"
@@ -35,11 +36,15 @@ type smtpConfig struct {
 	useTLS   bool
 }
 
+// imapSession covers the full set of IMAP operations used by this driver.
 type imapSession interface {
 	Select(name string, readOnly bool) (*imap.MailboxStatus, error)
 	Search(criteria *imap.SearchCriteria) ([]uint32, error)
 	Fetch(seqset *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
 	UidFetch(seqset *imap.SeqSet, items []imap.FetchItem, ch chan *imap.Message) error
+	UidStore(seqset *imap.SeqSet, item imap.StoreItem, value interface{}, ch chan *imap.Message) error
+	UidCopy(seqset *imap.SeqSet, dest string) error
+	Expunge(ch chan uint32) error
 	Logout() error
 }
 
@@ -88,6 +93,8 @@ func newIMAPDriver(account config.AccountConfig) (Driver, error) {
 	return driver, nil
 }
 
+// ─── Driver interface ────────────────────────────────────────────────────────
+
 func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]schema.MessageMetaSummary, error) {
 	client, err := d.connectFunc()
 	if err != nil {
@@ -109,7 +116,17 @@ func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]sche
 		return []schema.MessageMetaSummary{}, nil
 	}
 
+	// Use IMAP SEARCH when date filters are present.
+	hasSince := stringsTrim(query.Since) != ""
+	hasBefore := stringsTrim(query.Before) != ""
+	if hasSince || hasBefore {
+		return d.listWithDateSearch(ctx, client, query)
+	}
+
 	limit := query.Limit
+	if limit < 0 {
+		limit = 10
+	}
 	from := uint32(1)
 	to := mbox.Messages
 	if limit > 0 && mbox.Messages > uint32(limit-1) {
@@ -158,6 +175,69 @@ func (d *imapDriver) List(ctx context.Context, query schema.SearchQuery) ([]sche
 	return results, nil
 }
 
+// listWithDateSearch uses IMAP SEARCH criteria for server-side date filtering.
+func (d *imapDriver) listWithDateSearch(ctx context.Context, client imapSession, query schema.SearchQuery) ([]schema.MessageMetaSummary, error) {
+	criteria := imap.NewSearchCriteria()
+	if since := stringsTrim(query.Since); since != "" {
+		if t, err := time.Parse(time.RFC3339, since); err == nil {
+			criteria.Since = t
+		}
+	}
+	if before := stringsTrim(query.Before); before != "" {
+		if t, err := time.Parse(time.RFC3339, before); err == nil {
+			criteria.Before = t
+		}
+	}
+
+	seqNums, err := client.Search(criteria)
+	if err != nil {
+		return nil, err
+	}
+	if len(seqNums) == 0 {
+		return []schema.MessageMetaSummary{}, nil
+	}
+
+	limit := query.Limit
+	if limit > 0 && len(seqNums) > limit {
+		seqNums = seqNums[len(seqNums)-limit:]
+	}
+
+	seqset := new(imap.SeqSet)
+	for _, n := range seqNums {
+		seqset.AddNum(n)
+	}
+
+	messages := make(chan *imap.Message, len(seqNums))
+	done := make(chan error, 1)
+	go func() {
+		done <- client.Fetch(seqset, []imap.FetchItem{imap.FetchEnvelope}, messages)
+	}()
+
+	var results []schema.MessageMetaSummary
+	for msg := range messages {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+		summary := schema.MessageMetaSummary{
+			From:    safeEnvelopeFrom(msg),
+			Subject: safeEnvelopeSubject(msg),
+			Date:    safeEnvelopeDate(msg),
+		}
+		if msg.Envelope != nil && stringsTrim(msg.Envelope.MessageId) != "" {
+			summary.ID = msg.Envelope.MessageId
+		} else {
+			summary.ID = fmt.Sprintf("%d", msg.SeqNum)
+		}
+		results = append(results, summary)
+	}
+	if err := <-done; err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
 func (d *imapDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
 	client, err := d.connectFunc()
 	if err != nil {
@@ -169,6 +249,10 @@ func (d *imapDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
 		return nil, err
 	}
 
+	return d.fetchRawFromSession(ctx, client, id)
+}
+
+func (d *imapDriver) fetchRawFromSession(ctx context.Context, client imapSession, id string) ([]byte, error) {
 	target, err := resolveFetchTarget(id)
 	if err != nil {
 		return nil, err
@@ -208,6 +292,193 @@ func (d *imapDriver) SendRaw(ctx context.Context, raw []byte) error {
 	return smtpSendFunc(d.smtp, from, recipients, raw)
 }
 
+// ─── BulkFetcher interface ───────────────────────────────────────────────────
+
+// FetchRawBulk fetches multiple messages over a single IMAP connection,
+// avoiding O(n) TLS handshakes when syncing many messages.
+func (d *imapDriver) FetchRawBulk(ctx context.Context, ids []string) ([]BulkMessage, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+
+	client, err := d.connectFunc()
+	if err != nil {
+		return nil, err
+	}
+	defer client.Logout()
+
+	if _, err := client.Select(d.mailbox, true); err != nil {
+		return nil, err
+	}
+
+	results := make([]BulkMessage, 0, len(ids))
+	for _, id := range ids {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
+		raw, err := d.fetchRawFromSession(ctx, client, id)
+		results = append(results, BulkMessage{ID: id, Raw: raw, Err: err})
+	}
+	return results, nil
+}
+
+// ─── Writer interface ────────────────────────────────────────────────────────
+
+// Delete permanently removes a message by setting \Deleted and expunging.
+func (d *imapDriver) Delete(ctx context.Context, id string) error {
+	client, err := d.connectFunc()
+	if err != nil {
+		return err
+	}
+	defer client.Logout()
+
+	if _, err := client.Select(d.mailbox, false); err != nil {
+		return err
+	}
+
+	uid, err := d.resolveUID(ctx, client, id)
+	if err != nil {
+		return err
+	}
+
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uid)
+
+	flags := []interface{}{imap.DeletedFlag}
+	if err := client.UidStore(seqset, imap.FormatFlagsOp(imap.AddFlags, true), flags, nil); err != nil {
+		return err
+	}
+	return client.Expunge(nil)
+}
+
+// Move copies a message to destMailbox and deletes the original.
+func (d *imapDriver) Move(ctx context.Context, id, destMailbox string) error {
+	client, err := d.connectFunc()
+	if err != nil {
+		return err
+	}
+	defer client.Logout()
+
+	if _, err := client.Select(d.mailbox, false); err != nil {
+		return err
+	}
+
+	uid, err := d.resolveUID(ctx, client, id)
+	if err != nil {
+		return err
+	}
+
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uid)
+
+	if err := client.UidCopy(seqset, destMailbox); err != nil {
+		return err
+	}
+
+	flags := []interface{}{imap.DeletedFlag}
+	if err := client.UidStore(seqset, imap.FormatFlagsOp(imap.AddFlags, true), flags, nil); err != nil {
+		return err
+	}
+	return client.Expunge(nil)
+}
+
+// MarkRead sets or clears the \Seen flag on a message.
+func (d *imapDriver) MarkRead(ctx context.Context, id string, read bool) error {
+	client, err := d.connectFunc()
+	if err != nil {
+		return err
+	}
+	defer client.Logout()
+
+	if _, err := client.Select(d.mailbox, false); err != nil {
+		return err
+	}
+
+	uid, err := d.resolveUID(ctx, client, id)
+	if err != nil {
+		return err
+	}
+
+	seqset := new(imap.SeqSet)
+	seqset.AddNum(uid)
+
+	flags := []interface{}{imap.SeenFlag}
+	op := imap.FlagsOp(imap.AddFlags)
+	if !read {
+		op = imap.FlagsOp(imap.RemoveFlags)
+	}
+	return client.UidStore(seqset, imap.FormatFlagsOp(op, true), flags, nil)
+}
+
+// resolveUID returns the UID for any supported message ID format.
+func (d *imapDriver) resolveUID(ctx context.Context, client imapSession, id string) (uint32, error) {
+	target, err := resolveFetchTarget(id)
+	if err != nil {
+		return 0, err
+	}
+
+	switch target.kind {
+	case fetchTargetUID:
+		return target.value, nil
+
+	case fetchTargetSequence:
+		seqset := new(imap.SeqSet)
+		seqset.AddNum(target.value)
+		ch := make(chan *imap.Message, 1)
+		done := make(chan error, 1)
+		go func() { done <- client.Fetch(seqset, []imap.FetchItem{imap.FetchUid}, ch) }()
+		var uid uint32
+		for msg := range ch {
+			if msg != nil {
+				uid = msg.Uid
+			}
+		}
+		if err := <-done; err != nil {
+			return 0, err
+		}
+		if uid == 0 {
+			return 0, fmt.Errorf("%w: %s", ErrMessageNotFound, id)
+		}
+		return uid, nil
+
+	case fetchTargetMessageID:
+		criteria := imap.NewSearchCriteria()
+		criteria.Header.Add("Message-Id", target.headerValue)
+		matches, err := client.Search(criteria)
+		if err != nil {
+			return 0, err
+		}
+		if len(matches) == 0 {
+			return 0, fmt.Errorf("%w: %s", ErrMessageNotFound, id)
+		}
+		seqset := new(imap.SeqSet)
+		seqset.AddNum(matches[0])
+		ch := make(chan *imap.Message, 1)
+		done := make(chan error, 1)
+		go func() { done <- client.Fetch(seqset, []imap.FetchItem{imap.FetchUid}, ch) }()
+		var uid uint32
+		for msg := range ch {
+			if msg != nil {
+				uid = msg.Uid
+			}
+		}
+		if err := <-done; err != nil {
+			return 0, err
+		}
+		if uid == 0 {
+			return 0, fmt.Errorf("%w: %s", ErrMessageNotFound, id)
+		}
+		return uid, nil
+
+	default:
+		return 0, fmt.Errorf("unsupported fetch target: %s", id)
+	}
+}
+
+// ─── Connection ──────────────────────────────────────────────────────────────
+
 func (d *imapDriver) connect() (imapSession, error) {
 	addr := fmt.Sprintf("%s:%d", d.host, d.port)
 
@@ -234,6 +505,8 @@ func (d *imapDriver) connect() (imapSession, error) {
 
 	return c, nil
 }
+
+// ─── Fetch helpers ───────────────────────────────────────────────────────────
 
 func resolveFetchTarget(id string) (fetchTarget, error) {
 	trimmed := strings.TrimSpace(id)
@@ -319,6 +592,8 @@ func fetchMessageBody(ctx context.Context, client imapSession, useUID bool, valu
 	return raw, nil
 }
 
+// ─── Envelope helpers ────────────────────────────────────────────────────────
+
 func safeEnvelopeSubject(msg *imap.Message) string {
 	if msg == nil || msg.Envelope == nil {
 		return ""
@@ -348,6 +623,8 @@ func safeEnvelopeDate(msg *imap.Message) string {
 	}
 	return msg.Envelope.Date.UTC().Format("2006-01-02T15:04:05Z")
 }
+
+// ─── String utilities ────────────────────────────────────────────────────────
 
 func stringsTrim(value string) string {
 	return strings.TrimSpace(value)
@@ -386,6 +663,8 @@ func parsePositiveUint32(value string) (uint32, error) {
 	}
 	return uint32(parsed), nil
 }
+
+// ─── SMTP helpers ────────────────────────────────────────────────────────────
 
 func extractEnvelope(raw []byte) (string, []string, error) {
 	msg, err := netmail.ReadMessage(strings.NewReader(string(raw)))

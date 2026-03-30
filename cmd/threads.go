@@ -21,6 +21,8 @@ func newThreadsCmd() *cobra.Command {
 		hasCodes  bool
 		format    string
 		limit     int
+		since     string
+		before    string
 	)
 
 	cmd := &cobra.Command{
@@ -42,6 +44,8 @@ func newThreadsCmd() *cobra.Command {
 				Action:   action,
 				HasCodes: hasCodes,
 				Limit:    limit,
+				Since:    since,
+				Before:   before,
 			})
 			if err != nil {
 				return err
@@ -58,6 +62,8 @@ func newThreadsCmd() *cobra.Command {
 	cmd.Flags().StringVar(&action, "action", "", "filter local threads by aggregated action type")
 	cmd.Flags().BoolVar(&hasCodes, "has-codes", false, "filter local threads that include extracted codes")
 	cmd.Flags().IntVar(&limit, "limit", 10, "maximum number of thread results")
+	cmd.Flags().StringVar(&since, "since", "", "only return threads with messages on or after this RFC3339 timestamp")
+	cmd.Flags().StringVar(&before, "before", "", "only return threads with messages before this RFC3339 timestamp")
 	cmd.Flags().StringVar(&format, "format", "json", "output format: json, table")
 	return cmd
 }

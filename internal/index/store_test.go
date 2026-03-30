@@ -1,7 +1,6 @@
 package index
 
 import (
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -87,15 +86,25 @@ func TestFileStoreUpsertAndSearch(t *testing.T) {
 	}
 }
 
-func TestFileStoreReturnsErrorForInvalidJSON(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "index.json")
-	if err := os.WriteFile(path, []byte("{not-json"), 0o644); err != nil {
-		t.Fatalf("expected fixture write to succeed: %v", err)
+func TestFileStoreJSONPathRemappedToDb(t *testing.T) {
+	dir := t.TempDir()
+	// Passing a .json path should be silently remapped to .db by NewFileStore.
+	store := NewFileStore(filepath.Join(dir, "index.json"))
+	if store.Path() != filepath.Join(dir, "index.db") {
+		t.Fatalf("expected .json path to be remapped to .db, got %q", store.Path())
 	}
-
-	store := NewFileStore(path)
-	if _, err := store.All(); err == nil {
-		t.Fatalf("expected invalid index json to return an error")
+	// Should work correctly despite unusual extension in the original arg.
+	record := IndexedMessage{
+		Account: "demo",
+		ID:      "remap-test",
+		Message: schema.StandardMessage{ID: "remap-test"},
+	}
+	if err := store.Upsert(record); err != nil {
+		t.Fatalf("expected upsert after path remap to succeed: %v", err)
+	}
+	has, err := store.Has("demo", "remap-test")
+	if err != nil || !has {
+		t.Fatalf("expected remapped store to have upserted record: has=%v err=%v", has, err)
 	}
 }
 
