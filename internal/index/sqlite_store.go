@@ -99,6 +99,176 @@ func (s *Store) Has(account, id string) (bool, error) {
 	return n > 0, err
 }
 
+// BulkHas returns the set of IDs that already exist in the index for the
+// given account. Used by sync to filter messages that need fetching.
+func (s *Store) BulkHas(account string, ids []string) (map[string]bool, error) {
+	if len(ids) == 0 {
+		return map[string]bool{}, nil
+	}
+	db, err := s.openDB()
+	if err != nil {
+		return nil, err
+	}
+	account = strings.TrimSpace(account)
+
+	// SQLite supports up to 999 bind params; chunk to be safe.
+	const chunkSize = 500
+	result := make(map[string]bool, len(ids))
+	for i := 0; i < len(ids); i += chunkSize {
+		end := i + chunkSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		chunk := ids[i:end]
+
+		placeholders := make([]string, len(chunk))
+		args := make([]any, 0, len(chunk)+1)
+		args = append(args, account)
+		for j, id := range chunk {
+			placeholders[j] = "?"
+			args = append(args, id)
+		}
+		q := "SELECT id FROM messages WHERE account=? AND id IN (" +
+			strings.Join(placeholders, ",") + ")"
+		rows, err := db.Query(q, args...)
+		if err != nil {
+			return nil, err
+		}
+		for rows.Next() {
+			var id string
+			if err := rows.Scan(&id); err != nil {
+				rows.Close()
+				return nil, err
+			}
+			result[id] = true
+		}
+		rows.Close()
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+// BulkUpsert writes all messages inside a single SQLite transaction.
+// This is dramatically faster than calling Upsert() in a loop for large
+// batches because SQLite only calls fsync once at the end.
+func (s *Store) BulkUpsert(msgs []IndexedMessage) error {
+	if len(msgs) == 0 {
+		return nil
+	}
+	db, err := s.openDB()
+	if err != nil {
+		return err
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	// Prepare statements once for the whole batch.
+	stmtDel, err := tx.Prepare(`DELETE FROM messages_fts WHERE account=? AND msg_id=?`)
+	if err != nil {
+		return err
+	}
+	defer stmtDel.Close()
+
+	stmtUps, err := tx.Prepare(`
+		INSERT INTO messages
+		  (account, mailbox, id, thread_id, date, indexed_at,
+		   from_addr, subject, category, labels, action_types,
+		   has_codes, code_count, snippet, body_text, body_json)
+		VALUES (?,?,?,?,?,?, ?,?,?,?,?, ?,?,?,?,?)
+		ON CONFLICT(account, id) DO UPDATE SET
+		  mailbox      = excluded.mailbox,
+		  thread_id    = excluded.thread_id,
+		  date         = excluded.date,
+		  indexed_at   = excluded.indexed_at,
+		  from_addr    = excluded.from_addr,
+		  subject      = excluded.subject,
+		  category     = excluded.category,
+		  labels       = excluded.labels,
+		  action_types = excluded.action_types,
+		  has_codes    = excluded.has_codes,
+		  code_count   = excluded.code_count,
+		  snippet      = excluded.snippet,
+		  body_text    = excluded.body_text,
+		  body_json    = excluded.body_json`)
+	if err != nil {
+		return err
+	}
+	defer stmtUps.Close()
+
+	stmtFTS, err := tx.Prepare(`
+		INSERT INTO messages_fts(account, msg_id, subject, from_addr, body_text)
+		VALUES (?,?,?,?,?)`)
+	if err != nil {
+		return err
+	}
+	defer stmtFTS.Close()
+
+	now := time.Now().UTC().Format(time.RFC3339)
+	for i := range msgs {
+		msg := &msgs[i]
+		msg.Account = strings.TrimSpace(msg.Account)
+		msg.Mailbox = strings.TrimSpace(msg.Mailbox)
+		msg.ID = strings.TrimSpace(msg.ID)
+		if msg.IndexedAt == "" {
+			msg.IndexedAt = now
+		}
+		if msg.ThreadID == "" {
+			msg.ThreadID = deriveThreadID(*msg)
+		}
+
+		bodyJSON, err := json.Marshal(msg.Message)
+		if err != nil {
+			return fmt.Errorf("marshal message %s: %w", msg.ID, err)
+		}
+		labels, _ := json.Marshal(msg.Message.Labels)
+		actionTypes := extractActionTypes(msg.Message.Actions)
+		atJSON, _ := json.Marshal(actionTypes)
+
+		date := strings.TrimSpace(msg.Message.Meta.Date)
+		fromAddr := formatAddress(msg.Message.Meta.From)
+		subject := strings.TrimSpace(msg.Message.Meta.Subject)
+		category := strings.TrimSpace(msg.Message.Content.Category)
+		snippet := strings.TrimSpace(msg.Message.Content.Snippet)
+		bodyText := strings.Join([]string{
+			snippet,
+			strings.TrimSpace(msg.Message.Content.BodyMD),
+			actionSearchText(msg.Message.Actions),
+			codeSearchText(msg.Message.Codes),
+		}, " ")
+		bodyText = strings.TrimSpace(bodyText)
+		hasCodes := 0
+		if len(msg.Message.Codes) > 0 {
+			hasCodes = 1
+		}
+
+		if _, err := stmtDel.Exec(msg.Account, msg.ID); err != nil {
+			return fmt.Errorf("fts delete %s: %w", msg.ID, err)
+		}
+		if _, err := stmtUps.Exec(
+			msg.Account, msg.Mailbox, msg.ID, msg.ThreadID, date, msg.IndexedAt,
+			fromAddr, subject, category, string(labels), string(atJSON),
+			hasCodes, len(msg.Message.Codes), snippet, bodyText, string(bodyJSON),
+		); err != nil {
+			return fmt.Errorf("upsert %s: %w", msg.ID, err)
+		}
+		if _, err := stmtFTS.Exec(msg.Account, msg.ID, subject, fromAddr, bodyText); err != nil {
+			return fmt.Errorf("fts insert %s: %w", msg.ID, err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+
 // ── Upsert ────────────────────────────────────────────────────────────────────
 
 func (s *Store) Upsert(msg IndexedMessage) error {

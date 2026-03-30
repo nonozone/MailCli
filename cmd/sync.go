@@ -83,20 +83,31 @@ func newSyncCmd() *cobra.Command {
 			refreshedCount := 0
 			errorCount := 0
 
-			// Collect IDs that need fetching.
+			// Bulk-check which IDs already exist to avoid re-fetching.
 			idsToFetch := make([]string, 0, len(items))
-			for _, item := range items {
-				if !refresh {
-					has, err := store.Has(selectedAccount.Name, item.ID)
-					if err != nil {
-						return err
+			if refresh {
+				// --refresh: re-fetch everything regardless.
+				for _, item := range items {
+					idsToFetch = append(idsToFetch, item.ID)
+				}
+			} else {
+				existing, err := store.BulkHas(selectedAccount.Name, func() []string {
+					ids := make([]string, len(items))
+					for i, it := range items {
+						ids[i] = it.ID
 					}
-					if has {
+					return ids
+				}())
+				if err != nil {
+					return err
+				}
+				for _, item := range items {
+					if existing[item.ID] {
 						skippedCount++
-						continue
+					} else {
+						idsToFetch = append(idsToFetch, item.ID)
 					}
 				}
-				idsToFetch = append(idsToFetch, item.ID)
 			}
 
 			// Use BulkFetcher when the driver supports it (single IMAP connection).
@@ -122,7 +133,8 @@ func newSyncCmd() *cobra.Command {
 				}
 			}
 
-			// Parse and index each fetched message; isolate per-message errors.
+			// Parse all fetched messages; collect into a batch for BulkUpsert.
+			toIndex := make([]mailindex.IndexedMessage, 0, len(rawEntries))
 			for _, entry := range rawEntries {
 				if entry.err != nil {
 					fmt.Fprintf(cmd.ErrOrStderr(), "warn: fetch %s: %v\n", entry.id, entry.err)
@@ -137,22 +149,22 @@ func newSyncCmd() *cobra.Command {
 					errorCount++
 					continue
 				}
-
-				if err := store.Upsert(mailindex.IndexedMessage{
+				toIndex = append(toIndex, mailindex.IndexedMessage{
 					Account: selectedAccount.Name,
 					Mailbox: queryMailbox,
 					ID:      entry.id,
 					Message: *msg,
-				}); err != nil {
-					fmt.Fprintf(cmd.ErrOrStderr(), "warn: index %s: %v\n", entry.id, err)
-					errorCount++
-					continue
-				}
+				})
 				if refresh {
 					refreshedCount++
 				}
-				indexedCount++
 			}
+
+			// Single transaction for the entire batch — much faster than per-message commits.
+			if err := store.BulkUpsert(toIndex); err != nil {
+				return fmt.Errorf("bulk upsert: %w", err)
+			}
+			indexedCount = len(toIndex)
 
 			return writeSyncResult(cmd.OutOrStdout(), syncResult{
 				Account:        selectedAccount.Name,

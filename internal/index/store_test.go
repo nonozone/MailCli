@@ -1,6 +1,7 @@
 package index
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -516,4 +517,95 @@ func TestFileStoreSearchRanksStructuredSignalsAboveBodyOnlyMentions(t *testing.T
 	if results[0].Score <= results[1].Score {
 		t.Fatalf("expected structured action score to outrank body-only score, got %d <= %d", results[0].Score, results[1].Score)
 	}
+}
+
+func TestBulkHasReturnsExistingIDs(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.db"))
+
+	// Insert two messages.
+	for _, id := range []string{"msg-a", "msg-b"} {
+		if err := store.Upsert(IndexedMessage{
+			Account: "demo", Mailbox: "INBOX", ID: id,
+			Message: schema.StandardMessage{ID: id, Meta: schema.MessageMeta{Subject: "Test " + id}},
+		}); err != nil {
+			t.Fatalf("upsert %s: %v", id, err)
+		}
+	}
+
+	existing, err := store.BulkHas("demo", []string{"msg-a", "msg-b", "msg-c"})
+	if err != nil {
+		t.Fatalf("BulkHas: %v", err)
+	}
+	if !existing["msg-a"] || !existing["msg-b"] {
+		t.Fatalf("expected msg-a and msg-b to be known, got %v", existing)
+	}
+	if existing["msg-c"] {
+		t.Fatalf("expected msg-c to be unknown, got %v", existing)
+	}
+}
+
+func TestBulkUpsertWritesAllMessages(t *testing.T) {
+	store := NewFileStore(filepath.Join(t.TempDir(), "index.db"))
+
+	batch := make([]IndexedMessage, 50)
+	for i := range batch {
+		id := fmt.Sprintf("bulk-%02d", i)
+		batch[i] = IndexedMessage{
+			Account: "demo", Mailbox: "INBOX", ID: id,
+			Message: schema.StandardMessage{
+				ID:      id,
+				Meta:    schema.MessageMeta{Subject: "Bulk message " + id},
+				Content: schema.Content{Snippet: "bulk content " + id},
+			},
+		}
+	}
+
+	if err := store.BulkUpsert(batch); err != nil {
+		t.Fatalf("BulkUpsert: %v", err)
+	}
+
+	// Verify all 50 messages are searchable.
+	results, err := store.Search(SearchQuery{Query: "bulk content", Limit: 100})
+	if err != nil {
+		t.Fatalf("Search: %v", err)
+	}
+	if len(results) != 50 {
+		t.Fatalf("expected 50 results, got %d", len(results))
+	}
+}
+
+func BenchmarkUpsertSequential(b *testing.B) {
+	store := NewFileStore(filepath.Join(b.TempDir(), "index.db"))
+	msgs := makeBenchMessages(b.N)
+	b.ResetTimer()
+	for i := range msgs {
+		if err := store.Upsert(msgs[i]); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkBulkUpsert(b *testing.B) {
+	store := NewFileStore(filepath.Join(b.TempDir(), "index.db"))
+	msgs := makeBenchMessages(b.N)
+	b.ResetTimer()
+	if err := store.BulkUpsert(msgs); err != nil {
+		b.Fatal(err)
+	}
+}
+
+func makeBenchMessages(n int) []IndexedMessage {
+	msgs := make([]IndexedMessage, n)
+	for i := range msgs {
+		id := fmt.Sprintf("bench-%06d", i)
+		msgs[i] = IndexedMessage{
+			Account: "bench", Mailbox: "INBOX", ID: id,
+			Message: schema.StandardMessage{
+				ID:      id,
+				Meta:    schema.MessageMeta{Subject: "Benchmark message " + id},
+				Content: schema.Content{Snippet: "bench content", BodyMD: "some body text for indexing"},
+			},
+		}
+	}
+	return msgs
 }
