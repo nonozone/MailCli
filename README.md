@@ -16,6 +16,49 @@ It is trying to be the stable boundary between agents and email systems:
 
 Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and machine-facing workflows.
 
+## Install
+
+macOS / Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nonozone/MailCli/main/install.sh | sh
+```
+
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/nonozone/MailCli/main/install.ps1 | iex
+```
+
+The installer detects your OS and CPU architecture, downloads the matching
+GitHub Release asset, verifies `checksums.txt` when available, installs the
+`mailcli` binary, and runs:
+
+```bash
+mailcli agent doctor
+```
+
+`agent doctor` detects local agent CLIs such as Codex and Claude Code and prints
+the MCP registration commands for `mailcli mcp serve`.
+
+To install and register MailCLI with detected agents in one step:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nonozone/MailCli/main/install.sh | sh -s -- --auto-configure
+```
+
+Windows:
+
+```powershell
+$env:MAILCLI_AGENT_AUTO_CONFIGURE = "1"
+irm https://raw.githubusercontent.com/nonozone/MailCli/main/install.ps1 | iex
+```
+
+Default MCP exposure is intentionally read/setup focused: parse, list, get,
+sync, search, threads, thread, and config diagnostics/capabilities. Mutating
+mailbox actions such as send, delete, move, and mark are not exposed through the
+default MCP server.
+
 ## Zero-Network First Run
 
 If you only want to understand the agent boundary, start here:

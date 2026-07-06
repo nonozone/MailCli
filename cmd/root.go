@@ -8,11 +8,13 @@ import (
 // via the persistent flags on the root command.
 var Verbose bool
 var Quiet bool
+var Version = "dev"
 
 func NewRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "mailcli",
-		Short: "AI-native email normalization toolkit",
+		Use:     "mailcli",
+		Short:   "AI-native email normalization toolkit",
+		Version: Version,
 		Long: `mailcli — AI-native email normalization toolkit.
 
 Reads and writes email via IMAP or local .eml files, outputting structured
@@ -41,6 +43,8 @@ JSON that is ready for LLM consumption or AI pipeline processing.`,
 	cmd.AddCommand(newExportCmd())
 	cmd.AddCommand(newWatchCmd())
 	cmd.AddCommand(newConfigCmd())
+	cmd.AddCommand(newMCPCmd())
+	cmd.AddCommand(newAgentCmd())
 
 	return cmd
 }

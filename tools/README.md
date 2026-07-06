@@ -14,6 +14,44 @@ tools/
   README.md          This file
 ```
 
+## Codex / Claude Code via MCP
+
+MailCLI also ships a local stdio MCP server:
+
+```bash
+mailcli mcp serve
+```
+
+The one-command installer can detect local agent CLIs and register that MCP
+server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nonozone/MailCli/main/install.sh | sh -s -- --auto-configure
+```
+
+You can inspect or run the agent setup manually:
+
+```bash
+mailcli agent doctor
+mailcli agent configure --agent codex
+mailcli agent configure --agent claude
+```
+
+Default MCP tools are read/setup only:
+
+- `mailcli_parse`
+- `mailcli_list`
+- `mailcli_get`
+- `mailcli_sync`
+- `mailcli_search`
+- `mailcli_threads`
+- `mailcli_thread`
+- `mailcli_config_doctor`
+- `mailcli_config_capabilities`
+
+Mutating commands such as send, reply, delete, move, and mark are intentionally
+not exposed by the default MCP server.
+
 ---
 
 ## Quick start: on-demand tool use from Go

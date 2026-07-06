@@ -16,6 +16,47 @@ MailCLI 是一个面向 **AI agent**、**LLM 工作流** 和 **自动化开发�
 
 它不会把原始 MIME、臃肿 HTML 和 provider 私有行为直接推给 prompt，而是把邮件转换成结构化 JSON、干净 Markdown 和面向机器的工作流。
 
+## 安装
+
+macOS / Linux：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nonozone/MailCli/main/install.sh | sh
+```
+
+Windows PowerShell：
+
+```powershell
+irm https://raw.githubusercontent.com/nonozone/MailCli/main/install.ps1 | iex
+```
+
+安装器会自动检测系统和 CPU 架构，下载对应的 GitHub Release 二进制包，在有
+`checksums.txt` 时校验 SHA256，然后安装 `mailcli` 并运行：
+
+```bash
+mailcli agent doctor
+```
+
+`agent doctor` 会检测本机是否有 Codex、Claude Code 等 Agent CLI，并输出把
+`mailcli mcp serve` 注册为 MCP server 的命令。
+
+如果要一键安装并自动注册到检测到的 Agent：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/nonozone/MailCli/main/install.sh | sh -s -- --auto-configure
+```
+
+Windows：
+
+```powershell
+$env:MAILCLI_AGENT_AUTO_CONFIGURE = "1"
+irm https://raw.githubusercontent.com/nonozone/MailCli/main/install.ps1 | iex
+```
+
+默认 MCP server 只暴露读和配置诊断能力：parse、list、get、sync、search、
+threads、thread、config doctor、config capabilities。send、delete、move、mark
+这类会改变邮箱状态的动作默认不会暴露给 Agent。
+
 ## 零网络优先上手
 
 如果你只是想先看清楚 agent 边界，优先跑这一组：

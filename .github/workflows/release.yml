@@ -1,0 +1,107 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: darwin
+            goarch: amd64
+            package: tar.gz
+          - goos: darwin
+            goarch: arm64
+            package: tar.gz
+          - goos: linux
+            goarch: amd64
+            package: tar.gz
+          - goos: linux
+            goarch: arm64
+            package: tar.gz
+          - goos: windows
+            goarch: amd64
+            package: zip
+          - goos: windows
+            goarch: arm64
+            package: zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.0
+
+      - name: Setup Go
+        uses: actions/setup-go@v6.5.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+          VERSION: ${{ inputs.tag || github.ref_name }}
+        run: |
+          mkdir -p "dist/mailcli_${GOOS}_${GOARCH}"
+          output="dist/mailcli_${GOOS}_${GOARCH}/mailcli"
+          if [ "$GOOS" = "windows" ]; then
+            output="${output}.exe"
+          fi
+          go build -trimpath -ldflags="-s -w -X github.com/nonozone/MailCli/cmd.Version=${VERSION}" -o "$output" ./cmd/mailcli
+
+      - name: Package
+        run: |
+          cd dist
+          name="mailcli_${{ matrix.goos }}_${{ matrix.goarch }}"
+          if [ "${{ matrix.package }}" = "zip" ]; then
+            (cd "$name" && zip -q "../${name}.zip" mailcli.exe)
+          else
+            tar -czf "${name}.tar.gz" -C "$name" mailcli
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: mailcli_${{ matrix.goos }}_${{ matrix.goarch }}
+          path: dist/mailcli_${{ matrix.goos }}_${{ matrix.goarch }}.${{ matrix.package }}
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Checksums
+        run: |
+          cd dist
+          sha256sum mailcli_* > checksums.txt
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if gh release view "$TAG_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG_NAME" dist/* --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$TAG_NAME" --generate-notes
+          fi
