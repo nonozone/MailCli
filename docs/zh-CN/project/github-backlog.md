@@ -24,7 +24,7 @@
 - `composer`
 - `cmd`
 - `schema`
-- `docs`
+- `documentation`
 - `examples`
 - `governance`
 - `good first issue`
@@ -73,7 +73,7 @@ Type: Feature request
 
 Milestone: `v0.1 hardening`
 
-Labels: `docs`
+Labels: `documentation`
 
 Body:
 
@@ -247,7 +247,7 @@ Type: Feature request
 
 Milestone: `local memory`
 
-Labels: `cmd`, `docs`
+Labels: `cmd`, `documentation`
 
 Body:
 
@@ -340,7 +340,7 @@ Type: Feature request
 
 Milestone: `contributor surface`
 
-Labels: `driver`, `docs`, `good first issue`
+Labels: `driver`, `documentation`, `good first issue`
 
 Body:
 
@@ -387,7 +387,7 @@ Type: Feature request
 
 Milestone: `contributor surface`
 
-Labels: `docs`, `parser`, `good first issue`
+Labels: `documentation`, `parser`, `good first issue`
 
 Body:
 
