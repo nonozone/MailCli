@@ -43,6 +43,7 @@ JSON that is ready for LLM consumption or AI pipeline processing.`,
 	cmd.AddCommand(newExportCmd())
 	cmd.AddCommand(newWatchCmd())
 	cmd.AddCommand(newConfigCmd())
+	cmd.AddCommand(newAccountCmd())
 	cmd.AddCommand(newMCPCmd())
 	cmd.AddCommand(newAgentCmd())
 

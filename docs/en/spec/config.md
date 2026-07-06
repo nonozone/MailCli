@@ -18,6 +18,35 @@ Default path:
 
 ## Config Creation
 
+Use `account add` for the human-friendly existing-mailbox setup path:
+
+```bash
+mailcli account add
+```
+
+For agent or script setup, pass the provider and secret reference explicitly:
+
+```bash
+mailcli account add \
+  --provider gmail \
+  --email you@gmail.com \
+  --password-env MAILCLI_GMAIL_APP_PASSWORD \
+  --format json
+```
+
+`account add` currently ships provider presets for:
+
+- `gmail`
+- `outlook`
+- `microsoft365`
+- `qq`
+- `163`
+- `generic-imap`
+
+The command writes provider metadata and an `auth_method`, but it never asks for
+or writes raw passwords, app passwords, authorization codes, or OAuth tokens.
+It writes environment references into `password` and `smtp_password`.
+
 Use `config init` to create a starter config from the Go binary:
 
 ```bash
@@ -30,7 +59,7 @@ mailcli config init \
   --username you@example.com \
   --password-env MAILCLI_IMAP_PASSWORD \
   --smtp-host smtp.example.com \
-  --smtp-port 587 \
+  --smtp-port 465 \
   --smtp-password-env MAILCLI_SMTP_PASSWORD
 ```
 
@@ -44,7 +73,9 @@ The command refuses to overwrite an existing config unless `--force` is passed. 
 current_account: work
 accounts:
   - name: work
+    provider: gmail
     driver: imap
+    auth_method: app_password
     host: imap.example.com
     port: 993
     username: you@example.com
@@ -52,7 +83,7 @@ accounts:
     tls: true
     mailbox: INBOX
     smtp_host: smtp.example.com
-    smtp_port: 587
+    smtp_port: 465
     smtp_username: you@example.com
     smtp_password: ${MAILCLI_SMTP_PASSWORD}
 ```
@@ -62,7 +93,9 @@ accounts:
 Per account:
 
 - `name`
+- `provider`
 - `driver`
+- `auth_method`
 - `path`
 - `host`
 - `port`
@@ -78,7 +111,7 @@ Per account:
 
 ## Known Driver Types
 
-For `v0.1 RC`, built-in driver types are:
+Current built-in driver types are:
 
 - `imap`
 - `dir`
@@ -121,6 +154,14 @@ accounts:
 
 Current secret expansion is intentionally narrow.
 
+Non-secret metadata:
+
+- `provider`
+- `auth_method`
+
+These fields describe how the account was configured. They do not contain
+credentials.
+
 Fields that expand environment variables:
 
 - `password`
@@ -140,6 +181,32 @@ Non-secret fields are not expanded.
 - use app passwords or API tokens where supported
 - inject secrets with environment variables
 - do not commit real account secrets
+- use `account add` for provider defaults before falling back to fully manual
+  `config init`
+
+## Provider Preset Boundary
+
+Provider presets belong to onboarding and configuration generation. The IMAP
+driver still consumes the same normalized account fields: host, port, username,
+password reference, mailbox, and optional SMTP settings.
+
+Current presets cover password-style IMAP and SMTP setup only. Gmail, QQ Mail,
+and 163 Mail are expected to use app passwords or mailbox authorization codes.
+Outlook and Microsoft 365 are read-first presets because many accounts require
+OAuth or tenant-level IMAP/SMTP AUTH settings that MailCLI does not implement
+yet.
+
+`generic-imap` does not guess hostnames. Use:
+
+```bash
+mailcli account add \
+  --provider generic-imap \
+  --email you@example.com \
+  --host imap.example.com \
+  --smtp-host smtp.example.com \
+  --smtp-port 465 \
+  --password-env MAILCLI_GENERIC_PASSWORD
+```
 
 ## Config Diagnostics
 
@@ -236,7 +303,7 @@ Use this for:
 - letting agents inspect support before calling `send`, `watch`, `delete`, or similar commands
 - establishing the account boundary for later prepare / confirm / operation-log workflows
 
-## Explicit Non-Goals For v0.1 RC
+## Explicit Non-Goals For The Current Config Layer
 
 - no built-in OAuth flow
 - no keyring integration yet

@@ -18,6 +18,33 @@ MailCLI 使用本地 YAML 配置文件来完成账户选择和传输设置。
 
 ## 创建配置
 
+推荐使用 `account add` 作为现有邮箱接入的人机友好入口：
+
+```bash
+mailcli account add
+```
+
+Agent 或脚本可以显式传入 provider 和 secret reference：
+
+```bash
+mailcli account add \
+  --provider gmail \
+  --email you@gmail.com \
+  --password-env MAILCLI_GMAIL_APP_PASSWORD \
+  --format json
+```
+
+`account add` 当前内置这些 provider preset：
+
+- `gmail`
+- `outlook`
+- `microsoft365`
+- `qq`
+- `163`
+- `generic-imap`
+
+该命令会写入 `provider` 和 `auth_method` 元数据，但不会要求输入、写入或打印原始密码、app password、授权码或 OAuth token。它只会把 `password` 和 `smtp_password` 写成环境变量引用。
+
 可以直接用 Go binary 提供的 `config init` 创建 starter config：
 
 ```bash
@@ -30,7 +57,7 @@ mailcli config init \
   --username you@example.com \
   --password-env MAILCLI_IMAP_PASSWORD \
   --smtp-host smtp.example.com \
-  --smtp-port 587 \
+  --smtp-port 465 \
   --smtp-password-env MAILCLI_SMTP_PASSWORD
 ```
 
@@ -44,7 +71,9 @@ mailcli config init \
 current_account: work
 accounts:
   - name: work
+    provider: gmail
     driver: imap
+    auth_method: app_password
     host: imap.example.com
     port: 993
     username: you@example.com
@@ -52,7 +81,7 @@ accounts:
     tls: true
     mailbox: INBOX
     smtp_host: smtp.example.com
-    smtp_port: 587
+    smtp_port: 465
     smtp_username: you@example.com
     smtp_password: ${MAILCLI_SMTP_PASSWORD}
 ```
@@ -62,7 +91,9 @@ accounts:
 每个账户当前支持：
 
 - `name`
+- `provider`
 - `driver`
+- `auth_method`
 - `path`
 - `host`
 - `port`
@@ -78,7 +109,7 @@ accounts:
 
 ## 当前已知的 Driver 类型
 
-在 `v0.1 RC` 阶段，当前内置的 driver 类型有：
+当前内置的 driver 类型有：
 
 - `imap`
 - `dir`
@@ -121,6 +152,13 @@ accounts:
 
 当前环境变量展开能力刻意保持很窄。
 
+非秘密元数据：
+
+- `provider`
+- `auth_method`
+
+这些字段只描述账户是如何配置的，不包含凭据。
+
 支持展开环境变量的字段：
 
 - `password`
@@ -140,6 +178,25 @@ smtp_password: ${MAILCLI_SMTP_PASSWORD}
 - 优先使用 app password 或 API token
 - 通过环境变量注入秘密值
 - 不要提交真实账户密码
+- 优先用 `account add` 走 provider 默认值，再在需要时退回完全显式的 `config init`
+
+## Provider Preset 边界
+
+Provider preset 属于 onboarding 和配置生成层。IMAP driver 仍然只消费标准化后的账户字段：host、port、username、password reference、mailbox 和可选 SMTP 设置。
+
+当前 preset 只覆盖 password-style IMAP / SMTP 设置。Gmail 使用 app password；QQ 邮箱和 163 邮箱使用邮箱授权码。Outlook / Microsoft 365 当前是读取优先 preset，因为很多账户需要 OAuth 或租户级 IMAP / SMTP AUTH 策略放行，MailCLI 还没有内建 OAuth 流程。
+
+`generic-imap` 不会猜测服务器地址。使用方式：
+
+```bash
+mailcli account add \
+  --provider generic-imap \
+  --email you@example.com \
+  --host imap.example.com \
+  --smtp-host smtp.example.com \
+  --smtp-port 465 \
+  --password-env MAILCLI_GENERIC_PASSWORD
+```
 
 ## 配置诊断
 
@@ -236,7 +293,7 @@ mailcli config capabilities --config ~/.config/mailcli/config.yaml --account wor
 - 让 Agent 在调用 `send`、`watch`、`delete` 等命令前先判断能力
 - 为后续 prepare / confirm / operation log 工作流提供账户能力边界
 
-## v0.1 RC 明确不做的事
+## 当前配置层明确不做的事
 
 - 暂不内建 OAuth 流程
 - 暂不集成 keyring

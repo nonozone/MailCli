@@ -132,7 +132,7 @@ func newConfigInitCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&tlsEnabled, "tls", true, "enable TLS for IMAP")
 	cmd.Flags().StringVar(&mailbox, "mailbox", "INBOX", "default mailbox")
 	cmd.Flags().StringVar(&smtpHost, "smtp-host", "", "SMTP host")
-	cmd.Flags().IntVar(&smtpPort, "smtp-port", 587, "SMTP port")
+	cmd.Flags().IntVar(&smtpPort, "smtp-port", 465, "SMTP port")
 	cmd.Flags().StringVar(&smtpUsername, "smtp-username", "", "SMTP username; defaults to --username when omitted")
 	cmd.Flags().StringVar(&smtpPasswordEnv, "smtp-password-env", "", "environment variable name for the SMTP password")
 	cmd.Flags().BoolVar(&smtpTLSEnabled, "smtp-tls", true, "enable TLS for SMTP")
@@ -191,7 +191,7 @@ func buildInitialAccountConfig(opts initialAccountOptions) (config.AccountConfig
 		account.Password = envReference(opts.passwordEnv)
 		account.TLS = opts.tlsEnabled
 
-		if strings.TrimSpace(opts.smtpHost) != "" || opts.smtpPort != 587 || strings.TrimSpace(opts.smtpUsername) != "" || strings.TrimSpace(opts.smtpPasswordEnv) != "" {
+		if strings.TrimSpace(opts.smtpHost) != "" || opts.smtpPort != 465 || strings.TrimSpace(opts.smtpUsername) != "" || strings.TrimSpace(opts.smtpPasswordEnv) != "" {
 			if strings.TrimSpace(opts.smtpHost) == "" {
 				return config.AccountConfig{}, fmt.Errorf("--smtp-host is required when SMTP options are provided")
 			}
@@ -283,7 +283,13 @@ func newConfigShowCmd() *cobra.Command {
 			fmt.Fprintf(out, "accounts:\n")
 			for _, acc := range cfg.Accounts {
 				fmt.Fprintf(out, "\n  name:     %s\n", acc.Name)
+				if acc.Provider != "" {
+					fmt.Fprintf(out, "  provider: %s\n", acc.Provider)
+				}
 				fmt.Fprintf(out, "  driver:   %s\n", acc.Driver)
+				if acc.AuthMethod != "" {
+					fmt.Fprintf(out, "  auth:     %s\n", acc.AuthMethod)
+				}
 				switch strings.ToLower(acc.Driver) {
 				case "imap":
 					fmt.Fprintf(out, "  imap:\n")

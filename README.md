@@ -155,11 +155,12 @@ make demo-local-thread-check
 
 ## Project Status
 
-MailCLI has a published **v0.1.0** release. The `main` branch now carries post-`v0.1.0` Go-only core and existing-mailbox setup work.
+MailCLI has a published **v0.2.0** release with one-command installation and MCP agent setup. The current `main` branch adds existing-mailbox onboarding work.
 
 Working today:
 
 - parse local `.eml` input or stdin into `StandardMessage`
+- add existing mailbox accounts with provider presets for Gmail, Outlook / Microsoft 365, QQ Mail, 163 Mail, and generic IMAP
 - list messages from configured IMAP accounts (with `--since`/`--before` date filters)
 - fetch and parse messages by sequence number, UID, or `Message-ID`
 - sync recent messages into a local searchable index (BulkFetcher, BulkUpsert single-transaction, error isolation)
@@ -174,7 +175,7 @@ Working today:
 - integrate with Go, shell, and external agent workflows through stable JSON contracts
 - LLM tool-use schemas for OpenAI and Anthropic (`tools/` directory)
 
-Stable enough to build against in `v0.1.0` and current `main`:
+Stable enough to build against in current `main`:
 
 - `mailcli parse`
 - `mailcli list`
@@ -190,6 +191,7 @@ Stable enough to build against in `v0.1.0` and current `main`:
 - `mailcli mark`
 - `mailcli export`
 - `mailcli watch`
+- `mailcli account add`
 - `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
 - `DraftMessage`
@@ -316,13 +318,36 @@ MailCLI solves that by providing a stable boundary:
 
 ### Config management
 
+- `mailcli account add [--provider gmail|outlook|microsoft365|qq|163|generic-imap] [--email <address>]` — add an existing mailbox with provider defaults, human prompts, and environment-backed secret references
 - `mailcli config init [--config] --account <name> --driver imap --host <host> --username <email> --password-env <ENV>` — create a starter config file that stores secret environment references such as `${MAILCLI_IMAP_PASSWORD}`, not raw passwords
 - `mailcli config show [--config]` — print accounts (passwords redacted)
 - `mailcli config doctor [--config]` — run local static diagnostics without connecting to IMAP or SMTP
 - `mailcli config test [--config] [--account]` — test live connection
 - `mailcli config capabilities [--config] [--account]` — print machine-readable account capabilities without connecting to the mailbox server
 
-`config init`, `config doctor`, and `config capabilities` are safe onboarding commands for agents and setup scripts. They do not print configured password values. `config doctor` distinguishes missing secret references from unset environment variables such as `imap_password_env_unset`. `config test` is the command that performs a live mailbox connection check.
+`account add`, `config init`, `config doctor`, and `config capabilities` are safe onboarding commands for agents and setup scripts. They do not print configured password values. `config doctor` distinguishes missing secret references from unset environment variables such as `imap_password_env_unset`. `config test` is the command that performs a live mailbox connection check.
+
+Recommended human setup path:
+
+```bash
+mailcli account add
+```
+
+Recommended agent/script setup path:
+
+```bash
+mailcli account add \
+  --provider gmail \
+  --email you@gmail.com \
+  --password-env MAILCLI_GMAIL_APP_PASSWORD \
+  --format json
+```
+
+`account add` writes provider metadata and an `auth_method`, but it still stores
+only secret references such as `${MAILCLI_GMAIL_APP_PASSWORD}`. Gmail, QQ Mail,
+and 163 Mail presets use app passwords or authorization codes. Outlook and
+Microsoft 365 presets are read-first because many accounts require OAuth or
+tenant policy changes that MailCLI does not implement yet.
 
 ### Outbound Markdown baseline
 
@@ -432,7 +457,7 @@ accounts:
     tls: true
     mailbox: INBOX
     smtp_host: smtp.example.com
-    smtp_port: 587
+    smtp_port: 465
     smtp_username: you@example.com
     smtp_password: ${MAILCLI_SMTP_PASSWORD}
 ```

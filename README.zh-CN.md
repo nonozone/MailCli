@@ -153,11 +153,12 @@ make demo-local-thread-check
 
 ## 项目状态
 
-MailCLI 已经发布 **v0.1.0**。当前 `main` 分支承载的是 `v0.1.0` 之后的 Go-only 核心和现有邮箱接入体验工作。
+MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当前 `main` 分支新增的是现有邮箱 onboarding 的第一阶段能力。
 
 现在已经可用的部分：
 
 - 将本地 `.eml` 或 stdin 解析为 `StandardMessage`
+- 通过 provider preset 接入已有 Gmail、Outlook / Microsoft 365、QQ 邮箱、163 邮箱和通用 IMAP 邮箱
 - 从已配置的 IMAP 账户列出邮件
 - 通过序号、UID 或 `Message-ID` 抓取并解析邮件
 - 将近期邮件同步到本地 SQLite 索引（BulkFetcher + BulkUpsert 单事务，错误隔离）
@@ -168,11 +169,11 @@ MailCLI 已经发布 **v0.1.0**。当前 `main` 分支承载的是 `v0.1.0` 之�
 - 删除、移动、读/未读标记远端邮件
 - 将本地索引导出为 JSONL、JSON 或 CSV
 - **watch** 一个或多个邮箱（IMAP IDLE 推送事件流，重启后持久化去重）
-- `mailcli config init` / `mailcli config show` / `mailcli config doctor` / `mailcli config test` / `mailcli config capabilities` 创建、查看、诊断、测试配置与账户能力
+- `mailcli account add` / `mailcli config init` / `mailcli config show` / `mailcli config doctor` / `mailcli config test` / `mailcli config capabilities` 创建、查看、诊断、测试配置与账户能力
 - 通过稳定 JSON 契约与 Go、shell 和外部 agent 工作流协作
 - OpenAI 和 Anthropic 格式的 LLM Tool Use Schema（`tools/` 目录）
 
-在 `v0.1.0` 和当前 `main` 中，已经足够作为稳定集成边界的部分：
+在当前 `main` 中，已经足够作为稳定集成边界的部分：
 
 - `mailcli parse`
 - `mailcli list`
@@ -188,6 +189,7 @@ MailCLI 已经发布 **v0.1.0**。当前 `main` 分支承载的是 `v0.1.0` 之�
 - `mailcli mark`
 - `mailcli export`
 - `mailcli watch`
+- `mailcli account add`
 - `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
 - `DraftMessage`
@@ -297,13 +299,32 @@ MailCLI 提供的是一个稳定边界：
 
 ### 配置与能力发现
 
+- `mailcli account add [--provider gmail|outlook|microsoft365|qq|163|generic-imap] [--email <address>]`
 - `mailcli config init [--config] --account <name> --driver imap --host <host> --username <email> --password-env <ENV>`
 - `mailcli config show [--config]`
 - `mailcli config doctor [--config]`
 - `mailcli config test [--config] [--account]`
 - `mailcli config capabilities [--config] [--account]`
 
-`config init` 会生成 starter YAML，并把秘密值写成 `${MAILCLI_IMAP_PASSWORD}` 这样的环境变量引用，而不是原始密码。`config doctor` 做本地静态诊断，不连接 IMAP / SMTP，并能区分“没有写 secret 引用”和“引用存在但环境变量未设置”，例如 `imap_password_env_unset`。`config capabilities` 输出稳定 JSON，帮助 Agent 在执行 `send`、`watch`、`delete` 等命令前判断当前账户能力。它只读取本地配置和内置 driver 的已知能力，不连接邮箱服务器，也不输出密码。真正联网检查连接的是 `config test`。
+`account add` 是推荐的人机友好入口，会根据 provider preset 生成配置，并把秘密值写成 `${MAILCLI_GMAIL_APP_PASSWORD}`、`${MAILCLI_QQ_AUTH_CODE}` 这类环境变量引用，而不是原始密码或授权码。`config init` 仍是底层、完全显式的配置入口。`config doctor` 做本地静态诊断，不连接 IMAP / SMTP，并能区分“没有写 secret 引用”和“引用存在但环境变量未设置”，例如 `imap_password_env_unset`。`config capabilities` 输出稳定 JSON，帮助 Agent 在执行 `send`、`watch`、`delete` 等命令前判断当前账户能力。它只读取本地配置和内置 driver 的已知能力，不连接邮箱服务器，也不输出密码。真正联网检查连接的是 `config test`。
+
+推荐的人类交互路径：
+
+```bash
+mailcli account add
+```
+
+推荐的 Agent / 脚本路径：
+
+```bash
+mailcli account add \
+  --provider gmail \
+  --email you@gmail.com \
+  --password-env MAILCLI_GMAIL_APP_PASSWORD \
+  --format json
+```
+
+`account add` 会写入 `provider` 和 `auth_method`，但仍然只保存 secret reference。Gmail 使用 app password；QQ 邮箱和 163 邮箱使用授权码；Outlook / Microsoft 365 当前先按“读取优先”处理，因为很多账户需要 OAuth 或管理员策略放行，MailCLI 还没有内建 OAuth 流程。
 
 ### 出站 Markdown 基线
 
@@ -412,7 +433,7 @@ accounts:
     tls: true
     mailbox: INBOX
     smtp_host: smtp.example.com
-    smtp_port: 587
+    smtp_port: 465
     smtp_username: you@example.com
     smtp_password: ${MAILCLI_SMTP_PASSWORD}
 ```

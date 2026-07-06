@@ -10,7 +10,7 @@ func TestConfigRoundTrip(t *testing.T) {
 	cfg := Config{
 		CurrentAccount: "local",
 		Accounts: []AccountConfig{
-			{Name: "local", Driver: "imap"},
+			{Name: "local", Provider: "gmail", Driver: "imap", AuthMethod: "app_password"},
 		},
 	}
 
@@ -26,6 +26,9 @@ func TestConfigRoundTrip(t *testing.T) {
 
 	if got.CurrentAccount != "local" {
 		t.Fatalf("expected round-trip config")
+	}
+	if got.Accounts[0].Provider != "gmail" || got.Accounts[0].AuthMethod != "app_password" {
+		t.Fatalf("expected provider/auth_method to survive round-trip, got %+v", got.Accounts[0])
 	}
 }
 

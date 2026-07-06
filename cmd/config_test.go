@@ -106,6 +106,51 @@ func TestConfigInitRefusesToOverwriteExistingConfigWithoutForce(t *testing.T) {
 	}
 }
 
+func TestConfigShowPrintsProviderMetadataAndRedactsSecrets(t *testing.T) {
+	configPath := writeTempFile(t, "config.yaml", `
+current_account: work
+accounts:
+  - name: work
+    provider: gmail
+    driver: imap
+    auth_method: app_password
+    host: imap.gmail.com
+    port: 993
+    username: user@gmail.com
+    password: super-secret
+    tls: true
+    mailbox: INBOX
+    smtp_host: smtp.gmail.com
+    smtp_port: 465
+    smtp_username: user@gmail.com
+    smtp_password: smtp-secret
+`)
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"config", "show", "--config", configPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected config show to succeed: %v\n%s", err, out.String())
+	}
+	text := out.String()
+	for _, want := range []string{
+		"provider: gmail",
+		"auth:     app_password",
+		"host:     imap.gmail.com:993",
+		"host:     smtp.gmail.com:465",
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected config show to contain %q, got:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, "super-secret") || strings.Contains(text, "smtp-secret") {
+		t.Fatalf("config show must not print configured secrets: %s", text)
+	}
+}
+
 func TestConfigDoctorReportsCompleteDirAccountOK(t *testing.T) {
 	fixtureDir := t.TempDir()
 	configPath := writeTempFile(t, "config.yaml", `
