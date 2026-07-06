@@ -66,7 +66,7 @@ IMAP accounts use IMAP IDLE (push) when available; all other drivers fall
 back to polling via --poll.
 
 Pipe the output to any AI agent or script:
-  mailcli watch --account work | python3 ai_reply_agent.py`,
+  mailcli watch --account work | go run ./examples/go/watch_reply_agent`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Graceful shutdown on Ctrl+C / SIGTERM.
 			ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

@@ -18,7 +18,7 @@
   - `DraftMessage`
   - `ReplyDraft`
   - `SendResult`
-- 提供 Python / shell 示例，以及 external provider 契约和可选 OpenAI provider 示例
+- 提供 Go / shell 示例，以及 external provider 契约和可选 OpenAI provider 示例
 - 提供仓库内可直接运行的 fixture 配置和完整本地 thread demo
 
 ## 这个 RC 已包含
@@ -76,7 +76,8 @@
 
 - `go test ./...`
 - `go build ./cmd/mailcli`
-- `python3 -m py_compile examples/python/*.py examples/providers/*.py`
+- `go test ./examples`
+- `make demo-local-thread-check`
 
 ## 最快首次体验
 

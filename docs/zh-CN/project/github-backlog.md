@@ -11,10 +11,11 @@
 ### Milestones
 
 - `v0.1 hardening`
-- `parser quality`
-- `local memory`
-- `contributor surface`
-- `provider expansion`
+- `go-only core`
+- `existing mailbox setup`
+- `inbox intelligence`
+- `parser actions and attachments`
+- `safe outbound automation`
 
 ### Labels
 
@@ -29,9 +30,9 @@
 - `good first issue`
 - `rfc`
 
-## 建议第一批先开的 Issue
+## 历史 Issue 草案状态
 
-优先创建这 8 个：
+下面 8 个来自上一版路线图，当前多数已经完成或只需要作为后续扩展草案保留：
 
 1. Align docs with actual RC capabilities
 2. Add JSON contract snapshot tests for CLI commands
@@ -51,14 +52,18 @@
 - 第 8 项现在已经由 `docs/zh-CN/contributing/parser.md` 覆盖
 - 这两份 issue 草案可以保留给后续扩展用，不必再按“首批必开”处理
 
-如果以当前仓库状态为起点，更值得优先保留的开放项是：
+如果以当前仓库状态为起点，当前第一批应优先新建的问题是：
 
-1. Strengthen HTML body extraction and noise filtering
-2. Improve URL normalization for agent-facing actions
-3. Expand parser corpus for real-world edge cases
-4. 在共享层继续稳定后，再增加一个新的内置 provider
+1. 收紧现有邮箱接入、配置、账户能力和 Go-first 示例
+2. 增强 inbox / thread 摘要、优先级、待办提取
+3. 将入站附件和发票入口提升为一等结构化输出
+4. 为危险动作增加 prepare / confirm 流程和本地操作日志
+
+Provider 扩展和专用 Agent mailbox 暂不进入当前第一批。
 
 ## Issue 草案
+
+下面的草案主要保留上一版路线图中仍有参考价值的 issue 文案。新的 Go 主线 issue 可以按上面的四个当前优先项拆分。
 
 ## Issue 1
 

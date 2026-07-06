@@ -12,7 +12,7 @@ It is intentionally simple:
 
 The example script is:
 
-- `examples/python/agent_inbox_assistant.py`
+- `examples/go/agent_inbox_assistant`
 
 ## What It Demonstrates
 
@@ -25,7 +25,7 @@ The example script is:
 ## Local `.eml` Example
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/verification.eml
 ```
@@ -33,7 +33,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ## Reply Dry-Run Example
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
@@ -50,7 +50,7 @@ to the JSON output.
 ## Configured Inbox Example
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \
@@ -60,7 +60,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ## Zero-Network Fixture Example
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -80,13 +80,12 @@ This uses the built-in `dir` driver to fetch a local `.eml` fixture through the 
 You can delegate the analysis step to your own script or agent runtime:
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 The external provider receives JSON on stdin:
@@ -113,5 +112,5 @@ Contract reference:
 
 - [Agent Provider Contract](../spec/agent-provider.md)
 - [Examples Index](README.md)
-- Template provider: `examples/providers/template_external_provider.py`
+- Template provider: `examples/go/providers/template_external_provider`
 - Optional OpenAI provider example: [OpenAI External Provider](openai-external-provider.md)

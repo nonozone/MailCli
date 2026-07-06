@@ -165,7 +165,7 @@ cat draft.json | mailcli send -
 cat reply.json | mailcli reply -
 ```
 
-这样接口保持语言无关，适合 agent、shell、Python 和 Node.js 调用。
+这样接口保持语言无关，适合 agent、shell、Go、Node.js 和其他 runtime 调用。
 
 ## 当前状态
 

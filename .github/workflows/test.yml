@@ -17,11 +17,6 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
-
       - name: Run Go tests
         run: make test
 
@@ -30,7 +25,3 @@ jobs:
 
       - name: Check local thread demo artifacts
         run: make demo-local-thread-check
-
-      - name: Verify Python examples compile
-        run: |
-          python3 -m py_compile $(find examples/python -name '*.py' -print) $(find examples/providers -name '*.py' -print)

@@ -4,7 +4,7 @@
 
 ## 目的
 
-Python inbox agent 和 thread agent 示例都支持可插拔的 external provider 模式。
+Go inbox agent 和 thread agent 示例都支持可插拔的 external provider 模式。
 
 这样仓库本身可以保持零 LLM SDK 依赖，同时又为 OpenAI、Claude、本地模型或自定义 agent runtime 提供稳定的接入点。
 
@@ -13,13 +13,12 @@ Python inbox agent 和 thread agent 示例都支持可插拔的 external provide
 示例调用：
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 外部 provider 会以子进程方式运行。
@@ -27,15 +26,14 @@ python3 examples/python/agent_inbox_assistant.py \
 同一个契约也适用于：
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
   --thread-id "<root@example.com>" \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 ## 输入契约

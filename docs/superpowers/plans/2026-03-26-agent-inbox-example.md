@@ -4,9 +4,9 @@
 
 **Goal:** Add a complete, minimal agent example that shows how an agent can call `mailcli` to read mail, reason over structured output, and generate a reply dry-run.
 
-**Architecture:** Build one Python example script as the primary integration surface. It should support two input modes, local `.eml` via `mailcli parse` and configured inbox messages via `mailcli get`, then produce a JSON agent report with analysis, extracted codes/actions, and an optional reply dry-run block.
+**Architecture:** Build one Go example command as the primary integration surface. It should support two input modes, local `.eml` via `mailcli parse` and configured inbox messages via `mailcli get`, then produce a JSON agent report with analysis, extracted codes/actions, and an optional reply dry-run block.
 
-**Tech Stack:** Python 3 standard library, existing `mailcli` CLI, Go integration tests
+**Tech Stack:** Go standard library, existing `mailcli` CLI, Go integration tests
 
 ---
 
@@ -26,10 +26,10 @@
 
 ## Chunk 2: Example Implementation
 
-### Task 2: Implement the Python agent example
+### Task 2: Implement the Go agent example
 
 **Files:**
-- Create: `examples/python/agent_inbox_assistant.py`
+- Create: `examples/go/agent_inbox_assistant/main.go`
 
 - [x] **Step 1: Add input selection for `--email` and `--message-id`**
 - [x] **Step 2: Call `mailcli parse` or `mailcli get` and parse JSON output**

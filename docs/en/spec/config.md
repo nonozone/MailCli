@@ -16,6 +16,28 @@ Default path:
 ~/.config/mailcli/config.yaml
 ```
 
+## Config Creation
+
+Use `config init` to create a starter config from the Go binary:
+
+```bash
+mailcli config init \
+  --config ~/.config/mailcli/config.yaml \
+  --account work \
+  --driver imap \
+  --host imap.example.com \
+  --port 993 \
+  --username you@example.com \
+  --password-env MAILCLI_IMAP_PASSWORD \
+  --smtp-host smtp.example.com \
+  --smtp-port 587 \
+  --smtp-password-env MAILCLI_SMTP_PASSWORD
+```
+
+`config init` writes secret fields as environment references such as `${MAILCLI_IMAP_PASSWORD}` and `${MAILCLI_SMTP_PASSWORD}`. It does not ask for, write, or print raw password values.
+
+The command refuses to overwrite an existing config unless `--force` is passed. Config files created by this command are written with `0600` permissions.
+
 ## Example
 
 ```yaml
@@ -118,6 +140,101 @@ Non-secret fields are not expanded.
 - use app passwords or API tokens where supported
 - inject secrets with environment variables
 - do not commit real account secrets
+
+## Config Diagnostics
+
+Agents and setup scripts can run local diagnostics without connecting to IMAP or SMTP:
+
+```bash
+mailcli config doctor --config ~/.config/mailcli/config.yaml
+```
+
+The command returns JSON with a top-level `status` of `ok`, `warning`, or `error`, per-account checks, account capabilities, and a flattened `problems` list when warnings or errors are present.
+
+Secret checks use both raw and resolved config. If `password: ${MAILCLI_IMAP_PASSWORD}` is present but the environment variable is not set, `config doctor` reports `imap_password_env_unset` instead of printing or storing the secret value.
+
+Abbreviated output shape:
+
+```json
+{
+  "config_path": "/Users/you/.config/mailcli/config.yaml",
+  "status": "warning",
+  "accounts": [
+    {
+      "name": "work",
+      "driver": "imap",
+      "status": "warning",
+      "capabilities": {
+        "account": "work",
+        "driver": "imap",
+        "mailbox": "INBOX"
+      },
+      "checks": [
+        {
+          "status": "warning",
+          "code": "smtp_port_missing",
+          "message": "SMTP port must be greater than 0",
+          "field": "smtp_port"
+        }
+      ]
+    }
+  ],
+  "problems": [
+    {
+      "status": "warning",
+      "code": "smtp_port_missing",
+      "message": "SMTP port must be greater than 0",
+      "field": "smtp_port"
+    }
+  ]
+}
+```
+
+`config doctor` never prints configured `password` or `smtp_password` values. Use `mailcli config test` when you need a live connection check.
+
+## Capability Discovery
+
+Agents can inspect machine-readable capabilities for the selected account:
+
+```bash
+mailcli config capabilities --config ~/.config/mailcli/config.yaml --account work
+```
+
+This command reads only local config and known built-in driver behavior. It does not connect to IMAP / SMTP, and it does not print `password` or `smtp_password`.
+
+Example output:
+
+```json
+{
+  "account": "work",
+  "driver": "imap",
+  "mailbox": "INBOX",
+  "capabilities": {
+    "list": true,
+    "fetch_raw": true,
+    "search": true,
+    "threads": true,
+    "watch": true,
+    "send": true,
+    "reply": true,
+    "delete": true,
+    "move": true,
+    "mark_read": true,
+    "local_index": true
+  },
+  "configuration": {
+    "inbound_configured": true,
+    "outbound_configured": true,
+    "uses_local_storage": false
+  }
+}
+```
+
+Use this for:
+
+- checking whether account setup is complete during onboarding
+- letting agents inspect support before calling `send`, `watch`, `delete`, or similar commands
+- establishing the account boundary for later prepare / confirm / operation-log workflows
 
 ## Explicit Non-Goals For v0.1 RC
 

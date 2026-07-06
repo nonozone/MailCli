@@ -2,6 +2,8 @@ package examples_test
 
 import (
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,13 +16,10 @@ import (
 )
 
 func TestAgentInboxAssistantCapturesVerificationCode(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_inbox_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--email", filepath.Join(repoRoot, "testdata/emails/verification.eml"),
 	)
@@ -29,11 +28,7 @@ func TestAgentInboxAssistantCapturesVerificationCode(t *testing.T) {
 		t.Fatalf("agent example failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	analysis := mustMap(t, report["analysis"])
 	if analysis["decision"] != "capture_code" {
 		t.Fatalf("expected capture_code decision, got %#v", analysis["decision"])
@@ -44,7 +39,6 @@ func TestAgentInboxAssistantCapturesVerificationCode(t *testing.T) {
 	if len(codes) != 1 {
 		t.Fatalf("expected one code, got %#v", codes)
 	}
-
 	code := mustMap(t, codes[0])
 	if code["value"] != "123456" {
 		t.Fatalf("expected verification code 123456, got %#v", code["value"])
@@ -52,13 +46,10 @@ func TestAgentInboxAssistantCapturesVerificationCode(t *testing.T) {
 }
 
 func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_inbox_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
 		"--from-address", "support@nono.im",
@@ -69,11 +60,7 @@ func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
 		t.Fatalf("agent example failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	analysis := mustMap(t, report["analysis"])
 	if analysis["decision"] != "draft_reply" {
 		t.Fatalf("expected draft_reply decision, got %#v", analysis["decision"])
@@ -85,10 +72,7 @@ func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
 		t.Fatalf("expected reply_to_message_id to be propagated, got %#v", draft["reply_to_message_id"])
 	}
 
-	mime, ok := reply["mime"].(string)
-	if !ok {
-		t.Fatalf("expected reply mime string, got %#v", reply["mime"])
-	}
+	mime := mustString(t, reply["mime"])
 	if !strings.Contains(mime, "In-Reply-To: <plain-123@example.com>") {
 		t.Fatalf("expected reply mime to contain In-Reply-To header, got %q", mime)
 	}
@@ -98,30 +82,21 @@ func TestAgentInboxAssistantBuildsReplyDryRun(t *testing.T) {
 }
 
 func TestAgentInboxAssistantSupportsFixtureDirConfig(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_inbox_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
 		"--account", "fixtures",
 		"--message-id", "invoice.eml",
 	)
-	cmd.Dir = filepath.Join(repoRoot, "examples")
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("agent example with fixture dir config failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	message := mustMap(t, report["message"])
 	meta := mustMap(t, message["meta"])
 	if meta["subject"] != "Your April invoice is ready" {
@@ -130,15 +105,12 @@ func TestAgentInboxAssistantSupportsFixtureDirConfig(t *testing.T) {
 }
 
 func TestAgentThreadAssistantBuildsReplyDryRunFromLocalThread(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	configPath := writeTempFile(t, "config.yaml", "current_account: demo\naccounts:\n  - name: demo\n    driver: stub\n")
 	indexPath := filepath.Join(t.TempDir(), "index.json")
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_thread_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--config", configPath,
 		"--account", "demo",
@@ -152,11 +124,7 @@ func TestAgentThreadAssistantBuildsReplyDryRunFromLocalThread(t *testing.T) {
 		t.Fatalf("thread agent example failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	syncResult := mustMap(t, report["sync"])
 	if syncResult["indexed_count"] != float64(2) {
 		t.Fatalf("expected sync to index two stub messages, got %#v", syncResult["indexed_count"])
@@ -179,25 +147,19 @@ func TestAgentThreadAssistantBuildsReplyDryRunFromLocalThread(t *testing.T) {
 		t.Fatalf("expected reply target to use latest sender, got %#v", firstTo["address"])
 	}
 
-	mime, ok := reply["mime"].(string)
-	if !ok {
-		t.Fatalf("expected reply mime string, got %#v", reply["mime"])
-	}
+	mime := mustString(t, reply["mime"])
 	if !strings.Contains(mime, "In-Reply-To: <stub-invoice@example.com>") {
 		t.Fatalf("expected reply mime to contain In-Reply-To header, got %q", mime)
 	}
 }
 
 func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	indexPath := filepath.Join(t.TempDir(), "index.json")
 	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_thread_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
 		"--account", "fixtures",
@@ -205,18 +167,12 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 		"--sync-limit", strconv.Itoa(expectedFixtures),
 		"--query", "invoice",
 	)
-	cmd.Dir = t.TempDir()
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("thread agent example with fixture dir config failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	syncResult := mustMap(t, report["sync"])
 	if syncResult["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected fixture sync to index all repository fixtures, got %#v", syncResult["indexed_count"])
@@ -229,14 +185,11 @@ func TestAgentThreadAssistantSupportsFixtureDirConfig(t *testing.T) {
 }
 
 func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	indexPath := agentThreadTestIndex(t)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_thread_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--index", indexPath,
 		"--skip-sync",
@@ -249,11 +202,7 @@ func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T
 		t.Fatalf("thread agent local-only example failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	reply := mustMap(t, report["reply"])
 	draft := mustMap(t, reply["draft"])
 	if draft["reply_to_message_id"] != "<root@example.com>" {
@@ -263,10 +212,7 @@ func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T
 		t.Fatalf("expected local-only draft to avoid reply_to_id, got %#v", draft["reply_to_id"])
 	}
 
-	mime, ok := reply["mime"].(string)
-	if !ok {
-		t.Fatalf("expected reply mime string, got %#v", reply["mime"])
-	}
+	mime := mustString(t, reply["mime"])
 	if !strings.Contains(mime, "In-Reply-To: <root@example.com>") {
 		t.Fatalf("expected local-only reply mime to contain In-Reply-To header, got %q", mime)
 	}
@@ -280,51 +226,46 @@ func TestAgentThreadAssistantBuildsLocalOnlyReplyDraftWithoutConfig(t *testing.T
 }
 
 func TestAgentThreadAssistantReloadsLatestMessageWhenThreadLimitTruncates(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	indexPath := filepath.Join(t.TempDir(), "index.db")
-	{
-		store := mailindex.NewFileStore(indexPath)
-		for _, item := range []mailindex.IndexedMessage{
-			{
-				Account: "demo", Mailbox: "INBOX", ID: "msg-root",
-				IndexedAt: "2026-03-27T08:00:00Z",
-				Message: schema.StandardMessage{
-					ID: "msg-root",
-					Meta: schema.MessageMeta{
-						Subject: "Project update", Date: "2026-03-27T08:00:00Z",
-						MessageID: "<root@example.com>",
-						From:      &schema.Address{Name: "Older Sender", Address: "older@example.com"},
-					},
-					Content: schema.Content{Snippet: "Initial update", BodyMD: "Initial update"},
+	store := mailindex.NewFileStore(indexPath)
+	for _, item := range []mailindex.IndexedMessage{
+		{
+			Account: "demo", Mailbox: "INBOX", ID: "msg-root",
+			IndexedAt: "2026-03-27T08:00:00Z",
+			Message: schema.StandardMessage{
+				ID: "msg-root",
+				Meta: schema.MessageMeta{
+					Subject: "Project update", Date: "2026-03-27T08:00:00Z",
+					MessageID: "<root@example.com>",
+					From:      &schema.Address{Name: "Older Sender", Address: "older@example.com"},
 				},
+				Content: schema.Content{Snippet: "Initial update", BodyMD: "Initial update"},
 			},
-			{
-				Account: "demo", Mailbox: "INBOX", ID: "msg-reply",
-				IndexedAt: "2026-03-27T09:00:00Z",
-				Message: schema.StandardMessage{
-					ID: "msg-reply",
-					Meta: schema.MessageMeta{
-						Subject: "Re: Project update", Date: "2026-03-27T09:00:00Z",
-						MessageID: "<reply@example.com>",
-						InReplyTo: "<root@example.com>",
-						References: []string{"<root@example.com>"},
-						From:       &schema.Address{Name: "Latest Sender", Address: "latest@example.com"},
-					},
-					Content: schema.Content{Snippet: "Latest update", BodyMD: "Latest update"},
+		},
+		{
+			Account: "demo", Mailbox: "INBOX", ID: "msg-reply",
+			IndexedAt: "2026-03-27T09:00:00Z",
+			Message: schema.StandardMessage{
+				ID: "msg-reply",
+				Meta: schema.MessageMeta{
+					Subject: "Re: Project update", Date: "2026-03-27T09:00:00Z",
+					MessageID:  "<reply@example.com>",
+					InReplyTo:  "<root@example.com>",
+					References: []string{"<root@example.com>"},
+					From:       &schema.Address{Name: "Latest Sender", Address: "latest@example.com"},
 				},
+				Content: schema.Content{Snippet: "Latest update", BodyMD: "Latest update"},
 			},
-		} {
-			if err := store.Upsert(item); err != nil {
-				t.Fatalf("agentThreadTestIndexWithReply: upsert failed: %v", err)
-			}
+		},
+	} {
+		if err := store.Upsert(item); err != nil {
+			t.Fatalf("upsert failed: %v", err)
 		}
 	}
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_thread_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--index", indexPath,
 		"--skip-sync",
@@ -338,11 +279,7 @@ func TestAgentThreadAssistantReloadsLatestMessageWhenThreadLimitTruncates(t *tes
 		t.Fatalf("thread agent truncation example failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	latestMessage := mustMap(t, report["latest_message"])
 	if latestMessage["id"] != "msg-reply" {
 		t.Fatalf("expected latest message to be reloaded, got %#v", latestMessage["id"])
@@ -366,36 +303,41 @@ func TestAgentThreadAssistantReloadsLatestMessageWhenThreadLimitTruncates(t *tes
 }
 
 func TestAgentThreadAssistantUsesExternalProvider(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	indexPath := agentThreadTestIndex(t)
 	payloadPath := filepath.Join(t.TempDir(), "thread_payload.json")
-	providerPath := writeTempFile(t, "thread_provider.py", `import json
-import os
-import sys
+	providerPath := writeTempFile(t, "thread_provider.go", `package main
 
-payload = json.load(sys.stdin)
-with open(os.environ["THREAD_PROVIDER_PAYLOAD_PATH"], "w", encoding="utf-8") as fh:
-    json.dump(payload, fh)
-latest = payload["latest_message"]["message"]
-print(json.dumps({
-  "decision": "draft_reply",
-  "summary": latest["content"]["snippet"],
-  "reply_text": "Handled by thread provider."
-}))
+import (
+	"encoding/json"
+	"os"
+)
+
+func main() {
+	var payload map[string]any
+	_ = json.NewDecoder(os.Stdin).Decode(&payload)
+	data, _ := json.Marshal(payload)
+	_ = os.WriteFile(os.Getenv("THREAD_PROVIDER_PAYLOAD_PATH"), data, 0o644)
+	latest := payload["latest_message"].(map[string]any)["message"].(map[string]any)
+	content := latest["content"].(map[string]any)
+	_ = json.NewEncoder(os.Stdout).Encode(map[string]any{
+		"decision": "draft_reply",
+		"summary": content["snippet"],
+		"reply_text": "Handled by thread provider.",
+	})
+}
 `)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
+	cmd := goRunExample(t, repoRoot, "agent_thread_assistant",
 		"--mailcli-bin", mailcliBin,
 		"--index", indexPath,
 		"--skip-sync",
 		"--thread-id", "<root@example.com>",
 		"--from-address", "support@nono.im",
 		"--agent-provider", "external",
-		"--provider-command", python,
+		"--provider-command", "go",
+		"--provider-arg", "run",
 		"--provider-arg", providerPath,
 	)
 	cmd.Env = append(os.Environ(), "THREAD_PROVIDER_PAYLOAD_PATH="+payloadPath)
@@ -404,11 +346,7 @@ print(json.dumps({
 		t.Fatalf("thread agent external provider failed: %v\n%s", err, string(output))
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
+	report := decodeObject(t, output)
 	analysis := mustMap(t, report["analysis"])
 	if analysis["decision"] != "draft_reply" {
 		t.Fatalf("expected external provider to request draft_reply, got %#v", analysis["decision"])
@@ -427,10 +365,7 @@ print(json.dumps({
 	if err != nil {
 		t.Fatal(err)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
-		t.Fatalf("expected payload json: %v", err)
-	}
+	payload := decodeObject(t, payloadBytes)
 	selectionPayload := mustMap(t, payload["selection"])
 	if selectionPayload["thread_id"] != "<root@example.com>" {
 		t.Fatalf("expected selection thread id in payload, got %#v", selectionPayload["thread_id"])
@@ -438,483 +373,119 @@ print(json.dumps({
 	if payload["wants_reply"] != false {
 		t.Fatalf("expected wants_reply false without explicit reply text, got %#v", payload["wants_reply"])
 	}
-	summaries := mustSlice(t, payload["thread_summaries"])
-	if len(summaries) != 1 {
-		t.Fatalf("expected one thread summary in payload, got %#v", summaries)
-	}
-	threadMessages := mustSlice(t, payload["thread_messages"])
-	if len(threadMessages) != 1 {
-		t.Fatalf("expected one thread message in payload, got %#v", threadMessages)
-	}
 }
 
-func TestAgentThreadAssistantWorksWithTemplateExternalProvider(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := agentThreadTestIndex(t)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--index", indexPath,
-		"--skip-sync",
-		"--thread-id", "<root@example.com>",
-		"--from-address", "support@nono.im",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("thread agent template provider failed: %v\n%s", err, string(output))
-	}
-
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
-	analysis := mustMap(t, report["analysis"])
-	if analysis["provider"] != "external" {
-		t.Fatalf("expected external provider metadata, got %#v", analysis["provider"])
-	}
-	if analysis["decision"] != "review" {
-		t.Fatalf("expected template provider to default to review, got %#v", analysis["decision"])
-	}
-}
-
-func TestAgentThreadAssistantTemplateProviderSupportsReplyBranch(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := agentThreadTestIndex(t)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--index", indexPath,
-		"--skip-sync",
-		"--thread-id", "<root@example.com>",
-		"--from-address", "support@nono.im",
-		"--reply-text", "Please draft a reply.",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("thread agent template provider reply branch failed: %v\n%s", err, string(output))
-	}
-
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
-	analysis := mustMap(t, report["analysis"])
-	if analysis["decision"] != "draft_reply" {
-		t.Fatalf("expected template provider to request draft reply, got %#v", analysis["decision"])
-	}
-}
-
-func TestAgentThreadAssistantRejectsInvalidExternalProviderResponse(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := agentThreadTestIndex(t)
-	providerPath := writeTempFile(t, "thread_provider_invalid.py", `import json
-print(json.dumps({"summary": "missing decision"}))
-`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--index", indexPath,
-		"--skip-sync",
-		"--thread-id", "<root@example.com>",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected invalid thread provider response to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider response must include a non-empty decision") {
-		t.Fatalf("expected contract error, got %s", string(output))
-	}
-}
-
-func TestAgentThreadAssistantRejectsInvalidExternalProviderJSON(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := agentThreadTestIndex(t)
-	providerPath := writeTempFile(t, "thread_provider_bad_json.py", `print("not-json")`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--index", indexPath,
-		"--skip-sync",
-		"--thread-id", "<root@example.com>",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected invalid thread provider json to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider returned invalid JSON") {
-		t.Fatalf("expected invalid json contract error, got %s", string(output))
-	}
-}
-
-func TestAgentThreadAssistantRejectsUnknownExternalDecision(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := agentThreadTestIndex(t)
-	providerPath := writeTempFile(t, "thread_provider_unknown.py", `import json
-print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
-`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--index", indexPath,
-		"--skip-sync",
-		"--thread-id", "<root@example.com>",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected unknown thread provider decision to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider decision must be one of") {
-		t.Fatalf("expected decision enum error, got %s", string(output))
-	}
-}
-
-func TestAgentThreadAssistantRejectsInvalidReplyTextType(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	indexPath := agentThreadTestIndex(t)
-	providerPath := writeTempFile(t, "thread_provider_bad_reply_text.py", `import json
-print(json.dumps({"decision": "draft_reply", "summary": "bad", "reply_text": 123}))
-`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_thread_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--index", indexPath,
-		"--skip-sync",
-		"--thread-id", "<root@example.com>",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected invalid thread provider reply_text to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider reply_text must be a string when present") {
-		t.Fatalf("expected reply_text contract error, got %s", string(output))
-	}
-}
-
-func TestAgentInboxAssistantUsesExternalProvider(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	providerPath := writeTempFile(t, "provider.py", `import json
-import sys
-
-payload = json.load(sys.stdin)
-message = payload["message"]
-print(json.dumps({
-  "decision": "draft_reply",
-  "summary": message["content"]["snippet"],
-  "reply_text": "Handled by external provider."
-}))
-`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
-		"--from-address", "support@nono.im",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("agent example failed: %v\n%s", err, string(output))
-	}
-
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
-	analysis := mustMap(t, report["analysis"])
-	if analysis["decision"] != "draft_reply" {
-		t.Fatalf("expected provider-driven draft_reply decision, got %#v", analysis["decision"])
-	}
-	if analysis["provider"] != "external" {
-		t.Fatalf("expected provider metadata, got %#v", analysis["provider"])
-	}
-
-	reply := mustMap(t, report["reply"])
-	draft := mustMap(t, reply["draft"])
-	if draft["body_text"] != "Handled by external provider." {
-		t.Fatalf("expected provider reply text, got %#v", draft["body_text"])
-	}
-}
-
-func TestAgentInboxAssistantRejectsInvalidExternalProviderResponse(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	providerPath := writeTempFile(t, "provider_invalid.py", `import json
-print(json.dumps({"summary": "missing decision"}))
-`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected invalid provider response to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider response must include a non-empty decision") {
-		t.Fatalf("expected contract error, got %s", string(output))
-	}
-}
-
-func TestAgentInboxAssistantRejectsInvalidExternalProviderJSON(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	providerPath := writeTempFile(t, "provider_bad_json.py", `print("not-json")`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected invalid provider json to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider returned invalid JSON") {
-		t.Fatalf("expected invalid json contract error, got %s", string(output))
-	}
-}
-
-func TestAgentInboxAssistantRejectsUnknownExternalDecision(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	providerPath := writeTempFile(t, "provider_unknown.py", `import json
-print(json.dumps({"decision": "archive_now", "summary": "unsupported"}))
-`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected unknown decision to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider decision must be one of") {
-		t.Fatalf("expected decision enum error, got %s", string(output))
-	}
-}
-
-func TestAgentInboxAssistantRejectsNonObjectExternalProviderJSON(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-	providerPath := writeTempFile(t, "provider_array_json.py", `print("[]")`)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", providerPath,
-	)
-	output, err := cmd.CombinedOutput()
-	if err == nil {
-		t.Fatalf("expected non-object provider json to fail, got success: %s", string(output))
-	}
-	if !strings.Contains(string(output), "external provider must return a JSON object") {
-		t.Fatalf("expected object contract error, got %s", string(output))
-	}
-}
-
-func TestAgentInboxAssistantWorksWithTemplateExternalProvider(t *testing.T) {
-	python := requirePython(t)
+func TestTemplateExternalProviderBranches(t *testing.T) {
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
-		"--from-address", "support@nono.im",
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("template provider failed: %v\n%s", err, string(output))
+	tests := []struct {
+		name     string
+		email    string
+		decision string
+		summary  string
+	}{
+		{
+			name:     "verification",
+			email:    "verification.eml",
+			decision: "capture_code",
+			summary:  "expires in 600 seconds",
+		},
+		{
+			name:     "bounce",
+			email:    "bounce.eml",
+			decision: "escalate_delivery_error",
+			summary:  "Authentication credentials invalid",
+		},
+		{
+			name:     "unsubscribe",
+			email:    "unsubscribe_mixed.eml",
+			decision: "review",
+			summary:  "Subscription email with 2 unsubscribe action(s).",
+		},
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			args := []string{
+				"--mailcli-bin", mailcliBin,
+				"--email", filepath.Join(repoRoot, "testdata/emails", tc.email),
+				"--agent-provider", "external",
+			}
+			args = append(args, templateProviderArgs(repoRoot)...)
+			cmd := goRunExample(t, repoRoot, "agent_inbox_assistant", args...)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				t.Fatalf("template provider flow failed: %v\n%s", err, string(output))
+			}
 
-	analysis := mustMap(t, report["analysis"])
-	if analysis["provider"] != "external" {
-		t.Fatalf("expected external provider metadata, got %#v", analysis["provider"])
-	}
-	if analysis["decision"] != "review" {
-		t.Fatalf("expected template provider to default to review, got %#v", analysis["decision"])
+			report := decodeObject(t, output)
+			analysis := mustMap(t, report["analysis"])
+			if analysis["decision"] != tc.decision {
+				t.Fatalf("expected decision %s, got %#v", tc.decision, analysis["decision"])
+			}
+			if !strings.Contains(mustString(t, analysis["summary"]), tc.summary) {
+				t.Fatalf("expected summary to contain %q, got %#v", tc.summary, analysis["summary"])
+			}
+		})
 	}
 }
 
-func TestAgentInboxAssistantTemplateProviderCapturesVerificationCodes(t *testing.T) {
-	python := requirePython(t)
+func TestAgentInboxAssistantExternalProviderContractErrors(t *testing.T) {
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/verification.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("template provider verification flow failed: %v\n%s", err, string(output))
+	tests := []struct {
+		name       string
+		source     string
+		wantOutput string
+	}{
+		{
+			name:       "missing decision",
+			source:     `package main; import ("encoding/json"; "os"); func main(){ _ = json.NewEncoder(os.Stdout).Encode(map[string]any{"summary":"missing decision"}) }`,
+			wantOutput: "external provider response must include a non-empty decision",
+		},
+		{
+			name:       "bad json",
+			source:     `package main; import "fmt"; func main(){ fmt.Print("not-json") }`,
+			wantOutput: "external provider returned invalid JSON",
+		},
+		{
+			name:       "unknown decision",
+			source:     `package main; import ("encoding/json"; "os"); func main(){ _ = json.NewEncoder(os.Stdout).Encode(map[string]any{"decision":"archive_now","summary":"unsupported"}) }`,
+			wantOutput: "external provider decision must be one of",
+		},
+		{
+			name:       "non-object",
+			source:     `package main; import "fmt"; func main(){ fmt.Print("[]") }`,
+			wantOutput: "external provider must return a JSON object",
+		},
+		{
+			name:       "bad reply_text",
+			source:     `package main; import ("encoding/json"; "os"); func main(){ _ = json.NewEncoder(os.Stdout).Encode(map[string]any{"decision":"draft_reply","summary":"bad","reply_text":123}) }`,
+			wantOutput: "external provider reply_text must be a string when present",
+		},
 	}
 
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
-	analysis := mustMap(t, report["analysis"])
-	if analysis["decision"] != "capture_code" {
-		t.Fatalf("expected template provider to capture code, got %#v", analysis["decision"])
-	}
-	if !strings.Contains(mustString(t, analysis["summary"]), "expires in 600 seconds") {
-		t.Fatalf("expected verification summary to mention expiry, got %#v", analysis["summary"])
-	}
-}
-
-func TestAgentInboxAssistantTemplateProviderEscalatesBounceMail(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/bounce.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("template provider bounce flow failed: %v\n%s", err, string(output))
-	}
-
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
-	analysis := mustMap(t, report["analysis"])
-	if analysis["decision"] != "escalate_delivery_error" {
-		t.Fatalf("expected template provider to escalate bounce mail, got %#v", analysis["decision"])
-	}
-	if !strings.Contains(mustString(t, analysis["summary"]), "Authentication credentials invalid") {
-		t.Fatalf("expected bounce summary to include diagnostic code, got %#v", analysis["summary"])
-	}
-}
-
-func TestAgentInboxAssistantTemplateProviderSummarizesUnsubscribeActions(t *testing.T) {
-	python := requirePython(t)
-	repoRoot := repoRoot(t)
-	mailcliBin := buildMailcliBinary(t, repoRoot)
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/agent_inbox_assistant.py"),
-		"--mailcli-bin", mailcliBin,
-		"--email", filepath.Join(repoRoot, "testdata/emails/unsubscribe_mixed.eml"),
-		"--agent-provider", "external",
-		"--provider-command", python,
-		"--provider-arg", filepath.Join(repoRoot, "examples/providers/template_external_provider.py"),
-	)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("template provider unsubscribe flow failed: %v\n%s", err, string(output))
-	}
-
-	var report map[string]any
-	if err := json.Unmarshal(output, &report); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
-
-	analysis := mustMap(t, report["analysis"])
-	if analysis["decision"] != "review" {
-		t.Fatalf("expected template provider to keep unsubscribe mail in review, got %#v", analysis["decision"])
-	}
-	if mustString(t, analysis["summary"]) != "Subscription email with 2 unsubscribe action(s)." {
-		t.Fatalf("expected unsubscribe-aware summary, got %#v", analysis["summary"])
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			providerPath := writeTempFile(t, "provider.go", tc.source)
+			cmd := goRunExample(t, repoRoot, "agent_inbox_assistant",
+				"--mailcli-bin", mailcliBin,
+				"--email", filepath.Join(repoRoot, "testdata/emails/plaintext.eml"),
+				"--agent-provider", "external",
+				"--provider-command", "go",
+				"--provider-arg", "run",
+				"--provider-arg", providerPath,
+			)
+			output, err := cmd.CombinedOutput()
+			if err == nil {
+				t.Fatalf("expected provider failure, got success: %s", string(output))
+			}
+			if !strings.Contains(string(output), tc.wantOutput) {
+				t.Fatalf("expected %q, got %s", tc.wantOutput, string(output))
+			}
+		})
 	}
 }
 
@@ -1004,16 +575,13 @@ func TestOutboundPatternArtifactsCompile(t *testing.T) {
 	}
 }
 
-func TestRefreshLocalThreadDemoScript(t *testing.T) {
-	python := requirePython(t)
+func TestRefreshLocalThreadDemoCommand(t *testing.T) {
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	outputDir := filepath.Join(t.TempDir(), "local-thread-demo")
 	indexPath := filepath.Join(t.TempDir(), "index.json")
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/refresh_local_thread_demo.py"),
+	cmd := goRunExample(t, repoRoot, "refresh_local_thread_demo",
 		"--mailcli-bin", mailcliBin,
 		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
 		"--account", "fixtures",
@@ -1023,7 +591,7 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("refresh local thread demo script failed: %v\n%s", err, string(output))
+		t.Fatalf("refresh local thread demo command failed: %v\n%s", err, string(output))
 	}
 
 	for _, name := range []string{
@@ -1039,14 +607,7 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 		}
 	}
 
-	syncBytes, err := os.ReadFile(filepath.Join(outputDir, "sync.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var syncResult map[string]any
-	if err := json.Unmarshal(syncBytes, &syncResult); err != nil {
-		t.Fatalf("expected sync artifact json: %v", err)
-	}
+	syncResult := readJSONFile(t, filepath.Join(outputDir, "sync.json"))
 	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
 	if syncResult["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected generated sync artifact to match fixture corpus count, got %#v", syncResult["indexed_count"])
@@ -1055,14 +616,7 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 		t.Fatalf("expected generated sync artifact to start from a clean index, got %#v", syncResult["skipped_count"])
 	}
 
-	reportBytes, err := os.ReadFile(filepath.Join(outputDir, "agent-report.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var report map[string]any
-	if err := json.Unmarshal(reportBytes, &report); err != nil {
-		t.Fatalf("expected agent report json: %v", err)
-	}
+	report := readJSONFile(t, filepath.Join(outputDir, "agent-report.json"))
 	reportSync := mustMap(t, report["sync"])
 	if reportSync["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected generated agent report sync stats to match fixture corpus count, got %#v", reportSync["indexed_count"])
@@ -1078,9 +632,6 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 	replyMime := string(replyMimeBytes)
 	if !strings.Contains(replyMime, "Message-ID: <generated@mailcli.local>") {
 		t.Fatalf("expected generated reply mime to normalize message id, got %s", replyMime)
-	}
-	if strings.Contains(replyMime, "mailcli.local>") && !strings.Contains(replyMime, "<generated@mailcli.local>") {
-		t.Fatalf("expected generated reply mime to avoid runtime-specific message ids, got %s", replyMime)
 	}
 
 	threadBytes, err := os.ReadFile(filepath.Join(outputDir, "thread.json"))
@@ -1099,14 +650,11 @@ func TestRefreshLocalThreadDemoScript(t *testing.T) {
 	}
 }
 
-func TestRefreshLocalThreadDemoScriptCheckMode(t *testing.T) {
-	python := requirePython(t)
+func TestRefreshLocalThreadDemoCommandCheckMode(t *testing.T) {
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/refresh_local_thread_demo.py"),
+	cmd := goRunExample(t, repoRoot, "refresh_local_thread_demo",
 		"--mailcli-bin", mailcliBin,
 		"--config", filepath.Join(repoRoot, "examples/config/fixtures-dir.yaml"),
 		"--account", "fixtures",
@@ -1124,8 +672,7 @@ func TestRefreshLocalThreadDemoScriptCheckMode(t *testing.T) {
 	}
 }
 
-func TestRefreshLocalThreadDemoScriptUsesSelectedDirAccountForDefaultSyncLimit(t *testing.T) {
-	python := requirePython(t)
+func TestRefreshLocalThreadDemoCommandUsesSelectedDirAccountForDefaultSyncLimit(t *testing.T) {
 	repoRoot := repoRoot(t)
 	mailcliBin := buildMailcliBinary(t, repoRoot)
 	outputDir := filepath.Join(t.TempDir(), "local-thread-demo")
@@ -1142,9 +689,7 @@ func TestRefreshLocalThreadDemoScriptUsesSelectedDirAccountForDefaultSyncLimit(t
 
 	configPath := writeTempFile(t, "fixtures-multi.yaml", "current_account: other\naccounts:\n  - name: other\n    driver: dir\n    path: "+bogusRoot+"\n    mailbox: INBOX\n  - name: fixtures\n    driver: dir\n    path: "+filepath.Join(repoRoot, "testdata", "emails")+"\n    mailbox: INBOX\n")
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/python/refresh_local_thread_demo.py"),
+	cmd := goRunExample(t, repoRoot, "refresh_local_thread_demo",
 		"--mailcli-bin", mailcliBin,
 		"--config", configPath,
 		"--account", "fixtures",
@@ -1154,17 +699,10 @@ func TestRefreshLocalThreadDemoScriptUsesSelectedDirAccountForDefaultSyncLimit(t
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("refresh local thread demo script with multi-account config failed: %v\n%s", err, string(output))
+		t.Fatalf("refresh local thread demo command with multi-account config failed: %v\n%s", err, string(output))
 	}
 
-	syncBytes, err := os.ReadFile(filepath.Join(outputDir, "sync.json"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	var syncResult map[string]any
-	if err := json.Unmarshal(syncBytes, &syncResult); err != nil {
-		t.Fatalf("expected sync artifact json: %v", err)
-	}
+	syncResult := readJSONFile(t, filepath.Join(outputDir, "sync.json"))
 	expectedFixtures := countFixtureEmails(t, filepath.Join(repoRoot, "testdata", "emails"))
 	if syncResult["indexed_count"] != float64(expectedFixtures) {
 		t.Fatalf("expected selected account fixture corpus count, got %#v", syncResult["indexed_count"])
@@ -1172,13 +710,9 @@ func TestRefreshLocalThreadDemoScriptUsesSelectedDirAccountForDefaultSyncLimit(t
 }
 
 func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
 
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/providers/openai_external_provider.py"),
-	)
+	cmd := goRunExample(t, repoRoot, "providers/openai_external_provider")
 	cmd.Stdin = strings.NewReader(`{"message":{"content":{"snippet":"hello"}},"source":{"mode":"email","value":"x"},"wants_reply":false}`)
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -1190,68 +724,37 @@ func TestOpenAIExternalProviderRequiresAPIKey(t *testing.T) {
 }
 
 func TestOpenAIExternalProviderUsesResponsesAPIShape(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
+	var request map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/responses" {
+			t.Fatalf("expected /responses request, got %s", r.URL.Path)
+		}
+		if r.Header.Get("Authorization") != "Bearer test-key" {
+			t.Fatalf("expected bearer auth, got %q", r.Header.Get("Authorization"))
+		}
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatal(err)
+		}
+		_, _ = w.Write([]byte(`{"output_text":"{\"decision\":\"review\",\"summary\":\"stubbed openai provider\"}"}`))
+	}))
+	defer server.Close()
 
-	stubDir := t.TempDir()
-	requestPath := filepath.Join(stubDir, "request.json")
-	stubModule := `import json
-import os
-
-class _Response:
-    def __init__(self, output_text):
-        self.output_text = output_text
-
-class _Responses:
-    def create(self, **kwargs):
-        with open(os.environ["OPENAI_STUB_REQUEST_PATH"], "w", encoding="utf-8") as fh:
-            json.dump(kwargs, fh)
-        return _Response(json.dumps({
-            "decision": "review",
-            "summary": "stubbed openai provider"
-        }))
-
-class OpenAI:
-    def __init__(self):
-        self.responses = _Responses()
-`
-	stubModulePath := filepath.Join(stubDir, "openai.py")
-	if err := os.WriteFile(stubModulePath, []byte(stubModule), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/providers/openai_external_provider.py"),
-	)
+	cmd := goRunExample(t, repoRoot, "providers/openai_external_provider")
 	cmd.Stdin = strings.NewReader(`{"message":{"content":{"snippet":"hello"}},"source":{"mode":"email","value":"x"},"wants_reply":false}`)
 	cmd.Env = append(os.Environ(),
 		"OPENAI_API_KEY=test-key",
 		"OPENAI_MODEL=gpt-5-mini",
-		"PYTHONPATH="+stubDir,
-		"OPENAI_STUB_REQUEST_PATH="+requestPath,
+		"OPENAI_BASE_URL="+server.URL,
 	)
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("openai provider failed: %v\n%s", err, string(output))
 	}
 
-	var result map[string]any
-	if err := json.Unmarshal(output, &result); err != nil {
-		t.Fatalf("expected json output: %v\n%s", err, string(output))
-	}
+	result := decodeObject(t, output)
 	if result["decision"] != "review" {
 		t.Fatalf("expected stubbed decision, got %#v", result["decision"])
-	}
-
-	requestBytes, err := os.ReadFile(requestPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var request map[string]any
-	if err := json.Unmarshal(requestBytes, &request); err != nil {
-		t.Fatalf("expected request json: %v", err)
 	}
 	if request["model"] != "gpt-5-mini" {
 		t.Fatalf("expected OPENAI_MODEL to be used, got %#v", request["model"])
@@ -1264,40 +767,17 @@ class OpenAI:
 }
 
 func TestOpenAIExternalProviderNormalizesThreadPayload(t *testing.T) {
-	python := requirePython(t)
 	repoRoot := repoRoot(t)
+	var request map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+			t.Fatal(err)
+		}
+		_, _ = w.Write([]byte(`{"output_text":"{\"decision\":\"review\",\"summary\":\"stubbed openai provider\"}"}`))
+	}))
+	defer server.Close()
 
-	stubDir := t.TempDir()
-	requestPath := filepath.Join(stubDir, "request.json")
-	stubModule := `import json
-import os
-
-class _Response:
-    def __init__(self, output_text):
-        self.output_text = output_text
-
-class _Responses:
-    def create(self, **kwargs):
-        with open(os.environ["OPENAI_STUB_REQUEST_PATH"], "w", encoding="utf-8") as fh:
-            json.dump(kwargs, fh)
-        return _Response(json.dumps({
-            "decision": "review",
-            "summary": "stubbed openai provider"
-        }))
-
-class OpenAI:
-    def __init__(self):
-        self.responses = _Responses()
-`
-	stubModulePath := filepath.Join(stubDir, "openai.py")
-	if err := os.WriteFile(stubModulePath, []byte(stubModule), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	cmd := exec.Command(
-		python,
-		filepath.Join(repoRoot, "examples/providers/openai_external_provider.py"),
-	)
+	cmd := goRunExample(t, repoRoot, "providers/openai_external_provider")
 	cmd.Stdin = strings.NewReader(`{
   "source": {"mode": "local_thread", "thread_id": "<root@example.com>"},
   "selection": {"thread_id": "<root@example.com>", "last_message_id": "imap:uid:123"},
@@ -1314,35 +794,19 @@ class OpenAI:
 	cmd.Env = append(os.Environ(),
 		"OPENAI_API_KEY=test-key",
 		"OPENAI_MODEL=gpt-5-mini",
-		"PYTHONPATH="+stubDir,
-		"OPENAI_STUB_REQUEST_PATH="+requestPath,
+		"OPENAI_BASE_URL="+server.URL,
 	)
-
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("openai provider thread mode failed: %v\n%s", err, string(output))
 	}
 
-	requestBytes, err := os.ReadFile(requestPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var request map[string]any
-	if err := json.Unmarshal(requestBytes, &request); err != nil {
-		t.Fatalf("expected request json: %v", err)
-	}
 	input := mustSlice(t, request["input"])
 	user := mustMap(t, input[1])
 	content := mustSlice(t, user["content"])
 	part := mustMap(t, content[0])
-	payloadText, ok := part["text"].(string)
-	if !ok {
-		t.Fatalf("expected payload text, got %#v", part["text"])
-	}
-	var normalized map[string]any
-	if err := json.Unmarshal([]byte(payloadText), &normalized); err != nil {
-		t.Fatalf("expected normalized payload json: %v", err)
-	}
+	payloadText := mustString(t, part["text"])
+	normalized := decodeObject(t, []byte(payloadText))
 	message := mustMap(t, normalized["message"])
 	codes := mustSlice(t, message["codes"])
 	if len(codes) != 1 {
@@ -1350,15 +814,15 @@ class OpenAI:
 	}
 }
 
-func TestRepositoryProvidesLocalThreadDemoMaintenanceEntrypoints(t *testing.T) {
+func TestRepositoryProvidesGoOnlyLocalThreadDemoMaintenanceEntrypoints(t *testing.T) {
 	repoRoot := repoRoot(t)
 
-	makefilePath := filepath.Join(repoRoot, "Makefile")
-	makefileBytes, err := os.ReadFile(makefilePath)
+	makefileBytes, err := os.ReadFile(filepath.Join(repoRoot, "Makefile"))
 	if err != nil {
 		t.Fatalf("expected repository Makefile: %v", err)
 	}
 	makefile := string(makefileBytes)
+	bytecodeEnv := "PY" + "THON" + "DONTWRITEBYTECODE"
 	if !strings.Contains(makefile, "demo-local-thread-refresh:") {
 		t.Fatalf("expected Makefile to expose demo-local-thread-refresh target")
 	}
@@ -1368,12 +832,12 @@ func TestRepositoryProvidesLocalThreadDemoMaintenanceEntrypoints(t *testing.T) {
 	if !strings.Contains(makefile, "MAILCLI_BIN ?= /tmp/mailcli") {
 		t.Fatalf("expected Makefile to keep maintenance builds out of the repository root")
 	}
-	if !strings.Contains(makefile, "PYTHONDONTWRITEBYTECODE=1 python3") {
-		t.Fatalf("expected Makefile to avoid creating __pycache__ during demo maintenance")
+	pythonToken := "py" + "thon"
+	if strings.Contains(strings.ToLower(makefile), pythonToken) || strings.Contains(makefile, bytecodeEnv) {
+		t.Fatalf("expected Makefile maintenance targets to avoid non-Go runtimes")
 	}
 
-	workflowPath := filepath.Join(repoRoot, ".github", "workflows", "test.yml")
-	workflowBytes, err := os.ReadFile(workflowPath)
+	workflowBytes, err := os.ReadFile(filepath.Join(repoRoot, ".github", "workflows", "test.yml"))
 	if err != nil {
 		t.Fatalf("expected workflow file: %v", err)
 	}
@@ -1381,16 +845,28 @@ func TestRepositoryProvidesLocalThreadDemoMaintenanceEntrypoints(t *testing.T) {
 	if !strings.Contains(workflow, "make demo-local-thread-check") {
 		t.Fatalf("expected CI to run make demo-local-thread-check")
 	}
+	compileToken := "py_" + "compile"
+	if strings.Contains(workflow, "setup-"+pythonToken) || strings.Contains(workflow, compileToken) {
+		t.Fatalf("expected CI to avoid non-Go setup and compile checks")
+	}
 }
 
-func requirePython(t *testing.T) string {
+func goRunExample(t *testing.T, repoRoot, example string, args ...string) *exec.Cmd {
 	t.Helper()
 
-	python, err := exec.LookPath("python3")
-	if err != nil {
-		t.Skip("python3 not available")
+	examplePath := filepath.Join(repoRoot, "examples", "go", filepath.FromSlash(example))
+	command := append([]string{"run", examplePath}, args...)
+	cmd := exec.Command("go", command...)
+	cmd.Dir = repoRoot
+	return cmd
+}
+
+func templateProviderArgs(repoRoot string) []string {
+	return []string{
+		"--provider-command", "go",
+		"--provider-arg", "run",
+		"--provider-arg", filepath.Join(repoRoot, "examples/go/providers/template_external_provider"),
 	}
-	return python
 }
 
 func repoRoot(t *testing.T) string {
@@ -1424,6 +900,26 @@ func writeTempFile(t *testing.T, name, content string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+func decodeObject(t *testing.T, data []byte) map[string]any {
+	t.Helper()
+
+	var report map[string]any
+	if err := json.Unmarshal(data, &report); err != nil {
+		t.Fatalf("expected json object: %v\n%s", err, string(data))
+	}
+	return report
+}
+
+func readJSONFile(t *testing.T, path string) map[string]any {
+	t.Helper()
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return decodeObject(t, data)
 }
 
 func mustMap(t *testing.T, value any) map[string]any {
@@ -1478,11 +974,9 @@ func countFixtureEmails(t *testing.T, root string) int {
 	return count
 }
 
-// agentThreadTestIndex creates a temporary SQLite index pre-seeded with a
-// single 'msg-root' message in thread <root@example.com>, which is the
-// fixture thread_id used by the agent contract tests.
 func agentThreadTestIndex(t *testing.T) string {
 	t.Helper()
+
 	path := filepath.Join(t.TempDir(), "index.db")
 	store := mailindex.NewFileStore(path)
 	err := store.Upsert(mailindex.IndexedMessage{

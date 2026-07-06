@@ -8,6 +8,8 @@ The goal is not to add random surface area.
 
 The goal is to turn the current RC into a stable, contributor-friendly open-source project for agent developers.
 
+The next phase also clarifies a product and implementation direction: **the core runtime and official examples should be Go-only**. MailCLI should ship as a binary that agents can call reliably and users can install without understanding or deploying another language runtime.
+
 ## Recently Completed On `main`
 
 The original RC hardening pass already shipped several important pieces:
@@ -29,18 +31,34 @@ For the realistic maintainer-led sequence, see [Internal Development Priority](i
 
 ## Priority Order
 
-1. Harden the current RC boundary.
-2. Improve parser quality where agents feel pain today.
-3. Make local memory and thread workflows more reliable.
-4. Reduce contribution overhead for new driver and parser contributors.
-5. Expand providers only after the shared contracts are clearer.
+1. Tighten existing-mailbox setup and configuration as Go core behavior.
+2. Make inbox/thread summaries, priority, and todo extraction structured Go command output.
+3. Improve attachment, invoice, code, and action-link extraction in the Go parser/schema.
+4. Make draft, confirmation, execution, and operation logging a Go CLI contract.
+5. Do not prioritize dedicated Agent mailbox hosting or broad provider expansion yet.
 
 ## Maintainer Rules
 
 - prefer stable machine-facing contracts over feature count
+- keep official executable behavior in Go; do not introduce non-Go runtime prerequisites for installation or agent use
+- keep AI provider integration language-neutral through JSON contracts, while keeping official examples and long-term maintenance Go-first
 - keep provider-specific business logic out of shared parser and composer layers
 - treat parser heuristics as product work, not cleanup work
 - optimize for "easy to contribute to" as much as "useful to use"
+
+## Next Go Mainline
+
+These are the four main tracks after the current product direction decision:
+
+1. **Existing mailbox setup and configuration: Go core.**
+   Help users connect the Gmail, Outlook, QQ, 163, corporate mailbox, or local `.eml` data they already have, instead of requiring a dedicated Agent mailbox first.
+   The first concrete slice is a Go-only config path: `config init`, `config doctor`, `config test`, and `config capabilities`.
+2. **Inbox/thread summaries, priority, and todo extraction: Go provides structured data and commands; AI providers remain external.**
+   Go owns stable retrieval, aggregation, fields, and lightweight signals. LLMs can interpret, summarize, and draft recommendations outside the core.
+3. **Attachment, invoice, code, and action-link extraction: Go parser/schema.**
+   These are high-value signals in real inboxes and should be part of the core parser quality bar.
+4. **Draft, confirmation, execution, and operation logging: Go CLI contract.**
+   Automation must be controllable. High-impact actions should produce auditable intents before execution and machine-readable results afterward.
 
 ## Milestone 1: v0.1 Hardening
 
@@ -91,7 +109,7 @@ Status: completed.
   - point driver and schema docs to that path
 - Deliverable: `.github` template and docs update
 
-## Milestone 2: Parser Quality
+## Milestone 2: Parser / Schema Quality
 
 Goal: improve the one area that most directly affects agent usefulness.
 
@@ -99,6 +117,7 @@ Goal: improve the one area that most directly affects agent usefulness.
 
 - HTML body extraction is more reliable on noisy templates
 - redirect-heavy tracking links are cleaned more aggressively
+- structured output for attachments, invoices, codes, and action links is more complete
 - fixture coverage better represents real agent workflows
 - parser regressions are easier to catch before release
 
@@ -138,15 +157,26 @@ Status: baseline improvement completed; follow-up work should focus on more fixt
   - document what each fixture is meant to protect
 - Deliverable: new fixtures and focused regression coverage
 
-## Milestone 3: Local Memory And Threads
+#### Issue: Promote inbound attachments and invoice entry points to first-class structured output
 
-Goal: make local agent retrieval feel dependable instead of experimental.
+- Area: parser, schema, cmd
+- Problem: high-value inbox information often lives in attachments, invoice entry points, download links, or body URLs; agents should not rely on full-text guessing.
+- Scope:
+  - design a stable representation for inbound attachments and attachment entry points in `StandardMessage`
+  - distinguish real MIME attachments, body download links, and invoice view/download actions
+  - add fixtures and golden coverage for invoices, attachment notices, and multilingual codes
+- Deliverable: schema/parser changes, CLI output, tests, and spec updates
+
+## Milestone 3: Inbox / Thread Intelligence
+
+Goal: help AI retrieve information from a user's existing mailbox faster and more accurately, not just run keyword search.
 
 ### Done when
 
 - sync behavior is easier to reason about across reruns
 - cache/index state is more visible to users and contributors
 - thread metadata reduces unnecessary full-message loads
+- inbox/thread summaries support common triage decisions such as priority, todos, and needs-reply
 
 ### Suggested GitHub issues
 
@@ -174,79 +204,70 @@ Status: baseline thread-summary expansion and local ranking refinement completed
   - snapshot-test the chosen shape
 - Deliverable: schema/output adjustment with docs
 
-## Milestone 4: Contributor Surface
+#### Issue: Add priority and todo extraction signals for inbox/thread triage
 
-Goal: lower the effort required for outside developers to make useful PRs.
+- Area: internal/index, cmd, schema
+- Problem: the common user question is not just "find mail"; it is "what matters, what needs handling, and what should happen next."
+- Scope:
+  - design lightweight, explainable priority / needs_reply / todo-like signals
+  - keep Go output as structured candidate signals without binding core to a specific LLM
+  - add fixed output coverage to local fixtures and the thread demo
+- Deliverable: Go command output, schema/spec updates, and snapshot tests
+
+## Milestone 4: Safe Outbound Loop And Operation Logs
+
+Goal: move AI automation from "execute the command directly" to "prepare intent, confirm execution, record result."
 
 ### Done when
 
-- adding a driver is easy to understand and test
-- parser contributors can run targeted tests from documented entry points
-- contract changes have a review process that does not depend on tribal knowledge
+- high-impact actions such as `send`, `reply`, `delete`, `move`, and `mark` can produce a dry-run or intent first
+- confirmation uses a stable token or intent id so agents do not accidentally execute a different action
+- execution results and failure reasons are written to machine-readable operation logs
+- operation logging does not depend on provider-specific behavior
 
 ### Suggested GitHub issues
 
-#### Issue: Add a fake-driver test harness for extension contributors
+#### Issue: Add prepare / confirm flow for dangerous actions
 
-Status: baseline reusable driver contract harness completed in `pkg/driver/drivertest`.
-
-- Area: driver, tests, docs
-- Problem: contributor drivers are harder to validate than they need to be
+- Area: cmd, schema, docs
+- Problem: agents can draft send/delete/move actions, but direct execution amplifies mistakes.
 - Scope:
-  - add reusable test helpers or fixtures for driver conformance
-  - make list/fetch/send expectations explicit
-  - document the minimum acceptance bar
-- Deliverable: reusable test harness plus contributor docs
+  - design `prepare` output for sending and mailbox mutations
+  - execute the same intent through an intent id or confirmation token
+  - keep dry-run, prepare, and confirm output readable by agents
+- Deliverable: Go CLI contract, schema, tests, and docs
 
-#### Issue: Write a parser contributor guide
+#### Issue: Add local operation logs
 
-- Area: docs
-- Problem: parser work is high-value, but the entry path is still implicit
+- Area: cmd, internal, docs
+- Problem: agent automation needs auditability: what ran, why it failed, and which message or thread it targeted.
 - Scope:
-  - explain fixture layout, golden tests, and parser design constraints
-  - explain where heuristic behavior is acceptable and where it is not
-  - link to the most relevant parser packages and tests
-- Deliverable: new contributor doc
+  - record operation type, account, target ID, intent id, result, error code, and timestamp
+  - provide `mailcli operations list/show` or equivalent query commands
+  - avoid storing secret fields and full sensitive bodies
+- Deliverable: Go storage/CLI, tests, and security notes
 
-Status: completed at `docs/en/contributing/parser.md`.
+## Deferred: Provider Expansion And Dedicated Agent Mailboxes
 
-## Milestone 5: Provider Expansion
+Tencent Agent Mail shows that a dedicated Agent mailbox identity can be valuable, but MailCLI's current mainline is not hosted mailbox service. The next phase should first help users process their existing mailboxes with AI.
 
-Goal: grow the ecosystem without destabilizing the shared model.
+Therefore defer:
 
-This milestone should start only after the previous milestones are in reasonable shape.
+- OAuth-heavy auth flows in core
+- hosted `@agent` mailbox identity
+- broad provider expansion
+- runtime plugin loading
 
-### Suggested GitHub issues
-
-#### Issue: Add one more built-in provider with full docs and tests
-
-- Area: driver, docs
-- Problem: the ecosystem story gets stronger once there is more than one real integration path
-- Scope:
-  - implement one additional provider or provider style
-  - keep transport isolated from parser and composer logic
-  - document config, limits, and test strategy
-- Deliverable: new driver, tests, docs
-
-#### Issue: Define a driver compliance checklist
-
-Status: baseline checklist is completed in the current driver spec and contributor docs.
-
-- Area: docs, tests
-- Problem: community drivers need a shared quality bar
-- Scope:
-  - define required behaviors for list, fetch, send, and config validation
-  - map those expectations to tests and contributor guidance
-  - keep the checklist stable enough to reference in PR review
-- Deliverable: spec or contributing doc update
+Re-evaluate dedicated Agent mailbox modes or new providers only after the Go core setup, retrieval, extraction, and safe execution loop are stable.
 
 ## Recommended Milestones In GitHub
 
 - `v0.1 hardening`
-- `parser quality`
-- `local memory`
-- `contributor surface`
-- `provider expansion`
+- `go-only core`
+- `existing mailbox setup`
+- `inbox intelligence`
+- `parser actions and attachments`
+- `safe outbound automation`
 
 ## Recommended Labels
 
@@ -265,8 +286,10 @@ Status: baseline checklist is completed in the current driver spec and contribut
 
 - full terminal mail client UX
 - OAuth-heavy auth flows in core
+- hosted dedicated Agent mailbox service
 - runtime plugin loading
 - provider-specific business policy in shared layers
 - trying to solve every mailbox vendor at once
+- adding a second official runtime path beside Go
 
-The strongest next move is to make the current agent boundary sharper, not broader.
+The strongest next move is to use Go to make the boundary for "AI safely processes a user's existing mailbox" sharper, not broader.

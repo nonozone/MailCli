@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The Python inbox and thread agent examples support a pluggable external provider mode.
+The Go inbox and thread agent examples support a pluggable external provider mode.
 
 This keeps the repository free of LLM SDK dependencies while still giving developers a stable handoff point for OpenAI, Claude, local models, or custom agent runtimes.
 
@@ -13,13 +13,12 @@ This keeps the repository free of LLM SDK dependencies while still giving develo
 Example invocation:
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 The external provider is executed as a subprocess.
@@ -27,15 +26,14 @@ The external provider is executed as a subprocess.
 The same contract is also used by:
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
   --thread-id "<root@example.com>" \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 ## Input Contract

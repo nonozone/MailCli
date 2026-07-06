@@ -336,4 +336,4 @@ For agent developers, the stable contracts should be:
 - `ReplyDraft`
 - `SendResult`
 
-These are the boundaries that should remain easy to call from Python, shell, Node.js, or other agent runtimes.
+These are the boundaries that should remain easy to call from Go, shell, Node.js, or other agent runtimes.

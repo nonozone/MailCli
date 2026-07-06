@@ -35,7 +35,8 @@ The goal is not to become a traditional terminal mail client. The goal is to bui
 ```bash
 go test ./...
 go build ./cmd/mailcli
-python3 -m py_compile examples/python/*.py examples/providers/*.py
+go test ./examples
+make demo-local-thread-check
 ```
 
 ## Pull Requests

@@ -35,7 +35,8 @@ MailCLI 是一个开源的 AI Native 邮件接口项目。
 ```bash
 go test ./...
 go build ./cmd/mailcli
-python3 -m py_compile examples/python/*.py examples/providers/*.py
+go test ./examples
+make demo-local-thread-check
 ```
 
 ## Pull Request 请包含

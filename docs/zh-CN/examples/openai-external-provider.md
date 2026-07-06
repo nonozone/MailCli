@@ -9,16 +9,11 @@
 - 主仓库不引入 OpenAI SDK 依赖
 - provider 以独立子进程示例存在
 - 契约仍然是 stdin / stdout JSON
+- provider 使用 Go 标准库 HTTP 实现
 
 示例文件：
 
-- `examples/providers/openai_external_provider.py`
-
-## 安装
-
-```bash
-pip install openai
-```
+- `examples/go/providers/openai_external_provider`
 
 ## 环境变量
 
@@ -32,27 +27,29 @@ export OPENAI_MODEL=gpt-5-mini
 ## 配合 Agent 示例运行
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg examples/providers/openai_external_provider.py
+  --provider-command go \
+  --provider-arg run \
+  --provider-arg ./examples/go/providers/openai_external_provider
 ```
 
 同一个 provider 也可以直接用于 thread 场景示例：
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
   --thread-id "<root@example.com>" \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg examples/providers/openai_external_provider.py
+  --provider-command go \
+  --provider-arg run \
+  --provider-arg ./examples/go/providers/openai_external_provider
 ```
 
 ## 它做了什么

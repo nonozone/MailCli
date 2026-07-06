@@ -2,7 +2,7 @@
 
 # 本地 Thread Demo
 
-这个页面展示一条完整的本地 thread agent 往返链路，不需要先去读 Python 示例源码。
+这个页面展示一条完整的本地 thread agent 往返链路，不需要先去读 Go 示例源码。
 
 它使用：
 
@@ -36,10 +36,10 @@ make demo-local-thread-refresh
 make demo-local-thread-check
 ```
 
-如果你需要显式传参，底层脚本也可以直接运行：
+如果你需要显式传参，底层 Go 命令也可以直接运行：
 
 ```bash
-python3 examples/python/refresh_local_thread_demo.py \
+go run ./examples/go/refresh_local_thread_demo \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -187,7 +187,7 @@ Thanks, we have received the invoice notification.
 
 - [agent-report.json](../../../examples/artifacts/local-thread-demo/agent-report.json)
 
-这个文件对应的就是 `examples/python/agent_thread_assistant.py` 在这条本地 fixture 流程上的完整输出。
+这个文件对应的就是 `examples/go/agent_thread_assistant` 在这条本地 fixture 流程上的完整输出。
 
 ## 相关文档
 

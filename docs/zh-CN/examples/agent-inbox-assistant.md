@@ -12,7 +12,7 @@
 
 示例脚本：
 
-- `examples/python/agent_inbox_assistant.py`
+- `examples/go/agent_inbox_assistant`
 
 ## 它演示了什么
 
@@ -25,7 +25,7 @@
 ## 本地 `.eml` 示例
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/verification.eml
 ```
@@ -33,7 +33,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ## 回复 Dry-Run 示例
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
@@ -48,7 +48,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ## 已配置 inbox 示例
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \
@@ -58,7 +58,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ## 零网络 Fixture 示例
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -78,13 +78,12 @@ python3 examples/python/agent_inbox_assistant.py \
 你也可以把分析步骤委托给自己的脚本或 agent runtime：
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 外部 provider 会从 stdin 收到 JSON：
@@ -111,5 +110,5 @@ python3 examples/python/agent_inbox_assistant.py \
 
 - [Agent Provider 契约](../spec/agent-provider.md)
 - [Examples 索引](README.md)
-- 模板 provider：`examples/providers/template_external_provider.py`
+- 模板 provider：`examples/go/providers/template_external_provider`
 - 可选 OpenAI provider 示例：[OpenAI External Provider](openai-external-provider.md)

@@ -13,7 +13,7 @@ test:
 	go test ./...
 
 demo-local-thread-refresh: build
-	PYTHONDONTWRITEBYTECODE=1 python3 examples/python/refresh_local_thread_demo.py \
+	go run ./examples/go/refresh_local_thread_demo \
 		--mailcli-bin $(MAILCLI_BIN) \
 		--config $(FIXTURES_CONFIG) \
 		--account $(FIXTURES_ACCOUNT) \
@@ -21,7 +21,7 @@ demo-local-thread-refresh: build
 		--output-dir $(LOCAL_THREAD_DEMO_DIR)
 
 demo-local-thread-check: build
-	PYTHONDONTWRITEBYTECODE=1 python3 examples/python/refresh_local_thread_demo.py \
+	go run ./examples/go/refresh_local_thread_demo \
 		--mailcli-bin $(MAILCLI_BIN) \
 		--config $(FIXTURES_CONFIG) \
 		--account $(FIXTURES_ACCOUNT) \

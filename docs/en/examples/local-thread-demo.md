@@ -2,7 +2,7 @@
 
 # Local Thread Demo
 
-This page shows the full agent round trip for a local thread workflow without reading the Python example source.
+This page shows the full agent round trip for a local thread workflow without reading the Go example source.
 
 It uses:
 
@@ -36,10 +36,10 @@ To verify that the checked-in artifacts are still current:
 make demo-local-thread-check
 ```
 
-The underlying script remains available when you need explicit arguments:
+The underlying Go command remains available when you need explicit arguments:
 
 ```bash
-python3 examples/python/refresh_local_thread_demo.py \
+go run ./examples/go/refresh_local_thread_demo \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -187,7 +187,7 @@ If you want to inspect the whole loop in one object, see:
 
 - [agent-report.json](../../../examples/artifacts/local-thread-demo/agent-report.json)
 
-That file mirrors the output of `examples/python/agent_thread_assistant.py` for this local fixture flow.
+That file mirrors the output of `examples/go/agent_thread_assistant` for this local fixture flow.
 
 ## Related
 

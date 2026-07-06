@@ -14,7 +14,7 @@
 
 示例脚本：
 
-- `examples/python/agent_thread_assistant.py`
+- `examples/go/agent_thread_assistant`
 
 ## 它演示了什么
 
@@ -28,7 +28,7 @@
 ## Inbox 驱动示例
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \
@@ -41,7 +41,7 @@ python3 examples/python/agent_thread_assistant.py \
 ## 零网络 Fixture 示例
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -50,12 +50,12 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-这个示例通过内置 `dir` driver，把仓库内置的 fixture 语料跑进正常的 `sync -> threads -> thread` 工作流。这里的 `--sync-limit 0` 是 Python 示例自己的 sync 参数，表示脚本会调用 `mailcli sync --limit 0`，不截断初始同步阶段。
+这个示例通过内置 `dir` driver，把仓库内置的 fixture 语料跑进正常的 `sync -> threads -> thread` 工作流。这里的 `--sync-limit 0` 会让 Go 示例调用 `mailcli sync --limit 0`，不截断初始同步阶段。
 
 ## 复用已有本地索引示例
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
@@ -69,15 +69,14 @@ python3 examples/python/agent_thread_assistant.py \
 你也可以把 thread 分析步骤委托给自己的脚本或 agent runtime：
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
   --thread-id "<root@example.com>" \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 external provider 会收到一个 JSON payload，其中包含：
@@ -119,7 +118,7 @@ external provider 会收到一个 JSON payload，其中包含：
 
 ## 输出结构
 
-脚本会输出一个 JSON 报告，其中包括：
+Go 示例会输出一个 JSON 报告，其中包括：
 
 - `sync`
 - `selection`

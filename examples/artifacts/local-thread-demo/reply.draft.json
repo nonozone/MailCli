@@ -1,14 +1,14 @@
 {
+  "account": "fixtures",
+  "body_text": "Thanks, we have received the invoice notification.",
   "from": {
     "address": "support@nono.im"
   },
+  "reply_to_id": "invoice.eml",
   "to": [
     {
       "address": "billing@example.com",
       "name": "Billing Team"
     }
-  ],
-  "body_text": "Thanks, we have received the invoice notification.",
-  "account": "fixtures",
-  "reply_to_id": "invoice.eml"
+  ]
 }

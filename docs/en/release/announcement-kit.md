@@ -61,7 +61,7 @@ Highlights in the current RC:
 - Improve parser output with stronger HTML body extraction and cleaner tracked URL normalization
 - Compile outbound drafts and replies through `DraftMessage` and `ReplyDraft`
 - Support external provider workflows for both single-message and thread-aware agent examples
-- Ship Python, shell, template-provider, and optional OpenAI-provider examples
+- Ship Go, shell, template-provider, and optional OpenAI-provider examples
 - Ship a full local round-trip demo and ready-to-run fixture config for first-time users
 
 Stable contracts for integrators:

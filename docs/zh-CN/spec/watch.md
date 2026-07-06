@@ -137,7 +137,7 @@ mailcli watch \
   --account work \
   --index ~/.config/mailcli/index.db \
   --auto-sync \
-  | python3 my_agent.py
+  | go run ./examples/go/watch_reply_agent --from-address support@nono.im
 ```
 
 ## Agent 集成模式
@@ -147,7 +147,7 @@ mailcli watch \
 ```bash
 mailcli watch --account work --index ~/.config/mailcli/index.db \
   | while IFS= read -r line; do
-      echo "$line" | python3 handle_event.py
+      echo "$line" | ./handle_event
     done
 ```
 
@@ -155,12 +155,12 @@ mailcli watch --account work --index ~/.config/mailcli/index.db \
 
 ```bash
 mailcli watch --account work --index ~/.config/mailcli/index.db \
-  | python3 tools/agent_example.py
+  | go run ./examples/go/watch_reply_agent --from-address support@nono.im
 ```
 
 Agent 从 stdin 逐行读取，每行是完整 JSON 事件。通过 `event` 字段过滤，只处理 `new_message`。
 
-参考实现见 [tools/agent_example.py](../../../tools/agent_example.py)。
+参考实现见 [watch_reply_agent](../../../examples/go/watch_reply_agent/main.go)。
 
 ## 多邮箱模式
 

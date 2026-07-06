@@ -50,13 +50,20 @@ func Marshal(cfg Config) ([]byte, error) {
 	return yaml.Marshal(cfg)
 }
 
-func Unmarshal(data []byte) (Config, error) {
+func UnmarshalRaw(data []byte) (Config, error) {
 	var cfg Config
 	err := yaml.Unmarshal(data, &cfg)
 	if err != nil {
 		return Config{}, err
 	}
+	return cfg, nil
+}
 
+func Unmarshal(data []byte) (Config, error) {
+	cfg, err := UnmarshalRaw(data)
+	if err != nil {
+		return Config{}, err
+	}
 	for i := range cfg.Accounts {
 		cfg.Accounts[i].Password = expandSecretEnv(cfg.Accounts[i].Password)
 		cfg.Accounts[i].SMTPPassword = expandSecretEnv(cfg.Accounts[i].SMTPPassword)
@@ -77,9 +84,24 @@ func Load(path string) (Config, error) {
 	}
 
 	baseDir := filepath.Dir(path)
-	for i := range cfg.Accounts {
-		cfg.Accounts[i].Path = resolveConfigPath(baseDir, cfg.Accounts[i].Path)
+	resolveConfigPaths(baseDir, &cfg)
+
+	return cfg, nil
+}
+
+func LoadRaw(path string) (Config, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return Config{}, err
 	}
+
+	cfg, err := UnmarshalRaw(data)
+	if err != nil {
+		return Config{}, err
+	}
+
+	baseDir := filepath.Dir(path)
+	resolveConfigPaths(baseDir, &cfg)
 
 	return cfg, nil
 }
@@ -116,4 +138,10 @@ func resolveConfigPath(baseDir, value string) string {
 		return trimmed
 	}
 	return filepath.Clean(filepath.Join(baseDir, trimmed))
+}
+
+func resolveConfigPaths(baseDir string, cfg *Config) {
+	for i := range cfg.Accounts {
+		cfg.Accounts[i].Path = resolveConfigPath(baseDir, cfg.Accounts[i].Path)
+	}
 }

@@ -64,7 +64,7 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 
 # 3. inspect the full agent boundary
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -91,7 +91,7 @@ The repository already includes:
 
 - a local fixture corpus under `testdata/emails`
 - a zero-network config at `examples/config/fixtures-dir.yaml`
-- runnable Python examples
+- runnable Go examples under `examples/go`
 - a full local round-trip demo at [Local Thread Demo](docs/en/examples/local-thread-demo.md)
 - fixed outbound JSON and MIME pairs at [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md)
 
@@ -127,8 +127,8 @@ Working today:
 - delete, move, mark-read/unread on remote mailboxes
 - export the local index as JSONL, JSON, or CSV
 - **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed, persistent seen state across restarts)
-- manage config with `mailcli config show` / `mailcli config test`
-- integrate with Python or shell agent workflows through stable JSON contracts
+- create, inspect, diagnose, test, and inspect account capabilities with `mailcli config init` / `mailcli config show` / `mailcli config doctor` / `mailcli config test` / `mailcli config capabilities`
+- integrate with Go, shell, and external agent workflows through stable JSON contracts
 - LLM tool-use schemas for OpenAI and Anthropic (`tools/` directory)
 
 Stable enough to build against for `v0.1 RC`:
@@ -147,7 +147,7 @@ Stable enough to build against for `v0.1 RC`:
 - `mailcli mark`
 - `mailcli export`
 - `mailcli watch`
-- `mailcli config show|test`
+- `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`
@@ -268,13 +268,18 @@ MailCLI solves that by providing a stable boundary:
   ```bash
   # Pipe to AI agent with persistent deduplication:
   mailcli watch --account work --index ~/.config/mailcli/index.db \
-    | python3 tools/agent_example.py
+    | go run ./examples/go/watch_reply_agent --from-address support@nono.im
   ```
 
 ### Config management
 
+- `mailcli config init [--config] --account <name> --driver imap --host <host> --username <email> --password-env <ENV>` — create a starter config file that stores secret environment references such as `${MAILCLI_IMAP_PASSWORD}`, not raw passwords
 - `mailcli config show [--config]` — print accounts (passwords redacted)
+- `mailcli config doctor [--config]` — run local static diagnostics without connecting to IMAP or SMTP
 - `mailcli config test [--config] [--account]` — test live connection
+- `mailcli config capabilities [--config] [--account]` — print machine-readable account capabilities without connecting to the mailbox server
+
+`config init`, `config doctor`, and `config capabilities` are safe onboarding commands for agents and setup scripts. They do not print configured password values. `config doctor` distinguishes missing secret references from unset environment variables such as `imap_password_env_unset`. `config test` is the command that performs a live mailbox connection check.
 
 ### Outbound Markdown baseline
 
@@ -461,7 +466,7 @@ cat test.eml | mailcli parse --format json -
 If you want the full agent-side JSON and reply boundary, use:
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -470,7 +475,7 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-If you want fixed JSON and MIME pairs for outbound composition without reading Python code, use:
+If you want fixed JSON and MIME pairs for outbound composition without reading example code, use:
 
 ```bash
 ./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/ack-reply.draft.json
@@ -561,7 +566,7 @@ mailcli reply --dry-run reply.json
 ### Run the agent example
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/verification.eml
 ```
@@ -569,7 +574,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ### Run the thread agent example
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \

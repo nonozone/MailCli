@@ -64,7 +64,7 @@ go build -o mailcli ./cmd/mailcli
 ./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 
 # 3. 查看完整的 agent 边界
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -91,7 +91,7 @@ flowchart LR
 
 - `testdata/emails` 下的本地 fixture 语料
 - 零网络配置 `examples/config/fixtures-dir.yaml`
-- 可直接运行的 Python 示例
+- `examples/go` 下可直接运行的 Go 示例
 - 一份完整的本地往返说明：[Local Thread Demo](docs/zh-CN/examples/local-thread-demo.md)
 - 一组固定的出站 JSON / MIME 对照样例：[Outbound Draft Patterns](docs/zh-CN/examples/outbound-draft-patterns.md)
 
@@ -127,8 +127,8 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 删除、移动、读/未读标记远端邮件
 - 将本地索引导出为 JSONL、JSON 或 CSV
 - **watch** 一个或多个邮箱（IMAP IDLE 推送事件流，重启后持久化去重）
-- `mailcli config show` / `mailcli config test` 管理配置
-- 通过稳定 JSON 契约与 Python / shell agent 工作流协作
+- `mailcli config init` / `mailcli config show` / `mailcli config doctor` / `mailcli config test` / `mailcli config capabilities` 创建、查看、诊断、测试配置与账户能力
+- 通过稳定 JSON 契约与 Go、shell 和外部 agent 工作流协作
 - OpenAI 和 Anthropic 格式的 LLM Tool Use Schema（`tools/` 目录）
 
 在 `v0.1 RC` 阶段，已经足够作为稳定集成边界的部分：
@@ -147,7 +147,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - `mailcli mark`
 - `mailcli export`
 - `mailcli watch`
-- `mailcli config show|test`
+- `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`
@@ -253,6 +253,16 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli send --config ~/.config/mailcli/config.yaml <draft.json>`
 - `mailcli reply --dry-run <reply.json>`
 - `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
+
+### 配置与能力发现
+
+- `mailcli config init [--config] --account <name> --driver imap --host <host> --username <email> --password-env <ENV>`
+- `mailcli config show [--config]`
+- `mailcli config doctor [--config]`
+- `mailcli config test [--config] [--account]`
+- `mailcli config capabilities [--config] [--account]`
+
+`config init` 会生成 starter YAML，并把秘密值写成 `${MAILCLI_IMAP_PASSWORD}` 这样的环境变量引用，而不是原始密码。`config doctor` 做本地静态诊断，不连接 IMAP / SMTP，并能区分“没有写 secret 引用”和“引用存在但环境变量未设置”，例如 `imap_password_env_unset`。`config capabilities` 输出稳定 JSON，帮助 Agent 在执行 `send`、`watch`、`delete` 等命令前判断当前账户能力。它只读取本地配置和内置 driver 的已知能力，不连接邮箱服务器，也不输出密码。真正联网检查连接的是 `config test`。
 
 ### 出站 Markdown 基线
 
@@ -438,7 +448,7 @@ cat test.eml | mailcli parse --format json -
 如果你想直接看 agent 侧完整 JSON 和 reply 边界，可以运行：
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -447,7 +457,7 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-如果你想在不读 Python 示例的情况下直接查看固定的出站 JSON / MIME 对照，可以运行：
+如果你想在不读示例代码的情况下直接查看固定的出站 JSON / MIME 对照，可以运行：
 
 ```bash
 ./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/ack-reply.draft.json
@@ -538,7 +548,7 @@ mailcli reply --dry-run reply.json
 ### 运行 agent 示例
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/verification.eml
 ```
@@ -546,7 +556,7 @@ python3 examples/python/agent_inbox_assistant.py \
 ### 运行 thread agent 示例
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \

@@ -30,7 +30,7 @@ Describe the bug clearly.
 
 - OS:
 - Go version:
-- Python version (if examples are involved):
+- MailCLI version or commit:
 
 ## Evidence
 

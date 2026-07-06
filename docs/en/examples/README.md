@@ -28,30 +28,32 @@ make demo-local-thread-check
 - [OpenAI External Provider](openai-external-provider.md)
   Best for plugging an OpenAI-backed analyzer into either agent example.
 
-## Python Scripts
+## Go Examples
 
 ### Agent Workflows
 
-- `examples/python/agent_inbox_assistant.py`
+- `examples/go/agent_inbox_assistant`
   Minimal single-message agent boundary.
-- `examples/python/agent_thread_assistant.py`
+- `examples/go/agent_thread_assistant`
   Thread-aware local retrieval and reply boundary.
+- `examples/go/watch_reply_agent`
+  JSONL watch-event agent loop.
 
 ### Raw Utilities
 
-- `examples/python/parse_email.py`
+- `examples/go/parse_email`
   Parse one local `.eml` file through `mailcli parse`.
-- `examples/python/reply_dry_run.py`
+- `examples/go/reply_dry_run`
   Compile one `ReplyDraft` JSON file through `mailcli reply --dry-run`.
-- `examples/python/refresh_local_thread_demo.py`
+- `examples/go/refresh_local_thread_demo`
   Regenerate the stored local-thread-demo artifacts from the current fixture corpus.
 
 ### Provider Adapters
 
-- `examples/providers/template_external_provider.py`
+- `examples/go/providers/template_external_provider`
   Minimal external provider template for both inbox and thread payloads.
-- `examples/providers/openai_external_provider.py`
-  Optional OpenAI-backed provider using the Responses API.
+- `examples/go/providers/openai_external_provider`
+  Optional OpenAI-backed provider using the Responses API through Go standard-library HTTP.
 
 ## Shell Scripts
 

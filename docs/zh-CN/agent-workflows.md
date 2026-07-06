@@ -336,4 +336,4 @@ agent 生成 DraftMessage -> mailcli send
 - `ReplyDraft`
 - `SendResult`
 
-这些边界应该始终保持容易被 Python、shell、Node.js 和其他 agent runtime 调用。
+这些边界应该始终保持容易被 Go、shell、Node.js 和其他 agent runtime 调用。

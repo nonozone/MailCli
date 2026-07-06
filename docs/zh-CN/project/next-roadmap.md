@@ -8,6 +8,8 @@
 
 目标是把当前 RC 打磨成一个稳定、易贡献、真正服务于 agent 开发者的开源项目。
 
+下一阶段还有一个明确的产品技术方向：**核心运行时和官方示例全面 Go 化**。MailCLI 应该交付一个方便 Agent 调用、方便用户安装、方便维护者发布的 Go binary，而不是要求用户理解或部署另一套语言运行时。
+
 ## `main` 上最近已经完成的部分
 
 RC 收口阶段最关键的一批工作已经在 `main` 上完成：
@@ -29,18 +31,34 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 ## 优先级顺序
 
-1. 先把当前 RC 的稳定边界收紧。
-2. 优先提升 agent 当前最有痛感的 parser 质量。
-3. 继续增强本地 memory 和 thread 工作流的可靠性。
-4. 降低新 driver / parser 贡献者的接入门槛。
-5. 在共享契约更清晰之后，再扩 provider 生态。
+1. 先把现有邮箱接入和配置体验收紧为 Go core 能力。
+2. 让 inbox / thread 摘要、优先级、待办提取成为 Go 提供的结构化命令。
+3. 继续增强附件、发票、验证码、链接动作提取，落在 Go parser / schema。
+4. 把草稿、确认、执行、操作日志做成 Go CLI 契约。
+5. 暂不优先处理专用 Agent mailbox 或更大 provider 扩展。
 
 ## Maintainer 规则
 
 - 稳定的机器接口优先于功能数量
+- 官方可执行能力由 Go 实现；不要引入 Go 之外的运行时作为用户安装或 Agent 调用的前置条件
+- AI provider 接入保持语言无关的 JSON 契约，同时官方示例和长期维护路径以 Go 为主
 - provider 私有业务逻辑不要进入共享 parser / composer 层
 - parser heuristic 不是“清理工作”，而是核心产品工作
 - 既要优化“好用”，也要优化“好贡献”
+
+## 下一阶段 Go 主线
+
+这四条是当前产品方向认可后的主线：
+
+1. **现有邮箱接入和配置体验：Go core。**
+   重点是让普通用户把已有 Gmail、Outlook、QQ、163、企业邮箱或本地 `.eml` 接进 MailCLI，而不是先要求他们拥有专用 Agent 邮箱。
+   第一阶段的具体落点是 Go-only 配置路径：`config init`、`config doctor`、`config test` 和 `config capabilities`。
+2. **Inbox / thread 摘要、优先级、待办提取：Go 提供结构化数据和命令，AI provider 可外接。**
+   Go 负责稳定检索、聚合、字段输出和轻量规则；LLM 负责解释、归纳和生成建议。
+3. **附件、发票、验证码、链接动作提取：Go parser / schema。**
+   这些是 Agent 处理真实邮箱时最常遇到的高价值信息，应成为核心 parser 质量基线。
+4. **草稿、确认、执行、操作日志：Go CLI 契约。**
+   自动化必须可控。危险动作应先形成可审计意图，再确认执行，并留下机器可读结果。
 
 ## Milestone 1: v0.1 收口
 
@@ -91,7 +109,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
   - 在 driver / schema 文档中指向这条路径
 - Deliverable: `.github` 模板 + 文档更新
 
-## Milestone 2: Parser 质量
+## Milestone 2: Parser / Schema 质量
 
 目标：优先打磨最直接影响 agent 使用价值的部分。
 
@@ -99,6 +117,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 - 对噪音 HTML 模板的主体提取更稳定
 - 对追踪跳转链接的清洗更激进但仍可控
+- 对附件、发票、验证码、链接动作的结构化输出更完整
 - fixture 覆盖更贴近真实 agent 工作流
 - parser 回归更容易在发版前被发现
 
@@ -138,15 +157,26 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
   - 说明每个 fixture 保护的行为是什么
 - Deliverable: 新 fixture + 定向回归测试
 
-## Milestone 3: Local Memory 与 Threads
+#### Issue: 将入站附件和发票入口提升为一等结构化输出
 
-目标：让本地 agent 检索体验从“能用”变成“可靠”。
+- Area: parser, schema, cmd
+- Problem: 普通邮箱中的高价值信息经常藏在附件、发票入口、下载链接或正文 URL 中，agent 不应该只靠全文猜测。
+- Scope:
+  - 在 `StandardMessage` 中设计稳定的入站附件 / 附件入口表达
+  - 区分真实 MIME 附件、正文中的附件下载入口、发票查看 / 下载动作
+  - 为发票、附件通知、多语言验证码增加 fixture 和 golden 覆盖
+- Deliverable: schema / parser 改动、CLI 输出、测试和 spec 更新
+
+## Milestone 3: Inbox / Thread Intelligence
+
+目标：让 AI 基于用户已有邮箱更快、更准确地获取信息，而不是只做关键词搜索。
 
 ### 完成标准
 
 - `sync` 的重复运行语义更容易理解
 - 用户和贡献者更容易看清楚本地缓存里到底有什么
 - thread 元数据足够减少不必要的完整消息加载
+- inbox / thread 摘要能支持优先级、待办、需要回复等常见 triage 判断
 
 ### 建议 GitHub issues
 
@@ -174,79 +204,70 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
   - 对最终 shape 做 snapshot 测试
 - Deliverable: schema / 输出增强 + 文档
 
-## Milestone 4: Contributor Surface
+#### Issue: 增加 inbox / thread 的优先级与待办提取信号
 
-目标：降低外部开发者做出有效 PR 的成本。
+- Area: internal/index, cmd, schema
+- Problem: 用户最常见的问题不是“搜到邮件”，而是“哪些邮件重要、哪些需要处理、下一步做什么”。
+- Scope:
+  - 设计轻量、可解释的 priority / needs_reply / todo-like 信号
+  - 保持 Go 层输出为结构化候选信号，不在 core 中绑定特定 LLM
+  - 为本地 fixture 和 thread demo 增加固定输出覆盖
+- Deliverable: Go 命令输出、schema / spec 更新、snapshot 测试
+
+## Milestone 4: 安全出站闭环与操作日志
+
+目标：让 AI 自动化从“直接执行命令”升级为“生成意图、确认执行、记录结果”的可控闭环。
 
 ### 完成标准
 
-- 新增 driver 的方式容易理解，也容易验证
-- parser 贡献者有清晰的测试和入口说明
-- 契约变更有一条不依赖“口口相传”的讨论路径
+- `send` / `reply` / `delete` / `move` / `mark` 等高影响动作可以先生成 dry-run / intent
+- 确认执行有稳定 token 或 intent id，避免 agent 误操作
+- 执行结果和失败原因进入机器可读操作日志
+- 操作日志不依赖 provider 私有行为
 
 ### 建议 GitHub issues
 
-#### Issue: 为 driver 扩展贡献者增加 fake-driver 测试支架
+#### Issue: 为危险动作增加 prepare / confirm 流程
 
-状态：可复用的共享 driver 合同测试支架已完成，见 `pkg/driver/drivertest`。
-
-- Area: driver, tests, docs
-- Problem: 外部 driver 的验证门槛仍偏高
+- Area: cmd, schema, docs
+- Problem: Agent 可以生成发送、删除、移动等动作，但直接执行会放大误操作风险。
 - Scope:
-  - 增加可复用的 driver 合规测试辅助或 fixture
-  - 明确 list / fetch / send 的最小行为要求
-  - 文档化最低接受门槛
-- Deliverable: 可复用测试支架 + 贡献文档
+  - 为发送和 mailbox mutation 设计 `prepare` 输出
+  - 使用 intent id 或确认 token 执行同一意图
+  - 保持 dry-run、prepare、confirm 的输出都适合 Agent 读取
+- Deliverable: Go CLI 契约、schema、测试和文档
 
-#### Issue: 编写 parser contributor guide
+#### Issue: 增加本地操作日志
 
-- Area: docs
-- Problem: parser 是高价值区域，但当前进入路径仍然偏隐性
+- Area: cmd, internal, docs
+- Problem: Agent 自动化需要事后审计：执行了什么、为什么失败、对应哪个 message / thread。
 - Scope:
-  - 说明 fixture 布局、golden tests 和 parser 设计约束
-  - 说明哪些 heuristic 是允许的，哪些地方不允许随意漂移
-  - 指向最相关的 parser 包与测试文件
-- Deliverable: 新贡献文档
+  - 记录操作类型、账户、目标 ID、intent id、结果、错误码和时间
+  - 提供 `mailcli operations list/show` 或等价查询入口
+  - 避免记录秘密字段和完整敏感正文
+- Deliverable: Go 存储 / CLI、测试和安全说明
 
-状态：已完成，见 `docs/zh-CN/contributing/parser.md`。
+## 暂缓：Provider 扩展与专用 Agent Mailbox
 
-## Milestone 5: Provider 扩展
+腾讯 Agent Mail 证明了“专用 Agent 邮箱身份”有价值，但 MailCLI 当前主线不是托管邮箱服务。下一阶段应优先帮助用户用 AI 处理已有邮箱。
 
-目标：在不破坏共享模型的前提下扩展生态。
+因此暂缓：
 
-这个里程碑应该建立在前几个阶段已经基本收口之后。
+- 内建重 OAuth 流程
+- 提供托管式 `@agent` 邮箱身份
+- 大范围 provider 扩展
+- 运行时插件加载
 
-### 建议 GitHub issues
-
-#### Issue: 增加一个新的内置 provider，并配齐测试与文档
-
-- Area: driver, docs
-- Problem: 当仓库里不止一种真实接入路径时，生态故事会更有说服力
-- Scope:
-  - 实现一个额外的 provider 或 provider 风格
-  - 保持传输逻辑与 parser / composer 逻辑分离
-  - 补齐配置、限制与测试策略文档
-- Deliverable: 新 driver + 测试 + 文档
-
-#### Issue: 定义 driver 合规性检查清单
-
-状态：基线版清单已经在当前 driver spec 和 contributor docs 中完成。
-
-- Area: docs, tests
-- Problem: 社区 driver 需要共享质量门槛
-- Scope:
-  - 定义 list、fetch、send、config validation 的必备行为
-  - 把这些期望映射到测试和贡献说明
-  - 保持清单足够稳定，便于 PR review 直接引用
-- Deliverable: spec 或 contributing 文档更新
+后续只有在 Go core 的接入、检索、提取、确认执行闭环稳定之后，才重新评估专用 Agent mailbox 或新增 provider。
 
 ## 建议在 GitHub 中建立的 Milestones
 
 - `v0.1 hardening`
-- `parser quality`
-- `local memory`
-- `contributor surface`
-- `provider expansion`
+- `go-only core`
+- `existing mailbox setup`
+- `inbox intelligence`
+- `parser actions and attachments`
+- `safe outbound automation`
 
 ## 建议标签
 
@@ -265,8 +286,10 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 - 完整终端 mail client 体验
 - 在 core 中引入重 OAuth 认证流
+- 提供托管式专用 Agent mailbox
 - 运行时插件加载
 - 在共享层中加入 provider 私有业务策略
 - 试图一次性解决所有邮箱厂商
+- 在 Go 之外再引入第二条官方运行时路径
 
-最强的下一步，不是把边界做得更宽，而是把当前 agent 边界做得更锋利。
+最强的下一步，不是把边界做得更宽，而是用 Go 把“AI 安全处理用户已有邮箱”的边界做得更锋利。

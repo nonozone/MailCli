@@ -14,7 +14,7 @@ It is meant for developers who want to model the common agent loop:
 
 The example script is:
 
-- `examples/python/agent_thread_assistant.py`
+- `examples/go/agent_thread_assistant`
 
 ## What It Demonstrates
 
@@ -28,7 +28,7 @@ The example script is:
 ## Inbox-Backed Example
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config ~/.config/mailcli/config.yaml \
   --account work \
@@ -41,7 +41,7 @@ python3 examples/python/agent_thread_assistant.py \
 ## Zero-Network Fixture Example
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --config examples/config/fixtures-dir.yaml \
   --account fixtures \
@@ -50,12 +50,12 @@ python3 examples/python/agent_thread_assistant.py \
   --query invoice
 ```
 
-This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus. Here `--sync-limit 0` is the Python example's sync setting, and it tells the script to call `mailcli sync --limit 0` instead of truncating the initial sync pass.
+This uses the built-in `dir` driver to run the normal `sync -> threads -> thread` loop against the repository fixture corpus. Here `--sync-limit 0` tells the Go example to call `mailcli sync --limit 0` instead of truncating the initial sync pass.
 
 ## Existing Local Index Example
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
@@ -69,15 +69,14 @@ python3 examples/python/agent_thread_assistant.py \
 You can also delegate the thread analysis step to your own script or agent runtime:
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
   --thread-id "<root@example.com>" \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg ./my_provider.py
+  --provider-command ./my_provider
 ```
 
 The external provider receives a JSON payload that includes:
@@ -119,7 +118,7 @@ This keeps the example usable even when developers only have an existing local i
 
 ## Output Shape
 
-The script prints one JSON report that includes:
+The Go example prints one JSON report that includes:
 
 - `sync`
 - `selection`

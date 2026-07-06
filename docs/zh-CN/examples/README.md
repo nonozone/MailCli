@@ -28,30 +28,32 @@ make demo-local-thread-check
 - [OpenAI External Provider](openai-external-provider.md)
   适合把 OpenAI 驱动的分析器接到任一 agent 示例上。
 
-## Python 脚本
+## Go 示例
 
 ### Agent 工作流
 
-- `examples/python/agent_inbox_assistant.py`
+- `examples/go/agent_inbox_assistant`
   最小单封邮件 agent 边界。
-- `examples/python/agent_thread_assistant.py`
+- `examples/go/agent_thread_assistant`
   带 thread 感知的本地检索与回复边界。
+- `examples/go/watch_reply_agent`
+  JSONL watch 事件 agent 闭环。
 
 ### 原始工具
 
-- `examples/python/parse_email.py`
+- `examples/go/parse_email`
   通过 `mailcli parse` 解析单个本地 `.eml` 文件。
-- `examples/python/reply_dry_run.py`
+- `examples/go/reply_dry_run`
   通过 `mailcli reply --dry-run` 编译单个 `ReplyDraft` JSON 文件。
-- `examples/python/refresh_local_thread_demo.py`
+- `examples/go/refresh_local_thread_demo`
   根据当前 fixture corpus 重新生成 local-thread-demo 的固定产物。
 
 ### Provider 适配器
 
-- `examples/providers/template_external_provider.py`
+- `examples/go/providers/template_external_provider`
   同时适用于 inbox 和 thread payload 的最小 external provider 模板。
-- `examples/providers/openai_external_provider.py`
-  使用 Responses API 的可选 OpenAI provider 示例。
+- `examples/go/providers/openai_external_provider`
+  通过 Go 标准库 HTTP 调用 Responses API 的可选 OpenAI provider 示例。
 
 ## Shell 脚本
 

@@ -11,10 +11,11 @@ Use it when you want to create milestones, labels, and first-wave issues without
 ### Milestones
 
 - `v0.1 hardening`
-- `parser quality`
-- `local memory`
-- `contributor surface`
-- `provider expansion`
+- `go-only core`
+- `existing mailbox setup`
+- `inbox intelligence`
+- `parser actions and attachments`
+- `safe outbound automation`
 
 ### Labels
 
@@ -29,9 +30,9 @@ Use it when you want to create milestones, labels, and first-wave issues without
 - `good first issue`
 - `rfc`
 
-## Recommended First Wave
+## Historical Issue Draft Status
 
-Create these first:
+The following 8 items came from the previous roadmap. Most are now complete or should only be kept as follow-up expansion drafts:
 
 1. Align docs with actual RC capabilities
 2. Add JSON contract snapshot tests for CLI commands
@@ -51,14 +52,18 @@ Status note:
 - item 8 is now covered by `docs/en/contributing/parser.md`
 - keep those drafts only if follow-up expansion work is needed
 
-If starting from the current repository state, the higher-value open items are now:
+If starting from the current repository state, the current first wave should be:
 
-1. Strengthen HTML body extraction and noise filtering
-2. Improve URL normalization for agent-facing actions
-3. Expand parser corpus for real-world edge cases
-4. Add one more built-in provider only after the shared layers stay stable
+1. Tighten existing-mailbox setup, configuration, account capabilities, and Go-first examples
+2. Improve inbox/thread summaries, priority, and todo extraction
+3. Promote inbound attachments and invoice entry points to first-class structured output
+4. Add prepare / confirm flow and local operation logs for dangerous actions
+
+Provider expansion and dedicated Agent mailbox work are not part of the current first wave.
 
 ## Issue Drafts
+
+The drafts below mostly preserve issue wording from the previous roadmap where it is still useful. New Go-mainline issues can be split from the four current priority items above.
 
 ## Issue 1
 

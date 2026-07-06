@@ -61,7 +61,7 @@ MailCLI 是一个面向 agent 的开源邮件接口。
 - 通过更强的 HTML 主体提取和追踪链接清洗提升 parser 输出质量
 - 通过 `DraftMessage` 和 `ReplyDraft` 编译新邮件与回复
 - 同时支持单封邮件和 thread 场景的 external provider 工作流
-- 提供 Python、shell、template provider 和可选 OpenAI provider 示例
+- 提供 Go、shell、template provider 和可选 OpenAI provider 示例
 - 提供完整的本地往返 demo 和开箱即用的 fixture 配置
 
 建议集成方视为稳定边界的部分：

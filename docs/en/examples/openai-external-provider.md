@@ -9,16 +9,11 @@ It is optional on purpose:
 - the main repository does not depend on the OpenAI SDK
 - the provider is a standalone subprocess example
 - the contract still flows through stdin and stdout JSON
+- it is implemented in Go with standard-library HTTP
 
 Example file:
 
-- `examples/providers/openai_external_provider.py`
-
-## Install
-
-```bash
-pip install openai
-```
+- `examples/go/providers/openai_external_provider`
 
 ## Environment
 
@@ -32,27 +27,29 @@ export OPENAI_MODEL=gpt-5-mini
 ## Run With The Agent Example
 
 ```bash
-python3 examples/python/agent_inbox_assistant.py \
+go run ./examples/go/agent_inbox_assistant \
   --mailcli-bin ./mailcli \
   --email testdata/emails/plaintext.eml \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg examples/providers/openai_external_provider.py
+  --provider-command go \
+  --provider-arg run \
+  --provider-arg ./examples/go/providers/openai_external_provider
 ```
 
 The same provider can also be used with the thread-aware example:
 
 ```bash
-python3 examples/python/agent_thread_assistant.py \
+go run ./examples/go/agent_thread_assistant \
   --mailcli-bin ./mailcli \
   --index /tmp/mailcli-index.json \
   --skip-sync \
   --thread-id "<root@example.com>" \
   --from-address support@nono.im \
   --agent-provider external \
-  --provider-command python3 \
-  --provider-arg examples/providers/openai_external_provider.py
+  --provider-command go \
+  --provider-arg run \
+  --provider-arg ./examples/go/providers/openai_external_provider
 ```
 
 ## What It Does

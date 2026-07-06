@@ -156,6 +156,35 @@ accounts:
 	}
 }
 
+func TestUnmarshalRawPreservesSecretEnvironmentReferences(t *testing.T) {
+	t.Setenv("MAILCLI_IMAP_PASSWORD", "imap-secret")
+	t.Setenv("MAILCLI_SMTP_PASSWORD", "smtp-secret")
+
+	cfg, err := UnmarshalRaw([]byte(`
+current_account: work
+accounts:
+  - name: work
+    driver: imap
+    password: ${MAILCLI_IMAP_PASSWORD}
+    smtp_password: ${MAILCLI_SMTP_PASSWORD}
+`))
+	if err != nil {
+		t.Fatalf("expected raw unmarshal to succeed: %v", err)
+	}
+
+	account, err := cfg.ResolveAccount("work")
+	if err != nil {
+		t.Fatalf("expected account to resolve: %v", err)
+	}
+
+	if account.Password != "${MAILCLI_IMAP_PASSWORD}" {
+		t.Fatalf("expected raw imap password reference, got %q", account.Password)
+	}
+	if account.SMTPPassword != "${MAILCLI_SMTP_PASSWORD}" {
+		t.Fatalf("expected raw smtp password reference, got %q", account.SMTPPassword)
+	}
+}
+
 func TestUnmarshalDoesNotExpandEnvironmentVariablesForNonSecretFields(t *testing.T) {
 	t.Setenv("MAILCLI_ACCOUNT_NAME", "expanded-name")
 

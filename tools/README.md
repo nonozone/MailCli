@@ -11,70 +11,42 @@ function-calling / tool-use support can invoke via subprocess.
 tools/
   openai.json        OpenAI function-calling schema (tools[] array)
   anthropic.json     Anthropic tool-use schema (tools[] with input_schema)
-  agent_example.py   Minimal Python watch → LLM → reply pipeline
   README.md          This file
 ```
 
 ---
 
-## Quick start: on-demand tool use
+## Quick start: on-demand tool use from Go
 
-### Python (Anthropic)
+Load a schema JSON file, pass it to your model runtime, then map tool calls back
+to `mailcli` subprocess commands.
 
-```python
-import json, subprocess, anthropic
+```go
+package main
 
-def run_mailcli(*args) -> str:
-    r = subprocess.run(["mailcli", *args], capture_output=True, text=True)
-    return r.stdout
-
-with open("tools/anthropic.json") as f:
-    tools = json.load(f)["tools"]
-
-client = anthropic.Anthropic()
-
-# Pass tools to the model
-response = client.messages.create(
-    model="claude-3-5-sonnet-20241022",
-    max_tokens=1024,
-    tools=tools,
-    messages=[{"role": "user", "content": "Search my inbox for invoices from last week"}],
+import (
+	"encoding/json"
+	"fmt"
+	"os/exec"
 )
 
-# Execute tool calls
-for block in response.content:
-    if block.type == "tool_use":
-        name = block.name          # e.g. "mailcli_search"
-        inp  = block.input         # dict of parameters
+func runMailCLI(args ...string) (string, error) {
+	cmd := exec.Command("mailcli", args...)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
 
-        # Map tool names to mailcli subcommands + flags
-        cmd = tool_to_cmd(name, inp)
-        result = run_mailcli(*cmd)
-        print(result)
-```
-
-### Python (OpenAI)
-
-```python
-import json, subprocess
-from openai import OpenAI
-
-with open("tools/openai.json") as f:
-    tools = json.load(f)
-
-client = OpenAI()
-response = client.chat.completions.create(
-    model="gpt-4o",
-    tools=tools,
-    messages=[{"role": "user", "content": "Search my inbox for invoices from last week"}],
-)
-
-for choice in response.choices:
-    for call in (choice.message.tool_calls or []):
-        args = json.loads(call.function.arguments)
-        cmd  = tool_to_cmd(call.function.name, args)
-        result = subprocess.run(["mailcli", *cmd], capture_output=True, text=True)
-        print(result.stdout)
+func main() {
+	cmdArgs := toolToCommand("mailcli_search", map[string]any{
+		"query": "invoice",
+		"limit": 10,
+	})
+	out, err := runMailCLI(cmdArgs...)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Print(out)
+}
 ```
 
 ---
@@ -97,65 +69,90 @@ for choice in response.choices:
 | `dest_mailbox` | positional arg `[1]`|
 | `draft`        | JSON string arg     |
 
-### Example mapping function (Python)
+### Example mapping function (Go)
 
-```python
-import json
+```go
+package main
 
-def tool_to_cmd(name: str, inp: dict) -> list[str]:
-    sub = name.replace("mailcli_", "")  # mailcli_search → search
-    cmd = [sub]
+import (
+	"encoding/json"
+	"fmt"
+	"strings"
+)
 
-    draft = inp.pop("draft", None)
-    query = inp.pop("query", None)
-    dest  = inp.pop("dest_mailbox", None)
-    full  = inp.pop("full", False)
-    refresh = inp.pop("refresh", False)
-    unread  = inp.pop("unread", False)
-    has_codes = inp.pop("has_codes", False)
+func toolToCommand(name string, input map[string]any) []string {
+	sub := strings.TrimPrefix(name, "mailcli_")
+	cmd := []string{sub}
 
-    if query:
-        cmd.append(query)
-    if draft:
-        cmd.append(json.dumps(draft))
-    if dest:
-        cmd.append(dest)
+	query, _ := input["query"].(string)
+	dest, _ := input["dest_mailbox"].(string)
+	draft := input["draft"]
+	full, _ := input["full"].(bool)
+	refresh, _ := input["refresh"].(bool)
+	unread, _ := input["unread"].(bool)
+	hasCodes, _ := input["has_codes"].(bool)
 
-    for k, v in inp.items():
-        flag = "--" + k.replace("_", "-")
-        cmd += [flag, str(v)]
+	delete(input, "query")
+	delete(input, "dest_mailbox")
+	delete(input, "draft")
+	delete(input, "full")
+	delete(input, "refresh")
+	delete(input, "unread")
+	delete(input, "has_codes")
 
-    if full:      cmd.append("--full")
-    if refresh:   cmd.append("--refresh")
-    if unread:    cmd.append("--unread")
-    if has_codes: cmd.append("--has-codes")
+	if query != "" {
+		cmd = append(cmd, query)
+	}
+	if draft != nil {
+		raw, _ := json.Marshal(draft)
+		cmd = append(cmd, string(raw))
+	}
+	if dest != "" {
+		cmd = append(cmd, dest)
+	}
 
-    return cmd
+	for key, value := range input {
+		flag := "--" + strings.ReplaceAll(key, "_", "-")
+		cmd = append(cmd, flag, fmt.Sprint(value))
+	}
+	if full {
+		cmd = append(cmd, "--full")
+	}
+	if refresh {
+		cmd = append(cmd, "--refresh")
+	}
+	if unread {
+		cmd = append(cmd, "--unread")
+	}
+	if hasCodes {
+		cmd = append(cmd, "--has-codes")
+	}
+	return cmd
+}
 ```
 
 ---
 
 ## Passive monitoring: `mailcli watch` pipeline
 
-For continuous inbox monitoring with automatic AI replies:
+For continuous inbox monitoring with agent-side draft generation:
 
 ```bash
-# Install deps
-pip install anthropic
-
-# Set API key
-export ANTHROPIC_API_KEY=sk-ant-...
+# Configure the sending identity used for reply dry-runs or sends
 export MAILCLI_ACCOUNT=work
+export MAILCLI_FROM_ADDRESS=support@example.com
 
 # Human-in-the-loop (prints draft JSONs to stdout for review)
-mailcli watch --account work | python3 tools/agent_example.py
+mailcli watch --account work \
+  | go run ./examples/go/watch_reply_agent --draft-replies
 
 # Fully automatic (use with caution!)
-MAILCLI_AUTO_SEND=1 mailcli watch --account work | python3 tools/agent_example.py
+mailcli watch --account work \
+  | MAILCLI_AUTO_SEND=1 go run ./examples/go/watch_reply_agent --draft-replies
 
 # Watch multiple mailboxes
 mailcli watch --account work --mailbox INBOX --mailbox "Customer Support" \
-  | python3 tools/agent_example.py
+  | go run ./examples/go/watch_reply_agent --draft-replies
 ```
 
 ### Watch event schema (JSONL)

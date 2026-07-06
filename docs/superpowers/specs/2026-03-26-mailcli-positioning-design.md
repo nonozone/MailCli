@@ -144,7 +144,7 @@ The project should explicitly avoid scope drift.
 - Provider and driver interfaces
 - Baseline IMAP and SMTP support
 - Test corpus and golden outputs
-- Examples for shell, Python, and agent integrations
+- Examples for Go, shell, and agent integrations
 - Governance and contribution documentation
 
 - 标准 JSON schema
@@ -153,7 +153,7 @@ The project should explicitly avoid scope drift.
 - Provider 与 driver 接口
 - 基础 IMAP / SMTP 支持
 - 测试语料与 golden outputs
-- Shell、Python、agent 集成示例
+- Go、Shell、agent 集成示例
 - 治理与贡献文档
 
 ### Guiding rule / 边界原则
@@ -411,7 +411,7 @@ An open-source documentation site can be added later and maintained by the commu
         html-cleaning.md
         actions.md
       examples/
-        python.md
+        go.md
         shell.md
         agent.md
       roadmap.md
@@ -427,7 +427,7 @@ An open-source documentation site can be added later and maintained by the commu
         html-cleaning.md
         actions.md
       examples/
-        python.md
+        go.md
         shell.md
         agent.md
       roadmap.md

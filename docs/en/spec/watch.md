@@ -150,7 +150,7 @@ mailcli watch \
   --account work \
   --index ~/.config/mailcli/index.db \
   --auto-sync \
-  | python3 my_agent.py
+  | go run ./examples/go/watch_reply_agent --from-address support@nono.im
 ```
 
 ## Agent Integration Pattern
@@ -160,7 +160,7 @@ The simplest agent pattern:
 ```bash
 mailcli watch --account work --index ~/.config/mailcli/index.db \
   | while IFS= read -r line; do
-      echo "$line" | python3 handle_event.py
+      echo "$line" | ./handle_event
     done
 ```
 
@@ -168,14 +168,14 @@ Or pipe directly to a long-running agent process:
 
 ```bash
 mailcli watch --account work --index ~/.config/mailcli/index.db \
-  | python3 tools/agent_example.py
+  | go run ./examples/go/watch_reply_agent --from-address support@nono.im
 ```
 
 The agent reads from stdin line by line. Each line is a complete JSON event.
 The agent can filter by `event` field and act only on `new_message`.
 
-See [tools/agent_example.py](../../../tools/agent_example.py) for a full
-reference implementation.
+See [watch_reply_agent](../../../examples/go/watch_reply_agent/main.go) for a full
+Go reference implementation.
 
 ## Multi-Mailbox
 

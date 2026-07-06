@@ -18,7 +18,7 @@ First release candidate for MailCLI as an open, AI-native email interface.
   - `DraftMessage`
   - `ReplyDraft`
   - `SendResult`
-- Ship Python and shell examples, including an external provider contract and an optional OpenAI provider example
+- Ship Go and shell examples, including an external provider contract and an optional OpenAI provider example
 - Ship a ready-to-run fixture config and a full local thread demo for first-time users
 
 ## Included In This RC
@@ -76,7 +76,8 @@ For this RC, the intended stable boundary is:
 
 - `go test ./...`
 - `go build ./cmd/mailcli`
-- `python3 -m py_compile examples/python/*.py examples/providers/*.py`
+- `go test ./examples`
+- `make demo-local-thread-check`
 
 ## Fastest First Run
 

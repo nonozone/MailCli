@@ -165,7 +165,7 @@ cat draft.json | mailcli send -
 cat reply.json | mailcli reply -
 ```
 
-This keeps the contract language-agnostic and works well for agents, shell scripts, Python, and Node.js.
+This keeps the contract language-agnostic and works well for agents, shell scripts, Go, Node.js, and other runtimes.
 
 ## Current Status
 
