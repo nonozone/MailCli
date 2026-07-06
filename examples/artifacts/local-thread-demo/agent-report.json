@@ -63,7 +63,7 @@
         }
       ]
     },
-    "mime": "From: support@nono.im\r\nTo: Billing Team <billing@example.com>\r\nSubject: Re: Your April invoice is ready\r\nMessage-ID: <generated@mailcli.local>\nIn-Reply-To: <invoice-123@example.com>\r\nReferences: <invoice-123@example.com>\r\nDate: Fri, 27 Mar 2026 15:11:13 +0000\nMIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\nThanks, we have received the invoice notification.",
+    "mime": "From: support@nono.im\nTo: Billing Team <billing@example.com>\nSubject: Re: Your April invoice is ready\nMessage-ID: <generated@mailcli.local>\nIn-Reply-To: <invoice-123@example.com>\nReferences: <invoice-123@example.com>\nDate: Fri, 27 Mar 2026 15:11:13 +0000\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\nThanks, we have received the invoice notification.",
     "mode": "dry_run"
   },
   "selection": {

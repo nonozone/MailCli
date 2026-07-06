@@ -633,6 +633,9 @@ func TestRefreshLocalThreadDemoCommand(t *testing.T) {
 	if !strings.Contains(replyMime, "Message-ID: <generated@mailcli.local>") {
 		t.Fatalf("expected generated reply mime to normalize message id, got %s", replyMime)
 	}
+	if strings.Contains(replyMime, "\r\n") {
+		t.Fatalf("expected generated reply mime artifact to use repository-stable LF line endings")
+	}
 
 	threadBytes, err := os.ReadFile(filepath.Join(outputDir, "thread.json"))
 	if err != nil {

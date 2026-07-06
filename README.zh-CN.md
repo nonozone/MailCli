@@ -112,7 +112,7 @@ make demo-local-thread-check
 
 ## 项目状态
 
-MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
+MailCLI 已经发布 **v0.1.0**。当前 `main` 分支承载的是 `v0.1.0` 之后的 Go-only 核心和现有邮箱接入体验工作。
 
 现在已经可用的部分：
 
@@ -131,7 +131,7 @@ MailCLI 当前处于 **pre-v0.1 release candidate** 阶段。
 - 通过稳定 JSON 契约与 Go、shell 和外部 agent 工作流协作
 - OpenAI 和 Anthropic 格式的 LLM Tool Use Schema（`tools/` 目录）
 
-在 `v0.1 RC` 阶段，已经足够作为稳定集成边界的部分：
+在 `v0.1.0` 和当前 `main` 中，已经足够作为稳定集成边界的部分：
 
 - `mailcli parse`
 - `mailcli list`

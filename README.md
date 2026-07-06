@@ -112,7 +112,7 @@ make demo-local-thread-check
 
 ## Project Status
 
-MailCLI is currently in **pre-v0.1 release candidate** stage.
+MailCLI has a published **v0.1.0** release. The `main` branch now carries post-`v0.1.0` Go-only core and existing-mailbox setup work.
 
 Working today:
 
@@ -131,7 +131,7 @@ Working today:
 - integrate with Go, shell, and external agent workflows through stable JSON contracts
 - LLM tool-use schemas for OpenAI and Anthropic (`tools/` directory)
 
-Stable enough to build against for `v0.1 RC`:
+Stable enough to build against in `v0.1.0` and current `main`:
 
 - `mailcli parse`
 - `mailcli list`

@@ -420,6 +420,8 @@ func normalizeDemoJSON(value any) any {
 }
 
 func normalizeReplyMIME(mime string) string {
+	mime = strings.ReplaceAll(mime, "\r\n", "\n")
+	mime = strings.ReplaceAll(mime, "\r", "\n")
 	lines := strings.Split(mime, "\n")
 	for i, line := range lines {
 		if strings.HasPrefix(line, "Message-ID: ") {
