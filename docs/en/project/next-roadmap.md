@@ -28,6 +28,8 @@ The original RC hardening pass already shipped several important pieces:
 
 For copy-ready GitHub issue drafts, see [GitHub Backlog Drafts](github-backlog.md).
 For the realistic maintainer-led sequence, see [Internal Development Priority](internal-priority.md).
+For the rationale behind adopting harness-style workflows and how they differ
+from ordinary skills, see [Agent Harness Strategy](agent-harness-strategy.md).
 
 ## Priority Order
 

@@ -28,6 +28,7 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 如果你需要可直接复制到 GitHub 的 issue 草案，见 [GitHub Backlog 草案](github-backlog.md)。
 如果你需要更现实的维护者主导开发顺序，见 [内部主导开发顺序](internal-priority.md)。
+如果你需要理解 MailCLI 后续为什么要吸收 harness 方法，以及它和普通 skill 的区别，见 [Agent Harness 策略](agent-harness-strategy.md)。
 
 ## 优先级顺序
 
