@@ -156,14 +156,16 @@ Concrete JSON and MIME pairs are documented in:
 
 - [Outbound Draft Patterns](../examples/outbound-draft-patterns.md)
 
-## Prepared Send Intents
+## Prepared Outbound Intents
 
-For agent automation, a new outbound message should normally be prepared before
-it is sent:
+For agent automation, a new outbound message or reply should normally be
+prepared before it is sent:
 
 ```bash
 mailcli send prepare --config ~/.config/mailcli/config.yaml draft.json
 mailcli send confirm --config ~/.config/mailcli/config.yaml <intent-id>
+mailcli reply prepare --config ~/.config/mailcli/config.yaml reply.json
+mailcli reply confirm --config ~/.config/mailcli/config.yaml <intent-id>
 mailcli operations list
 mailcli operations show <operation-id|intent-id>
 ```
@@ -171,6 +173,12 @@ mailcli operations show <operation-id|intent-id>
 `send prepare` validates the draft, composes enough MIME to allocate a stable
 `Message-ID`, writes a send intent, and returns `OperationIntentResult` JSON. It
 does not initialize the transport driver and does not send mail.
+
+`reply prepare` validates the reply draft, derives `From`, `To`,
+`In-Reply-To`, `References`, and subject when `reply_to_id` requires fetching
+the original message, composes enough MIME to allocate a stable `Message-ID`,
+writes a reply intent, and returns `OperationIntentResult` JSON. It may read the
+source message to resolve thread headers, but it does not send mail.
 
 Example prepare result:
 
@@ -190,14 +198,15 @@ Example prepare result:
 }
 ```
 
-`send confirm` reloads the stored intent and sends that exact draft. On success,
-`SendResult` includes both `intent_id` and `operation_id`. On operational
-failure, MailCLI still returns structured `SendResult` JSON with `error.code`
-and appends a failed operation entry when the intent could be loaded. Confirm
-failures include `intent_id` and the failed `operation_id` in the returned
-`SendResult`, so agents can jump directly to `mailcli operations show`.
+`send confirm` and `reply confirm` reload the stored intent and send that exact
+prepared draft. On success, `SendResult` includes both `intent_id` and
+`operation_id`. On operational failure, MailCLI still returns structured
+`SendResult` JSON with `error.code` and appends a failed operation entry when
+the intent could be loaded. Confirm failures include `intent_id` and the failed
+`operation_id` in the returned `SendResult`, so agents can jump directly to
+`mailcli operations show`.
 If an intent already has a successful `sent` operation entry, a later
-`send confirm` is rejected with `error.code = "intent_already_sent"` before the
+confirm is rejected with `error.code = "intent_already_sent"` before the
 transport driver is called.
 
 The operation log is JSONL. By default it lives at:
@@ -227,6 +236,8 @@ cat draft.json | mailcli send -
 cat reply.json | mailcli reply -
 mailcli send prepare draft.json
 mailcli send confirm <intent-id>
+mailcli reply prepare reply.json
+mailcli reply confirm <intent-id>
 ```
 
 This keeps the contract language-agnostic and works well for agents, shell scripts, Go, Node.js, and other runtimes.
@@ -243,8 +254,8 @@ That composer now supports:
 
 `mailcli send` is now wired for driver-backed transport when an account is configured.
 
-`mailcli send prepare` and `mailcli send confirm` are wired for the first
-operation-intent phase for new outbound messages.
+`mailcli send prepare|confirm` and `mailcli reply prepare|confirm` are wired for
+the first operation-intent phase for outbound messages and replies.
 
 `mailcli reply` is also wired for driver-backed transport when an account is configured.
 

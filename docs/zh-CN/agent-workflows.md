@@ -228,6 +228,8 @@ agent 应该生成 `ReplyDraft`，而不是原始邮件。
 ```bash
 mailcli reply --config ~/.config/mailcli/config.yaml reply.json
 mailcli reply --dry-run reply.json
+mailcli reply prepare --config ~/.config/mailcli/config.yaml reply.json
+mailcli reply confirm --config ~/.config/mailcli/config.yaml <intent-id>
 ```
 
 最小可用的回复边界：
@@ -299,6 +301,12 @@ mailcli sync -> mailcli search -> 选中 id -> mailcli get/reply
 mailcli get -> agent 生成最小 ReplyDraft JSON -> mailcli reply
 ```
 
+Agent 自动化推荐使用：
+
+```text
+mailcli get -> agent 生成最小 ReplyDraft JSON -> mailcli reply prepare -> 确认 -> mailcli reply confirm
+```
+
 ### agent 主动通知
 
 ```text
@@ -337,10 +345,12 @@ agent 生成 DraftMessage -> mailcli send prepare -> 确认 -> mailcli send conf
 - `mailcli search`
 - `mailcli send prepare`
 - `mailcli send confirm`
+- `mailcli reply prepare`
+- `mailcli reply confirm`
 - `mailcli operations list`
 - `mailcli operations show`
 - `mailcli send`，用于受信任的直接发送
-- `mailcli reply`
+- `mailcli reply`，用于受信任的直接回复
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`

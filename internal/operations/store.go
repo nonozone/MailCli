@@ -27,6 +27,16 @@ type SendIntent struct {
 	Draft     schema.DraftMessage     `json:"draft"`
 }
 
+type ReplyIntent struct {
+	ID        string                  `json:"id"`
+	Operation string                  `json:"operation"`
+	Account   string                  `json:"account,omitempty"`
+	MessageID string                  `json:"message_id,omitempty"`
+	CreatedAt string                  `json:"created_at"`
+	Summary   schema.OperationSummary `json:"summary"`
+	Draft     schema.ReplyDraft       `json:"draft"`
+}
+
 type Store struct {
 	path string
 }
@@ -88,6 +98,44 @@ func (s *Store) SaveSendIntent(intent SendIntent) error {
 	})
 }
 
+func (s *Store) SaveReplyIntent(intent ReplyIntent) error {
+	if strings.TrimSpace(intent.ID) == "" {
+		return fmt.Errorf("intent id is required")
+	}
+	if strings.TrimSpace(intent.CreatedAt) == "" {
+		intent.CreatedAt = Now()
+	}
+	if strings.TrimSpace(intent.Operation) == "" {
+		intent.Operation = "reply"
+	}
+
+	if err := os.MkdirAll(s.intentDir(), 0o700); err != nil {
+		return fmt.Errorf("create intent directory: %w", err)
+	}
+	data, err := json.MarshalIndent(intent, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal intent: %w", err)
+	}
+	if err := os.WriteFile(s.intentPath(intent.ID), data, 0o600); err != nil {
+		return fmt.Errorf("write intent: %w", err)
+	}
+	if err := os.Chmod(s.intentPath(intent.ID), 0o600); err != nil {
+		return fmt.Errorf("set intent permissions: %w", err)
+	}
+
+	summary := intent.Summary
+	return s.Append(schema.OperationLogEntry{
+		ID:        NewID("op"),
+		IntentID:  intent.ID,
+		Operation: intent.Operation,
+		Status:    "prepared",
+		Account:   intent.Account,
+		MessageID: intent.MessageID,
+		CreatedAt: intent.CreatedAt,
+		Summary:   &summary,
+	})
+}
+
 func (s *Store) LoadSendIntent(id string) (SendIntent, error) {
 	trimmed := strings.TrimSpace(id)
 	if trimmed == "" {
@@ -103,6 +151,28 @@ func (s *Store) LoadSendIntent(id string) (SendIntent, error) {
 	var intent SendIntent
 	if err := json.Unmarshal(data, &intent); err != nil {
 		return SendIntent{}, fmt.Errorf("decode intent: %w", err)
+	}
+	if intent.ID == "" {
+		intent.ID = trimmed
+	}
+	return intent, nil
+}
+
+func (s *Store) LoadReplyIntent(id string) (ReplyIntent, error) {
+	trimmed := strings.TrimSpace(id)
+	if trimmed == "" {
+		return ReplyIntent{}, ErrNotFound
+	}
+	data, err := os.ReadFile(s.intentPath(trimmed))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return ReplyIntent{}, fmt.Errorf("%w: %s", ErrNotFound, trimmed)
+		}
+		return ReplyIntent{}, fmt.Errorf("read intent: %w", err)
+	}
+	var intent ReplyIntent
+	if err := json.Unmarshal(data, &intent); err != nil {
+		return ReplyIntent{}, fmt.Errorf("decode intent: %w", err)
 	}
 	if intent.ID == "" {
 		intent.ID = trimmed
@@ -183,16 +253,21 @@ func (s *Store) Find(id string) (schema.OperationLogEntry, error) {
 }
 
 func (s *Store) SentEntryForIntent(intentID string) (schema.OperationLogEntry, error) {
+	return s.SentEntryForOperation(intentID, "send")
+}
+
+func (s *Store) SentEntryForOperation(intentID, operation string) (schema.OperationLogEntry, error) {
 	target := strings.TrimSpace(intentID)
 	if target == "" {
 		return schema.OperationLogEntry{}, ErrNotFound
 	}
+	operation = strings.TrimSpace(operation)
 	entries, err := s.List()
 	if err != nil {
 		return schema.OperationLogEntry{}, err
 	}
 	for i := len(entries) - 1; i >= 0; i-- {
-		if entries[i].IntentID == target && entries[i].Operation == "send" && entries[i].Status == "sent" {
+		if entries[i].IntentID == target && entries[i].Operation == operation && entries[i].Status == "sent" {
 			return entries[i], nil
 		}
 	}

@@ -85,6 +85,9 @@ func ComposeReply(draft schema.ReplyDraft) (raw []byte, messageID string, err er
 	if len(draft.References) > 0 {
 		headers["References"] = strings.Join(draft.References, " ")
 	}
+	for k, v := range draft.Headers {
+		headers[k] = v
+	}
 
 	contentType, body, err := composeMessageBody(draft.BodyText, draft.BodyMD, draft.Attachments)
 	if err != nil {

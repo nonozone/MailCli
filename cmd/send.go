@@ -365,6 +365,174 @@ func newReplyCmd() *cobra.Command {
 	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
 	cmd.Flags().StringVar(&account, "account", "", "account name override")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print MIME instead of sending it")
+	cmd.AddCommand(newReplyPrepareCmd())
+	cmd.AddCommand(newReplyConfirmCmd())
+	return cmd
+}
+
+func newReplyPrepareCmd() *cobra.Command {
+	var (
+		configPath     string
+		account        string
+		operationsPath string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "prepare [file|-]",
+		Short: "Prepare a reply intent without sending mail",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			raw, err := readInput(cmd, args[0])
+			if err != nil {
+				return err
+			}
+
+			var draft schema.ReplyDraft
+			if err := json.Unmarshal(raw, &draft); err != nil {
+				return err
+			}
+
+			selectedAccount, err := resolveSelectedAccount(configPath, account, draft.Account)
+			if err != nil {
+				return err
+			}
+			applyDefaultFromAddress(selectedAccount, &draft.From)
+
+			if strings.TrimSpace(draft.ReplyToID) != "" {
+				drv, err := driverFactoryFunc(selectedAccount)
+				if err != nil {
+					return err
+				}
+				if err := enrichReplyDraft(cmd.Context(), drv, &draft); err != nil {
+					return err
+				}
+			}
+			if err := validateEnvelopeAddressing(draft.From, draft.To, draft.Cc, draft.Bcc); err != nil {
+				return err
+			}
+
+			_, messageID, err := composer.ComposeReply(draft)
+			if err != nil {
+				return err
+			}
+			if draft.Headers == nil {
+				draft.Headers = map[string]string{}
+			}
+			draft.Headers["Message-ID"] = messageID
+
+			store := opstore.NewStore(operationsPath)
+			summary := summarizeReplyDraft(draft)
+			intent := opstore.ReplyIntent{
+				ID:        opstore.NewID("intent"),
+				Operation: "reply",
+				Account:   selectedAccount.Name,
+				MessageID: messageID,
+				CreatedAt: opstore.Now(),
+				Summary:   summary,
+				Draft:     draft,
+			}
+			if err := store.SaveReplyIntent(intent); err != nil {
+				return err
+			}
+
+			return writeJSON(cmd.OutOrStdout(), schema.OperationIntentResult{
+				Status:         "prepared",
+				IntentID:       intent.ID,
+				Operation:      intent.Operation,
+				Account:        intent.Account,
+				MessageID:      intent.MessageID,
+				OperationsPath: store.Path(),
+				ConfirmCommand: buildReplyConfirmCommand(configPath, store.Path(), intent.ID),
+				Summary:        summary,
+			})
+		},
+	}
+
+	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
+	cmd.Flags().StringVar(&account, "account", "", "account name override")
+	cmd.Flags().StringVar(&operationsPath, "operations", "", "operations log path")
+	return cmd
+}
+
+func newReplyConfirmCmd() *cobra.Command {
+	var (
+		configPath     string
+		account        string
+		operationsPath string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "confirm [intent-id]",
+		Short: "Send a previously prepared reply intent",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			store := opstore.NewStore(operationsPath)
+			intent, err := store.LoadReplyIntent(args[0])
+			if err != nil {
+				return err
+			}
+			if intent.Operation != "reply" {
+				return fmt.Errorf("unsupported intent operation: %s", intent.Operation)
+			}
+
+			selectedAccount, err := resolveSelectedAccount(configPath, account, intent.Account)
+			if err != nil {
+				return recordAndWriteReplyFailure(cmd, store, intent, "", intent.Account, err)
+			}
+			if strings.TrimSpace(account) != "" && selectedAccount.Name != intent.Account {
+				return fmt.Errorf("intent %s belongs to account %s, not %s", intent.ID, intent.Account, selectedAccount.Name)
+			}
+			if sentEntry, err := store.SentEntryForOperation(intent.ID, "reply"); err == nil {
+				return recordAndWriteReplyFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, fmt.Errorf("%w: %s was sent as %s", errIntentAlreadySent, intent.ID, sentEntry.ID))
+			} else if !errors.Is(err, opstore.ErrNotFound) {
+				return err
+			}
+
+			if err := validateEnvelopeAddressing(intent.Draft.From, intent.Draft.To, intent.Draft.Cc, intent.Draft.Bcc); err != nil {
+				return recordAndWriteReplyFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+			mime, _, err := composer.ComposeReply(intent.Draft)
+			if err != nil {
+				return recordAndWriteReplyFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+
+			drv, err := driverFactoryFunc(selectedAccount)
+			if err != nil {
+				return recordAndWriteReplyFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+			if err := drv.SendRaw(cmd.Context(), mime); err != nil {
+				return recordAndWriteReplyFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+
+			operationID := opstore.NewID("op")
+			summary := intent.Summary
+			if err := store.Append(schema.OperationLogEntry{
+				ID:        operationID,
+				IntentID:  intent.ID,
+				Operation: "reply",
+				Status:    "sent",
+				Account:   selectedAccount.Name,
+				MessageID: intent.MessageID,
+				CreatedAt: opstore.Now(),
+				Summary:   &summary,
+			}); err != nil {
+				return err
+			}
+
+			return writeJSON(cmd.OutOrStdout(), &schema.SendResult{
+				OK:          true,
+				MessageID:   intent.MessageID,
+				Provider:    selectedAccount.Driver,
+				Account:     selectedAccount.Name,
+				IntentID:    intent.ID,
+				OperationID: operationID,
+			})
+		},
+	}
+
+	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
+	cmd.Flags().StringVar(&account, "account", "", "account name override")
+	cmd.Flags().StringVar(&operationsPath, "operations", "", "operations log path")
 	return cmd
 }
 
@@ -522,8 +690,27 @@ func summarizeDraft(draft schema.DraftMessage) schema.OperationSummary {
 	}
 }
 
+func summarizeReplyDraft(draft schema.ReplyDraft) schema.OperationSummary {
+	return schema.OperationSummary{
+		Subject:         strings.TrimSpace(draft.Subject),
+		From:            draft.From,
+		To:              append([]schema.Address{}, draft.To...),
+		Cc:              append([]schema.Address{}, draft.Cc...),
+		BccCount:        countAddressRecipients(draft.Bcc),
+		AttachmentCount: len(draft.Attachments),
+	}
+}
+
 func buildSendConfirmCommand(configPath, operationsPath, intentID string) string {
-	args := []string{"mailcli", "send", "confirm"}
+	return buildOperationConfirmCommand("send", configPath, operationsPath, intentID)
+}
+
+func buildReplyConfirmCommand(configPath, operationsPath, intentID string) string {
+	return buildOperationConfirmCommand("reply", configPath, operationsPath, intentID)
+}
+
+func buildOperationConfirmCommand(command, configPath, operationsPath, intentID string) string {
+	args := []string{"mailcli", command, "confirm"}
 	if strings.TrimSpace(configPath) != "" {
 		args = append(args, "--config", configPath)
 	}
@@ -587,6 +774,28 @@ func recordSendFailure(store *opstore.Store, intent opstore.SendIntent, account 
 
 func recordAndWriteSendFailure(cmd *cobra.Command, store *opstore.Store, intent opstore.SendIntent, provider, account string, err error) error {
 	operationID := recordSendFailure(store, intent, account, mapSendError(err))
+	return writeSendFailureForIntent(cmd, provider, account, intent.ID, operationID, err)
+}
+
+func recordReplyFailure(store *opstore.Store, intent opstore.ReplyIntent, account string, sendErr *schema.SendError) string {
+	summary := intent.Summary
+	operationID := opstore.NewID("op")
+	_ = store.Append(schema.OperationLogEntry{
+		ID:        operationID,
+		IntentID:  intent.ID,
+		Operation: "reply",
+		Status:    "failed",
+		Account:   account,
+		MessageID: intent.MessageID,
+		CreatedAt: opstore.Now(),
+		Summary:   &summary,
+		Error:     sendErr,
+	})
+	return operationID
+}
+
+func recordAndWriteReplyFailure(cmd *cobra.Command, store *opstore.Store, intent opstore.ReplyIntent, provider, account string, err error) error {
+	operationID := recordReplyFailure(store, intent, account, mapSendError(err))
 	return writeSendFailureForIntent(cmd, provider, account, intent.ID, operationID, err)
 }
 

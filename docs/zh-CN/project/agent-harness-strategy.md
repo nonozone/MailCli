@@ -223,7 +223,7 @@ I will ask you only if:
 
 当前第一阶段已经落地：
 
-**`send` 的 operation intent + log。**
+**`send` / `reply` 的 operation intent + log。**
 
 原因：
 
@@ -233,8 +233,8 @@ I will ask you only if:
 
 第一阶段 CLI 契约：
 
-- `mailcli send prepare [--config] [--operations] draft.json`
-- `mailcli send confirm [--config] [--operations] <intent-id>`
+- `mailcli send prepare|confirm [--config] [--operations] ...`
+- `mailcli reply prepare|confirm [--config] [--operations] ...`
 - `mailcli operations list [--operations]`
 - `mailcli operations show [--operations] <operation-id|intent-id>`
 
@@ -248,6 +248,6 @@ I will ask you only if:
 
 后续扩展：
 
-- 给 `reply`、`delete`、`move`、`mark` 增加同样的 prepare / confirm / log 契约
+- 给 `delete`、`move`、`mark` 增加同样的 prepare / confirm / log 契约
 - 先补 inbox triage 信号，再扩大自动执行范围
 - MCP 写工具继续默认关闭，除非本地 policy 明确开启

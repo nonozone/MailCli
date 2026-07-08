@@ -55,7 +55,8 @@ not exposed by the default MCP server.
 Standalone tool schemas still include write-capable tools for integrations that
 explicitly opt in. Agent-initiated new outbound mail should use
 `mailcli_send_prepare` followed by `mailcli_send_confirm`, not direct
-`mailcli_send`.
+`mailcli_send`. Agent-initiated replies should use `mailcli_reply_prepare`
+followed by `mailcli_reply_confirm`, not direct `mailcli_reply`.
 
 ---
 
@@ -148,6 +149,10 @@ func toolToCommand(name string, input map[string]any) ([]string, string) {
 		return commandWithFlags([]string{"send", "prepare"}, input, "draft")
 	case "mailcli_send_confirm":
 		return commandWithFlags([]string{"send", "confirm"}, input, "intent_id")
+	case "mailcli_reply_prepare":
+		return commandWithFlags([]string{"reply", "prepare"}, input, "draft")
+	case "mailcli_reply_confirm":
+		return commandWithFlags([]string{"reply", "confirm"}, input, "intent_id")
 	case "mailcli_operations_list":
 		return commandWithFlags([]string{"operations", "list"}, input)
 	case "mailcli_operations_show":
@@ -246,7 +251,7 @@ mailcli watch --account work --mailbox INBOX --mailbox "Customer Support" \
 3. On new_message event:
    a. Pass StandardMessage to LLM with system prompt
    b. LLM decides: reply / archive / flag / ignore
-   c. If reply → cat reply.json | mailcli reply --dry-run - first, then require local approval before direct send
+   c. If reply → cat reply.json | mailcli reply prepare -, inspect summary, then mailcli reply confirm <intent-id>
    d. If new outbound mail → cat draft.json | mailcli send prepare -, inspect summary, then mailcli send confirm <intent-id>
    e. If archive / flag → require local policy approval before mailcli move or mailcli mark until mutation intents are implemented
 4. Periodically:

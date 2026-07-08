@@ -228,6 +228,8 @@ When `reply_to_id` is used, `mailcli` may fetch the original message and derive:
 ```bash
 mailcli reply --config ~/.config/mailcli/config.yaml reply.json
 mailcli reply --dry-run reply.json
+mailcli reply prepare --config ~/.config/mailcli/config.yaml reply.json
+mailcli reply confirm --config ~/.config/mailcli/config.yaml <intent-id>
 ```
 
 Smallest useful reply boundary:
@@ -303,6 +305,12 @@ mailcli sync -> mailcli search -> choose id -> mailcli get/reply
 mailcli get -> agent writes minimal ReplyDraft JSON -> mailcli reply
 ```
 
+For agent automation, use:
+
+```text
+mailcli get -> agent writes minimal ReplyDraft JSON -> mailcli reply prepare -> confirm -> mailcli reply confirm
+```
+
 ### Agent-triggered outbound notification
 
 ```text
@@ -341,10 +349,12 @@ For agent developers, the stable contracts should be:
 - `mailcli search`
 - `mailcli send prepare`
 - `mailcli send confirm`
+- `mailcli reply prepare`
+- `mailcli reply confirm`
 - `mailcli operations list`
 - `mailcli operations show`
 - `mailcli send` for direct trusted sends
-- `mailcli reply`
+- `mailcli reply` for direct trusted replies
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`

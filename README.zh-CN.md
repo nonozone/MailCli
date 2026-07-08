@@ -166,7 +166,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - 查看本地索引中的会话 / thread 摘要
 - 编译出站草稿和回复草稿
 - 通过 SMTP 为 IMAP 风格账户发信
-- 为 `send` 生成可确认的 intent，并把准备、执行、失败结果写入本地 operation log
+- 为 `send` / `reply` 生成可确认的 intent，并把准备、执行、失败结果写入本地 operation log
 - 删除、移动、读/未读标记远端邮件
 - 将本地索引导出为 JSONL、JSON 或 CSV
 - **watch** 一个或多个邮箱（IMAP IDLE 推送事件流，重启后持久化去重）
@@ -186,6 +186,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `mailcli send`
 - `mailcli send prepare|confirm`
 - `mailcli reply`
+- `mailcli reply prepare|confirm`
 - `mailcli delete`
 - `mailcli move`
 - `mailcli mark`
@@ -301,10 +302,12 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli send --config ~/.config/mailcli/config.yaml <draft.json>`：受信任脚本或人工场景的直接发送
 - `mailcli send prepare --config ~/.config/mailcli/config.yaml [--operations <path>] <draft.json>`：生成待确认发送 intent，不发信
 - `mailcli send confirm --config ~/.config/mailcli/config.yaml [--operations <path>] <intent-id>`：确认并执行已准备的发送 intent
+- `mailcli reply --dry-run <reply.json>`：直接预览回复 MIME
+- `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`：受信任脚本或人工场景的直接回复
+- `mailcli reply prepare --config ~/.config/mailcli/config.yaml [--operations <path>] <reply.json>`：生成待确认回复 intent，不发信
+- `mailcli reply confirm --config ~/.config/mailcli/config.yaml [--operations <path>] <intent-id>`：确认并执行已准备的回复 intent
 - `mailcli operations list [--operations <path>]`
 - `mailcli operations show [--operations <path>] <operation-id|intent-id>`
-- `mailcli reply --dry-run <reply.json>`
-- `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
 
 ### 配置与能力发现
 
@@ -401,12 +404,12 @@ Agent -> mailcli sync -> mailcli threads -> 选择 thread -> mailcli search/get/
 ```mermaid
 flowchart LR
   A["Agent"] --> B["最小 ReplyDraft JSON"]
-  B --> C["mailcli reply"]
+  B --> C["mailcli reply prepare"]
   C --> D["MailCLI 自动补 From / To / 线程头"]
-  D --> E["Composer"]
-  E --> F["Raw MIME"]
-  F --> G["Driver"]
-  G --> H["Provider"]
+  D --> E["Intent 摘要"]
+  E --> F["确认"]
+  F --> G["mailcli reply confirm"]
+  G --> H["Operation log / Provider"]
 ```
 
 ### 新邮件发送循环

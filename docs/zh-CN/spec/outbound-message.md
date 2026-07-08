@@ -156,18 +156,22 @@
 
 - [Outbound Draft Patterns](../examples/outbound-draft-patterns.md)
 
-## 可确认发送 Intent
+## 可确认出站 Intent
 
-对于 agent 自动化，全新出站邮件通常应该先准备，再发送：
+对于 agent 自动化，全新出站邮件或回复通常应该先准备，再发送：
 
 ```bash
 mailcli send prepare --config ~/.config/mailcli/config.yaml draft.json
 mailcli send confirm --config ~/.config/mailcli/config.yaml <intent-id>
+mailcli reply prepare --config ~/.config/mailcli/config.yaml reply.json
+mailcli reply confirm --config ~/.config/mailcli/config.yaml <intent-id>
 mailcli operations list
 mailcli operations show <operation-id|intent-id>
 ```
 
 `send prepare` 会校验 draft，编译足够的 MIME 来生成稳定 `Message-ID`，写入发送 intent，并返回 `OperationIntentResult` JSON。它不会初始化 transport driver，也不会发信。
+
+`reply prepare` 会校验 reply draft；如果 `reply_to_id` 需要抓取原邮件，它会先推导 `From`、`To`、`In-Reply-To`、`References` 和主题；然后编译足够的 MIME 来生成稳定 `Message-ID`，写入 reply intent，并返回 `OperationIntentResult` JSON。它可能读取原邮件来补线程头，但不会发信。
 
 prepare 结果示例：
 
@@ -187,8 +191,8 @@ prepare 结果示例：
 }
 ```
 
-`send confirm` 会重新加载已保存的 intent，并发送同一份 draft。成功时，`SendResult` 会包含 `intent_id` 和 `operation_id`。发生业务失败时，只要 intent 已经成功加载，MailCLI 仍会返回带 `error.code` 的结构化 `SendResult` JSON，并追加一条 failed operation log。confirm 失败返回也会包含 `intent_id` 和失败的 `operation_id`，agent 可以直接继续调用 `mailcli operations show` 追踪。
-如果某个 intent 已经有成功的 `sent` operation 记录，后续再次 `send confirm` 会在调用 transport driver 前被拒绝，并返回 `error.code = "intent_already_sent"`。
+`send confirm` 和 `reply confirm` 会重新加载已保存的 intent，并发送同一份已准备 draft。成功时，`SendResult` 会包含 `intent_id` 和 `operation_id`。发生业务失败时，只要 intent 已经成功加载，MailCLI 仍会返回带 `error.code` 的结构化 `SendResult` JSON，并追加一条 failed operation log。confirm 失败返回也会包含 `intent_id` 和失败的 `operation_id`，agent 可以直接继续调用 `mailcli operations show` 追踪。
+如果某个 intent 已经有成功的 `sent` operation 记录，后续再次 confirm 会在调用 transport driver 前被拒绝，并返回 `error.code = "intent_already_sent"`。
 
 operation log 是 JSONL，默认位置是：
 
@@ -213,6 +217,8 @@ cat draft.json | mailcli send -
 cat reply.json | mailcli reply -
 mailcli send prepare draft.json
 mailcli send confirm <intent-id>
+mailcli reply prepare reply.json
+mailcli reply confirm <intent-id>
 ```
 
 这样接口保持语言无关，适合 agent、shell、Go、Node.js 和其他 runtime 调用。
@@ -229,7 +235,7 @@ mailcli send confirm <intent-id>
 
 `mailcli send` 已经接通，在有账户配置时可以把 MIME 交给 driver。
 
-`mailcli send prepare` 和 `mailcli send confirm` 已经接通，作为新邮件发送的第一阶段 operation-intent 契约。
+`mailcli send prepare|confirm` 和 `mailcli reply prepare|confirm` 已经接通，作为出站邮件和回复的第一阶段 operation-intent 契约。
 
 `mailcli reply` 也已经接通，在有账户配置时可以把 MIME 交给 driver。
 

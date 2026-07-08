@@ -17,7 +17,8 @@ remains the user-facing installation and usage document.
 - MUST: Store mailbox credentials as environment-variable references or future secret-provider references, not as raw passwords, app passwords, authorization codes, or OAuth tokens in committed config examples.
 - MUST: Keep read and setup surfaces available to agents without granting destructive mail actions by default; send, delete, move, and mark operations must stay behind explicit CLI capabilities, confirmation, dry-run, or operation-log boundaries.
 - MUST: Keep `mailcli send prepare` transport-free, creating a confirmable send intent without calling the driver.
-- MUST: Keep `mailcli send confirm` bound to the stored intent, append sent or failed operation log entries, and reject later confirms for an already sent intent.
+- MUST: Keep `mailcli reply prepare` send-free, creating a confirmable reply intent; it may read the source message only when needed to derive reply headers and recipients.
+- MUST: Keep `mailcli send confirm` and `mailcli reply confirm` bound to the stored intent, append sent or failed operation log entries, and reject later confirms for an already sent intent.
 - MUST: Keep `mailcli operations list|show` limited to operation summaries and structured errors; do not expose full message bodies, raw MIME, or configured secrets.
 - SHOULD: Prefer existing-mailbox onboarding through provider presets and normalized IMAP/SMTP account config rather than provider-specific core driver logic.
 - SHOULD: Validate user-visible workflow changes with Go tests plus a CLI smoke test or demo check when the change affects command behavior.

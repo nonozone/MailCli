@@ -568,6 +568,344 @@ func TestOperationsListAndShowReadOperationLog(t *testing.T) {
 	}
 }
 
+func TestReplyPrepareWritesIntentWithoutSending(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("reply prepare must not initialize the transport driver when the reply is already resolved")
+		return nil, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Re: Question",
+  "body_text": "Thanks for the email.",
+  "reply_to_message_id": "<orig-123@example.com>",
+  "references": ["<orig-123@example.com>"]
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "prepare", "--config", configPath, "--operations", operationsPath, replyPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected reply prepare to succeed: %v\n%s", err, out.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &result); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, out.String())
+	}
+	if result["status"] != "prepared" || result["operation"] != "reply" || result["account"] != "work" {
+		t.Fatalf("unexpected reply prepare result: %#v", result)
+	}
+	if strings.TrimSpace(result["intent_id"].(string)) == "" {
+		t.Fatalf("expected intent id in reply prepare result: %#v", result)
+	}
+	if !strings.Contains(result["confirm_command"].(string), "mailcli reply confirm") {
+		t.Fatalf("expected reply confirm command, got %#v", result["confirm_command"])
+	}
+
+	rawLog, err := os.ReadFile(operationsPath)
+	if err != nil {
+		t.Fatalf("expected operations log to be written: %v", err)
+	}
+	if !strings.Contains(string(rawLog), `"operation":"reply"`) || !strings.Contains(string(rawLog), `"status":"prepared"`) {
+		t.Fatalf("expected prepared reply log entry, got %s", string(rawLog))
+	}
+	if strings.Contains(string(rawLog), "Thanks for the email.") {
+		t.Fatalf("operation log must not store full reply body: %s", string(rawLog))
+	}
+}
+
+func TestReplyPrepareEnrichesReplyToIDWithoutSending(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	fake := &replyResolveDriver{
+		fakeSendDriver: &fakeSendDriver{},
+		raw:            []byte("From: User <user@example.com>\r\nTo: Support <support@nono.im>\r\nSubject: Question\r\nMessage-ID: <orig-123@example.com>\r\nDate: Thu, 26 Mar 2026 12:40:00 +0800\r\n\r\nCan you help?"),
+	}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "body_text": "Thanks for the email.",
+  "reply_to_id": "orig.eml"
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"reply", "prepare", "--config", configPath, "--operations", operationsPath, replyPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected reply prepare to enrich and succeed: %v\n%s", err, out.String())
+	}
+	if len(fake.lastRaw) != 0 {
+		t.Fatalf("reply prepare must not send raw MIME")
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &result); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, out.String())
+	}
+
+	fetchingDriver := &replyResolveDriver{fakeSendDriver: &fakeSendDriver{fetchErr: errors.New("confirm should not fetch original")}}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fetchingDriver, nil
+	}
+	confirmCmd := NewRootCmd()
+	var confirmOut bytes.Buffer
+	confirmCmd.SetOut(&confirmOut)
+	confirmCmd.SetErr(&confirmOut)
+	confirmCmd.SetArgs([]string{"reply", "confirm", "--config", configPath, "--operations", operationsPath, result["intent_id"].(string)})
+	if err := confirmCmd.Execute(); err != nil {
+		t.Fatalf("expected reply confirm to use prepared enriched draft: %v\n%s", err, confirmOut.String())
+	}
+	rawMessage := string(fetchingDriver.lastRaw)
+	if !strings.Contains(rawMessage, "In-Reply-To: <orig-123@example.com>") || !strings.Contains(rawMessage, "user@example.com") {
+		t.Fatalf("expected confirm to send enriched reply headers and recipients, got %s", rawMessage)
+	}
+}
+
+func TestReplyConfirmSendsPreparedIntentAndLogsOperation(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Re: Question",
+  "body_text": "Thanks for the email.",
+  "reply_to_message_id": "<orig-123@example.com>",
+  "references": ["<orig-123@example.com>"]
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("reply prepare must not initialize the transport driver when the reply is already resolved")
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"reply", "prepare", "--config", configPath, "--operations", operationsPath, replyPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected reply prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+	messageID := prepareResult["message_id"].(string)
+
+	fake := &fakeSendDriver{}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+	confirmCmd := NewRootCmd()
+	var confirmOut bytes.Buffer
+	confirmCmd.SetOut(&confirmOut)
+	confirmCmd.SetErr(&confirmOut)
+	confirmCmd.SetArgs([]string{"reply", "confirm", "--config", configPath, "--operations", operationsPath, prepareResult["intent_id"].(string)})
+	if err := confirmCmd.Execute(); err != nil {
+		t.Fatalf("expected reply confirm to succeed: %v\n%s", err, confirmOut.String())
+	}
+
+	if len(fake.lastRaw) == 0 {
+		t.Fatalf("expected reply confirm to send prepared MIME")
+	}
+	rawMessage := string(fake.lastRaw)
+	if !strings.Contains(rawMessage, "Thanks for the email.") || !strings.Contains(rawMessage, "In-Reply-To: <orig-123@example.com>") || !strings.Contains(rawMessage, "Message-ID: "+messageID) {
+		t.Fatalf("expected confirm to send the prepared reply body and headers, got %s", rawMessage)
+	}
+	var confirmResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(confirmOut.Bytes()), &confirmResult); err != nil {
+		t.Fatalf("expected JSON confirm result: %v\n%s", err, confirmOut.String())
+	}
+	if confirmResult["ok"] != true || confirmResult["intent_id"] != prepareResult["intent_id"] || strings.TrimSpace(confirmResult["operation_id"].(string)) == "" {
+		t.Fatalf("unexpected reply confirm result: %#v", confirmResult)
+	}
+
+	rawLog, err := os.ReadFile(operationsPath)
+	if err != nil {
+		t.Fatalf("expected operations log to be written: %v", err)
+	}
+	logText := string(rawLog)
+	if !strings.Contains(logText, `"operation":"reply"`) || !strings.Contains(logText, `"status":"sent"`) {
+		t.Fatalf("expected sent reply log entry, got %s", logText)
+	}
+	if strings.Contains(logText, "Thanks for the email.") {
+		t.Fatalf("operation log must not store full reply body: %s", logText)
+	}
+}
+
+func TestReplyConfirmRejectsAlreadySentIntent(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Re: Question",
+  "body_text": "Thanks for the email.",
+  "reply_to_message_id": "<orig-123@example.com>",
+  "references": ["<orig-123@example.com>"]
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"reply", "prepare", "--config", configPath, "--operations", operationsPath, replyPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected reply prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+	intentID := prepareResult["intent_id"].(string)
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return &fakeSendDriver{}, nil
+	}
+	firstConfirm := NewRootCmd()
+	var firstOut bytes.Buffer
+	firstConfirm.SetOut(&firstOut)
+	firstConfirm.SetErr(&firstOut)
+	firstConfirm.SetArgs([]string{"reply", "confirm", "--config", configPath, "--operations", operationsPath, intentID})
+	if err := firstConfirm.Execute(); err != nil {
+		t.Fatalf("expected first reply confirm to succeed: %v\n%s", err, firstOut.String())
+	}
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("second reply confirm must not call the transport driver")
+		return nil, nil
+	}
+	secondConfirm := NewRootCmd()
+	var secondOut bytes.Buffer
+	secondConfirm.SetOut(&secondOut)
+	secondConfirm.SetErr(&secondOut)
+	secondConfirm.SetArgs([]string{"reply", "confirm", "--config", configPath, "--operations", operationsPath, intentID})
+	err := secondConfirm.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected second reply confirm to fail with outbound sentinel, got %v\n%s", err, secondOut.String())
+	}
+	if !strings.Contains(secondOut.String(), `"code": "intent_already_sent"`) {
+		t.Fatalf("expected structured already-sent failure, got %s", secondOut.String())
+	}
+
+	rawLog, readErr := os.ReadFile(operationsPath)
+	if readErr != nil {
+		t.Fatalf("expected operations log to be written: %v", readErr)
+	}
+	logText := string(rawLog)
+	if strings.Count(logText, `"operation":"reply"`) < 3 || strings.Count(logText, `"status":"sent"`) != 1 {
+		t.Fatalf("expected prepared, one sent, and failed reply operation entries, got %s", logText)
+	}
+}
+
+func TestReplyConfirmLogsFailedOperation(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	replyPath := writeTempFile(t, "reply.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Re: Question",
+  "body_text": "Thanks for the email.",
+  "reply_to_message_id": "<orig-123@example.com>",
+  "references": ["<orig-123@example.com>"]
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"reply", "prepare", "--config", configPath, "--operations", operationsPath, replyPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected reply prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return nil, driver.ErrDriverConfigInvalid
+	}
+	confirmCmd := NewRootCmd()
+	var confirmOut bytes.Buffer
+	confirmCmd.SetOut(&confirmOut)
+	confirmCmd.SetErr(&confirmOut)
+	confirmCmd.SetArgs([]string{"reply", "confirm", "--config", configPath, "--operations", operationsPath, prepareResult["intent_id"].(string)})
+	err := confirmCmd.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected outbound failure sentinel, got %v\n%s", err, confirmOut.String())
+	}
+	if !strings.Contains(confirmOut.String(), `"code": "transport_failed"`) || !strings.Contains(confirmOut.String(), `"operation_id"`) {
+		t.Fatalf("expected structured reply confirm failure, got %s", confirmOut.String())
+	}
+
+	rawLog, readErr := os.ReadFile(operationsPath)
+	if readErr != nil {
+		t.Fatalf("expected operations log to be written: %v", readErr)
+	}
+	if !strings.Contains(string(rawLog), `"operation":"reply"`) || !strings.Contains(string(rawLog), `"status":"failed"`) {
+		t.Fatalf("expected failed reply operation log entry, got %s", string(rawLog))
+	}
+}
+
 func TestSendCommandDefaultsFromAddressFromAccountConfig(t *testing.T) {
 	restoreLoad := loadConfigFunc
 	restoreDriver := driverFactoryFunc
@@ -1108,6 +1446,9 @@ func (d *replyResolveDriver) List(ctx context.Context, query schema.SearchQuery)
 }
 
 func (d *replyResolveDriver) FetchRaw(ctx context.Context, id string) ([]byte, error) {
+	if d.fetchErr != nil {
+		return nil, d.fetchErr
+	}
 	return d.raw, nil
 }
 

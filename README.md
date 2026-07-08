@@ -168,7 +168,7 @@ Working today:
 - inspect local conversation/thread summaries from indexed messages
 - compile outbound drafts and replies (RFC 2047 encoded headers)
 - send through SMTP-backed IMAP-style accounts (returns `message_id`)
-- prepare and confirm send intents with local operation logs for agent-safe outbound workflows
+- prepare and confirm send/reply intents with local operation logs for agent-safe outbound workflows
 - delete, move, mark-read/unread on remote mailboxes
 - export the local index as JSONL, JSON, or CSV
 - **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed, persistent seen state across restarts)
@@ -188,6 +188,7 @@ Stable enough to build against in current `main`:
 - `mailcli send`
 - `mailcli send prepare|confirm`
 - `mailcli reply`
+- `mailcli reply prepare|confirm`
 - `mailcli delete`
 - `mailcli move`
 - `mailcli mark`
@@ -302,9 +303,11 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli send [--account] [--dry-run] <draft.json>` for direct send or MIME preview
 - `mailcli send prepare [--account] [--operations] <draft.json>` for agent-safe outbound intent creation
 - `mailcli send confirm [--account] [--operations] <intent-id>` to execute a prepared send intent
+- `mailcli reply [--account] [--dry-run] <reply.json>` for direct reply or MIME preview
+- `mailcli reply prepare [--account] [--operations] <reply.json>` for agent-safe reply intent creation
+- `mailcli reply confirm [--account] [--operations] <intent-id>` to execute a prepared reply intent
 - `mailcli operations list [--operations]`
 - `mailcli operations show [--operations] <operation-id|intent-id>`
-- `mailcli reply [--account] [--dry-run] <reply.json>`
 - `mailcli delete [--account] [--mailbox] <id>`
 - `mailcli move [--account] [--mailbox] <id> <dest-mailbox>`
 - `mailcli mark [--account] [--mailbox] [--unread] <id>`
@@ -424,12 +427,12 @@ Agent -> mailcli sync -> mailcli threads -> choose thread -> mailcli search/get/
 ```mermaid
 flowchart LR
   A["Agent"] --> B["Minimal ReplyDraft JSON"]
-  B --> C["mailcli reply"]
+  B --> C["mailcli reply prepare"]
   C --> D["MailCLI derives From / To / thread headers"]
-  D --> E["Composer"]
-  E --> F["Raw MIME"]
-  F --> G["Driver"]
-  G --> H["Provider"]
+  D --> E["Intent summary"]
+  E --> F["Confirmation"]
+  F --> G["mailcli reply confirm"]
+  G --> H["Operation log / Provider"]
 ```
 
 ### New outbound message loop

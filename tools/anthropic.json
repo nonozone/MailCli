@@ -132,6 +132,48 @@
       }
     },
     {
+      "name": "mailcli_reply_prepare",
+      "description": "Prepare a reply intent without sending it. Use this before any agent-initiated reply so a human or controlling harness can inspect and confirm the operation.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "config": { "type": "string", "description": "Optional config file path" },
+          "account": { "type": "string" },
+          "operations": { "type": "string", "description": "Optional operations log path" },
+          "draft": {
+            "type": "object",
+            "properties": {
+              "from": { "type": "object", "properties": { "name": { "type": "string" }, "address": { "type": "string" } }, "required": ["address"] },
+              "to": { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "address": { "type": "string" } }, "required": ["address"] } },
+              "cc": { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" } } } },
+              "bcc": { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" } } } },
+              "reply_to_id": { "type": "string", "description": "Message lookup ID; lets MailCLI fetch the original and derive reply headers/recipients" },
+              "reply_to_message_id": { "type": "string", "description": "Message-ID of the message being replied to" },
+              "references": { "type": "array", "items": { "type": "string" } },
+              "subject": { "type": "string" },
+              "body_md": { "type": "string" },
+              "body_text": { "type": "string" }
+            }
+          }
+        },
+        "required": ["draft"]
+      }
+    },
+    {
+      "name": "mailcli_reply_confirm",
+      "description": "Confirm and send a previously prepared reply intent. Call only after the intent summary has been approved.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "config": { "type": "string", "description": "Optional config file path" },
+          "account": { "type": "string", "description": "Optional account override; must match the prepared intent account" },
+          "operations": { "type": "string", "description": "Optional operations log path" },
+          "intent_id": { "type": "string", "description": "Intent ID returned by mailcli_reply_prepare" }
+        },
+        "required": ["intent_id"]
+      }
+    },
+    {
       "name": "mailcli_operations_list",
       "description": "List prepared, sent, and failed operation log entries. Entries contain summaries and structured errors, not full message bodies.",
       "input_schema": {
@@ -178,7 +220,7 @@
     },
     {
       "name": "mailcli_reply",
-      "description": "Send a reply to an existing email. Sets In-Reply-To and References headers automatically from the draft.",
+      "description": "Directly send a reply to an existing email. Sets In-Reply-To and References headers automatically from the draft. For agent-initiated replies, prefer mailcli_reply_prepare followed by mailcli_reply_confirm.",
       "input_schema": {
         "type": "object",
         "properties": {

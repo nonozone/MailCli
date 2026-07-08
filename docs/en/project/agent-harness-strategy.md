@@ -164,15 +164,15 @@ Defer:
 
 Current first implementation slice:
 
-**Operation intent and logs for `send`.**
+**Operation intent and logs for `send` and `reply`.**
 
 This directly addresses the user's strongest trust concern: AI should not send,
 delete, or move mail without a confirmable intent and durable audit trail.
 
 Implemented first-phase contract:
 
-- `mailcli send prepare [--config] [--operations] draft.json`
-- `mailcli send confirm [--config] [--operations] <intent-id>`
+- `mailcli send prepare|confirm [--config] [--operations] ...`
+- `mailcli reply prepare|confirm [--config] [--operations] ...`
 - `mailcli operations list [--operations]`
 - `mailcli operations show [--operations] <operation-id|intent-id>`
 
@@ -186,6 +186,6 @@ Acceptance criteria:
 
 Remaining extensions:
 
-- add the same prepare / confirm / log contract for `reply`, `delete`, `move`, and `mark`
+- add the same prepare / confirm / log contract for `delete`, `move`, and `mark`
 - add inbox triage signals before expanding automatic execution
 - keep MCP write tools disabled by default unless a local policy explicitly enables them
