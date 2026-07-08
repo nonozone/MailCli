@@ -244,16 +244,19 @@ This is the preferred handoff when the agent already chose the target message an
 
 ## The New Message Path
 
-Use this path when the agent is sending a brand new outbound email.
+Use this path when the agent is preparing a brand new outbound email. The
+recommended automation path is prepare first, inspect the intent summary, then
+confirm.
 
 ```mermaid
 flowchart LR
   A["Agent"] --> B["DraftMessage JSON"]
-  B --> C["mailcli send"]
-  C --> D["Composer"]
-  D --> E["Raw MIME"]
-  E --> F["Driver"]
-  F --> G["Provider"]
+  B --> C["mailcli send prepare"]
+  C --> D["Intent summary"]
+  D --> E["Human or harness confirmation"]
+  E --> F["mailcli send confirm"]
+  F --> G["Operation log"]
+  G --> H["Driver / Provider"]
 ```
 
 ### Example
@@ -269,9 +272,16 @@ flowchart LR
 ```
 
 ```bash
-mailcli send --config ~/.config/mailcli/config.yaml draft.json
+mailcli send prepare --config ~/.config/mailcli/config.yaml draft.json
+mailcli send confirm --config ~/.config/mailcli/config.yaml <intent-id>
+mailcli operations list
+mailcli operations show <operation-id|intent-id>
 mailcli send --dry-run draft.json
 ```
+
+Direct `mailcli send --config ... draft.json` remains available for trusted
+scripts. Agents should prefer `send prepare` / `send confirm` so outbound mail
+has a confirmable intent id and an operation log entry.
 
 ## Round-Trip Patterns
 
@@ -296,7 +306,7 @@ mailcli get -> agent writes minimal ReplyDraft JSON -> mailcli reply
 ### Agent-triggered outbound notification
 
 ```text
-agent writes DraftMessage -> mailcli send
+agent writes DraftMessage -> mailcli send prepare -> confirm -> mailcli send confirm
 ```
 
 ## What Developers Should Build Where
@@ -329,11 +339,17 @@ For agent developers, the stable contracts should be:
 - `mailcli parse`
 - `mailcli sync`
 - `mailcli search`
-- `mailcli send`
+- `mailcli send prepare`
+- `mailcli send confirm`
+- `mailcli operations list`
+- `mailcli operations show`
+- `mailcli send` for direct trusted sends
 - `mailcli reply`
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult`
+- `OperationIntentResult`
+- `OperationLogEntry`
 
 These are the boundaries that should remain easy to call from Go, shell, Node.js, or other agent runtimes.

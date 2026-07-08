@@ -35,12 +35,14 @@ type Attachment struct {
 }
 
 type SendResult struct {
-	OK        bool       `json:"ok" yaml:"ok"`
-	MessageID string     `json:"message_id,omitempty" yaml:"message_id,omitempty"`
-	ThreadID  string     `json:"thread_id,omitempty" yaml:"thread_id,omitempty"`
-	Provider  string     `json:"provider,omitempty" yaml:"provider,omitempty"`
-	Account   string     `json:"account,omitempty" yaml:"account,omitempty"`
-	Error     *SendError `json:"error,omitempty" yaml:"error,omitempty"`
+	OK          bool       `json:"ok" yaml:"ok"`
+	MessageID   string     `json:"message_id,omitempty" yaml:"message_id,omitempty"`
+	ThreadID    string     `json:"thread_id,omitempty" yaml:"thread_id,omitempty"`
+	Provider    string     `json:"provider,omitempty" yaml:"provider,omitempty"`
+	Account     string     `json:"account,omitempty" yaml:"account,omitempty"`
+	IntentID    string     `json:"intent_id,omitempty" yaml:"intent_id,omitempty"`
+	OperationID string     `json:"operation_id,omitempty" yaml:"operation_id,omitempty"`
+	Error       *SendError `json:"error,omitempty" yaml:"error,omitempty"`
 }
 
 type SendError struct {

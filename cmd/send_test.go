@@ -3,6 +3,7 @@ package cmd
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -126,6 +127,444 @@ func TestSendCommandUsesConfiguredDriver(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "\"ok\": true") {
 		t.Fatalf("expected send result output")
+	}
+}
+
+func TestSendPrepareWritesIntentWithoutSending(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("prepare must not initialize or call the transport driver")
+		return nil, nil
+	}
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"send", "prepare", "--config", configPath, "--operations", operationsPath, draftPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected send prepare to succeed: %v\n%s", err, out.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &result); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, out.String())
+	}
+	if result["status"] != "prepared" || result["operation"] != "send" || result["account"] != "work" {
+		t.Fatalf("unexpected prepare result: %#v", result)
+	}
+	if strings.TrimSpace(result["intent_id"].(string)) == "" {
+		t.Fatalf("expected intent id in prepare result: %#v", result)
+	}
+	confirmCommand, ok := result["confirm_command"].(string)
+	if !ok || !strings.Contains(confirmCommand, "--config "+configPath) {
+		t.Fatalf("expected confirm command to preserve config path, got %#v", result["confirm_command"])
+	}
+
+	rawLog, err := os.ReadFile(operationsPath)
+	if err != nil {
+		t.Fatalf("expected operations log to be written: %v", err)
+	}
+	if !strings.Contains(string(rawLog), `"status":"prepared"`) {
+		t.Fatalf("expected prepared log entry, got %s", string(rawLog))
+	}
+	if strings.Contains(string(rawLog), "Hello from MailCLI.") {
+		t.Fatalf("operation log must not store full draft body: %s", string(rawLog))
+	}
+}
+
+func TestSendPrepareConfirmCommandQuotesPathsForCopyPaste(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	baseDir := t.TempDir()
+	configDir := filepath.Join(baseDir, "config dir")
+	operationsDir := filepath.Join(baseDir, "operations dir")
+	if err := os.MkdirAll(configDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(operationsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(configDir, "config.yaml")
+	if err := os.WriteFile(configPath, []byte("current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	loadConfigFunc = config.Load
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("prepare must not initialize or call the transport driver")
+		return nil, nil
+	}
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+	operationsPath := filepath.Join(operationsDir, "operations.jsonl")
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"send", "prepare", "--config", configPath, "--operations", operationsPath, draftPath})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected send prepare to succeed: %v\n%s", err, out.String())
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(out.Bytes()), &result); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, out.String())
+	}
+	confirmCommand := result["confirm_command"].(string)
+	if !strings.Contains(confirmCommand, "--config '"+configPath+"'") {
+		t.Fatalf("expected quoted config path in confirm command, got %q", confirmCommand)
+	}
+	if !strings.Contains(confirmCommand, "--operations '"+operationsPath+"'") {
+		t.Fatalf("expected quoted operations path in confirm command, got %q", confirmCommand)
+	}
+}
+
+func TestSendConfirmSendsPreparedIntentAndLogsOperation(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("prepare must not initialize or call the transport driver")
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"send", "prepare", "--config", configPath, "--operations", operationsPath, draftPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected send prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+	intentID := prepareResult["intent_id"].(string)
+	messageID := prepareResult["message_id"].(string)
+
+	fake := &fakeSendDriver{}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+	confirmCmd := NewRootCmd()
+	var confirmOut bytes.Buffer
+	confirmCmd.SetOut(&confirmOut)
+	confirmCmd.SetErr(&confirmOut)
+	confirmCmd.SetArgs([]string{"send", "confirm", "--config", configPath, "--operations", operationsPath, intentID})
+	if err := confirmCmd.Execute(); err != nil {
+		t.Fatalf("expected send confirm to succeed: %v\n%s", err, confirmOut.String())
+	}
+
+	if len(fake.lastRaw) == 0 {
+		t.Fatalf("expected confirm to send prepared MIME")
+	}
+	rawMessage := string(fake.lastRaw)
+	if !strings.Contains(rawMessage, "Hello from MailCLI.") || !strings.Contains(rawMessage, "Message-ID: "+messageID) {
+		t.Fatalf("expected confirm to send the prepared intent body and message id, got %s", rawMessage)
+	}
+
+	var confirmResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(confirmOut.Bytes()), &confirmResult); err != nil {
+		t.Fatalf("expected JSON confirm result: %v\n%s", err, confirmOut.String())
+	}
+	if confirmResult["ok"] != true || confirmResult["intent_id"] != intentID || strings.TrimSpace(confirmResult["operation_id"].(string)) == "" {
+		t.Fatalf("unexpected confirm result: %#v", confirmResult)
+	}
+
+	rawLog, err := os.ReadFile(operationsPath)
+	if err != nil {
+		t.Fatalf("expected operations log to be written: %v", err)
+	}
+	logText := string(rawLog)
+	if !strings.Contains(logText, `"status":"prepared"`) || !strings.Contains(logText, `"status":"sent"`) {
+		t.Fatalf("expected prepared and sent log entries, got %s", logText)
+	}
+	if strings.Contains(logText, "Hello from MailCLI.") {
+		t.Fatalf("operation log must not store full draft body: %s", logText)
+	}
+}
+
+func TestSendConfirmRejectsAlreadySentIntent(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("prepare must not initialize or call the transport driver")
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"send", "prepare", "--config", configPath, "--operations", operationsPath, draftPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected send prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+	intentID := prepareResult["intent_id"].(string)
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return &fakeSendDriver{}, nil
+	}
+	firstConfirm := NewRootCmd()
+	var firstOut bytes.Buffer
+	firstConfirm.SetOut(&firstOut)
+	firstConfirm.SetErr(&firstOut)
+	firstConfirm.SetArgs([]string{"send", "confirm", "--config", configPath, "--operations", operationsPath, intentID})
+	if err := firstConfirm.Execute(); err != nil {
+		t.Fatalf("expected first confirm to succeed: %v\n%s", err, firstOut.String())
+	}
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("second confirm must not call the transport driver")
+		return nil, nil
+	}
+	secondConfirm := NewRootCmd()
+	var secondOut bytes.Buffer
+	var secondErr bytes.Buffer
+	secondConfirm.SetOut(&secondOut)
+	secondConfirm.SetErr(&secondErr)
+	secondConfirm.SetArgs([]string{"send", "confirm", "--config", configPath, "--operations", operationsPath, intentID})
+	err := secondConfirm.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected second confirm to fail with outbound sentinel, got %v\n%s", err, secondOut.String())
+	}
+	var secondResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(secondOut.Bytes()), &secondResult); err != nil {
+		t.Fatalf("expected JSON duplicate-confirm failure: %v\n%s", err, secondOut.String())
+	}
+	if !strings.Contains(secondOut.String(), `"ok": false`) || !strings.Contains(secondOut.String(), `"code": "intent_already_sent"`) {
+		t.Fatalf("expected structured already-sent failure, got %s", secondOut.String())
+	}
+	if secondResult["intent_id"] != intentID || strings.TrimSpace(secondResult["operation_id"].(string)) == "" {
+		t.Fatalf("expected duplicate-confirm failure to include intent and operation ids, got %#v", secondResult)
+	}
+
+	rawLog, readErr := os.ReadFile(operationsPath)
+	if readErr != nil {
+		t.Fatalf("expected operations log to be written: %v", readErr)
+	}
+	logText := string(rawLog)
+	if strings.Count(logText, `"status":"sent"`) != 1 {
+		t.Fatalf("expected exactly one sent operation log entry, got %s", logText)
+	}
+	if !strings.Contains(logText, `"status":"failed"`) || !strings.Contains(logText, `"code":"intent_already_sent"`) {
+		t.Fatalf("expected failed duplicate-confirm operation log entry, got %s", logText)
+	}
+}
+
+func TestSendConfirmLogsFailedOperation(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		t.Fatalf("prepare must not initialize or call the transport driver")
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"send", "prepare", "--config", configPath, "--operations", operationsPath, draftPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected send prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+	intentID := prepareResult["intent_id"].(string)
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return nil, driver.ErrDriverConfigInvalid
+	}
+	confirmCmd := NewRootCmd()
+	var confirmOut bytes.Buffer
+	var confirmErr bytes.Buffer
+	confirmCmd.SetOut(&confirmOut)
+	confirmCmd.SetErr(&confirmErr)
+	confirmCmd.SetArgs([]string{"send", "confirm", "--config", configPath, "--operations", operationsPath, intentID})
+	err := confirmCmd.Execute()
+	if !errors.Is(err, errSendFailure) {
+		t.Fatalf("expected outbound failure sentinel, got %v\n%s", err, confirmOut.String())
+	}
+	var confirmResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(confirmOut.Bytes()), &confirmResult); err != nil {
+		t.Fatalf("expected JSON confirm failure: %v\n%s", err, confirmOut.String())
+	}
+	if !strings.Contains(confirmOut.String(), `"ok": false`) || !strings.Contains(confirmOut.String(), `"code": "transport_failed"`) {
+		t.Fatalf("expected structured confirm failure, got %s", confirmOut.String())
+	}
+	if confirmResult["intent_id"] != intentID || strings.TrimSpace(confirmResult["operation_id"].(string)) == "" {
+		t.Fatalf("expected confirm failure to include intent and operation ids, got %#v", confirmResult)
+	}
+
+	rawLog, readErr := os.ReadFile(operationsPath)
+	if readErr != nil {
+		t.Fatalf("expected operations log to be written: %v", readErr)
+	}
+	if !strings.Contains(string(rawLog), `"status":"failed"`) || !strings.Contains(string(rawLog), `"code":"transport_failed"`) {
+		t.Fatalf("expected failed operation log entry, got %s", string(rawLog))
+	}
+	if strings.Contains(string(rawLog), "Hello from MailCLI.") {
+		t.Fatalf("operation log must not store full draft body: %s", string(rawLog))
+	}
+}
+
+func TestOperationsListAndShowReadOperationLog(t *testing.T) {
+	restoreLoad := loadConfigFunc
+	restoreDriver := driverFactoryFunc
+	t.Cleanup(func() {
+		loadConfigFunc = restoreLoad
+		driverFactoryFunc = restoreDriver
+	})
+
+	configPath := writeTempFile(t, "config.yaml", "current_account: work\naccounts:\n  - name: work\n    driver: fake\n    username: support@nono.im\n")
+	loadConfigFunc = config.Load
+	operationsPath := filepath.Join(t.TempDir(), "operations.jsonl")
+	draftPath := writeTempFile(t, "draft.json", `{
+  "account": "work",
+  "to": [{"address": "user@example.com"}],
+  "subject": "Welcome",
+  "body_text": "Hello from MailCLI."
+}`)
+
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return nil, nil
+	}
+	prepareCmd := NewRootCmd()
+	var prepareOut bytes.Buffer
+	prepareCmd.SetOut(&prepareOut)
+	prepareCmd.SetErr(&prepareOut)
+	prepareCmd.SetArgs([]string{"send", "prepare", "--config", configPath, "--operations", operationsPath, draftPath})
+	if err := prepareCmd.Execute(); err != nil {
+		t.Fatalf("expected send prepare to succeed: %v\n%s", err, prepareOut.String())
+	}
+	var prepareResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(prepareOut.Bytes()), &prepareResult); err != nil {
+		t.Fatalf("expected JSON prepare result: %v\n%s", err, prepareOut.String())
+	}
+
+	fake := &fakeSendDriver{}
+	driverFactoryFunc = func(account config.AccountConfig) (driver.Driver, error) {
+		return fake, nil
+	}
+	confirmCmd := NewRootCmd()
+	var confirmOut bytes.Buffer
+	confirmCmd.SetOut(&confirmOut)
+	confirmCmd.SetErr(&confirmOut)
+	confirmCmd.SetArgs([]string{"send", "confirm", "--config", configPath, "--operations", operationsPath, prepareResult["intent_id"].(string)})
+	if err := confirmCmd.Execute(); err != nil {
+		t.Fatalf("expected send confirm to succeed: %v\n%s", err, confirmOut.String())
+	}
+	var confirmResult map[string]any
+	if err := json.Unmarshal(bytes.TrimSpace(confirmOut.Bytes()), &confirmResult); err != nil {
+		t.Fatalf("expected JSON confirm result: %v\n%s", err, confirmOut.String())
+	}
+	operationID := confirmResult["operation_id"].(string)
+
+	listCmd := NewRootCmd()
+	var listOut bytes.Buffer
+	listCmd.SetOut(&listOut)
+	listCmd.SetErr(&listOut)
+	listCmd.SetArgs([]string{"operations", "list", "--operations", operationsPath})
+	if err := listCmd.Execute(); err != nil {
+		t.Fatalf("expected operations list to succeed: %v\n%s", err, listOut.String())
+	}
+	if !strings.Contains(listOut.String(), `"operations"`) || !strings.Contains(listOut.String(), `"status": "sent"`) {
+		t.Fatalf("expected operations list to include sent entry, got %s", listOut.String())
+	}
+	if strings.Contains(listOut.String(), "Hello from MailCLI.") {
+		t.Fatalf("operations list must not print full draft body: %s", listOut.String())
+	}
+
+	showCmd := NewRootCmd()
+	var showOut bytes.Buffer
+	showCmd.SetOut(&showOut)
+	showCmd.SetErr(&showOut)
+	showCmd.SetArgs([]string{"operations", "show", "--operations", operationsPath, operationID})
+	if err := showCmd.Execute(); err != nil {
+		t.Fatalf("expected operations show to succeed: %v\n%s", err, showOut.String())
+	}
+	if !strings.Contains(showOut.String(), `"id": "`+operationID+`"`) || !strings.Contains(showOut.String(), `"status": "sent"`) {
+		t.Fatalf("expected operations show to return requested entry, got %s", showOut.String())
 	}
 }
 

@@ -92,8 +92,70 @@
       }
     },
     {
+      "name": "mailcli_send_prepare",
+      "description": "Prepare a new outbound email intent without sending it. Use this before any agent-initiated send so a human or controlling harness can inspect and confirm the operation.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "config": { "type": "string", "description": "Optional config file path" },
+          "account": { "type": "string" },
+          "operations": { "type": "string", "description": "Optional operations log path" },
+          "draft": {
+            "type": "object",
+            "properties": {
+              "from":      { "type": "object", "properties": { "name": { "type": "string" }, "address": { "type": "string" } }, "required": ["address"] },
+              "to":        { "type": "array", "items": { "type": "object", "properties": { "name": { "type": "string" }, "address": { "type": "string" } }, "required": ["address"] } },
+              "cc":        { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" } } } },
+              "bcc":       { "type": "array", "items": { "type": "object", "properties": { "address": { "type": "string" } } } },
+              "subject":   { "type": "string" },
+              "body_md":   { "type": "string", "description": "Body in Markdown — rendered to HTML+plain" },
+              "body_text": { "type": "string", "description": "Plain-text fallback when body_md absent" }
+            },
+            "required": ["to", "subject"]
+          }
+        },
+        "required": ["draft"]
+      }
+    },
+    {
+      "name": "mailcli_send_confirm",
+      "description": "Confirm and send a previously prepared outbound email intent. Call only after the intent summary has been approved.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "config": { "type": "string", "description": "Optional config file path" },
+          "account": { "type": "string", "description": "Optional account override; must match the prepared intent account" },
+          "operations": { "type": "string", "description": "Optional operations log path" },
+          "intent_id": { "type": "string", "description": "Intent ID returned by mailcli_send_prepare" }
+        },
+        "required": ["intent_id"]
+      }
+    },
+    {
+      "name": "mailcli_operations_list",
+      "description": "List prepared, sent, and failed operation log entries. Entries contain summaries and structured errors, not full message bodies.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operations": { "type": "string", "description": "Optional operations log path" }
+        }
+      }
+    },
+    {
+      "name": "mailcli_operations_show",
+      "description": "Show one operation log entry by operation ID or intent ID.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "operations": { "type": "string", "description": "Optional operations log path" },
+          "id": { "type": "string", "description": "Operation ID or intent ID" }
+        },
+        "required": ["id"]
+      }
+    },
+    {
       "name": "mailcli_send",
-      "description": "Send a new email via SMTP. Returns the generated Message-ID on success.",
+      "description": "Directly send a new email via SMTP. Returns the generated Message-ID on success. For agent-initiated sends, prefer mailcli_send_prepare followed by mailcli_send_confirm.",
       "input_schema": {
         "type": "object",
         "properties": {

@@ -244,16 +244,17 @@ mailcli reply --dry-run reply.json
 
 ## 新邮件发送路径
 
-当 agent 需要发送全新的邮件时，走这条链路。
+当 agent 需要发送全新的邮件时，推荐先准备 intent，再检查摘要，最后确认执行。
 
 ```mermaid
 flowchart LR
   A["Agent"] --> B["DraftMessage JSON"]
-  B --> C["mailcli send"]
-  C --> D["Composer"]
-  D --> E["Raw MIME"]
-  E --> F["Driver"]
-  F --> G["Provider"]
+  B --> C["mailcli send prepare"]
+  C --> D["Intent 摘要"]
+  D --> E["人或 harness 确认"]
+  E --> F["mailcli send confirm"]
+  F --> G["Operation log"]
+  G --> H["Driver / Provider"]
 ```
 
 ### 示例
@@ -269,9 +270,14 @@ flowchart LR
 ```
 
 ```bash
-mailcli send --config ~/.config/mailcli/config.yaml draft.json
+mailcli send prepare --config ~/.config/mailcli/config.yaml draft.json
+mailcli send confirm --config ~/.config/mailcli/config.yaml <intent-id>
+mailcli operations list
+mailcli operations show <operation-id|intent-id>
 mailcli send --dry-run draft.json
 ```
+
+直接 `mailcli send --config ... draft.json` 仍然保留，适合受信任脚本或人工操作。Agent 自动化应优先使用 `send prepare` / `send confirm`，让出站邮件拥有可确认的 intent id 和 operation log。
 
 ## 往返模式
 
@@ -296,7 +302,7 @@ mailcli get -> agent 生成最小 ReplyDraft JSON -> mailcli reply
 ### agent 主动通知
 
 ```text
-agent 生成 DraftMessage -> mailcli send
+agent 生成 DraftMessage -> mailcli send prepare -> 确认 -> mailcli send confirm
 ```
 
 ## 开发者应该把逻辑写在哪
@@ -329,11 +335,17 @@ agent 生成 DraftMessage -> mailcli send
 - `mailcli parse`
 - `mailcli sync`
 - `mailcli search`
-- `mailcli send`
+- `mailcli send prepare`
+- `mailcli send confirm`
+- `mailcli operations list`
+- `mailcli operations show`
+- `mailcli send`，用于受信任的直接发送
 - `mailcli reply`
 - `StandardMessage`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult`
+- `OperationIntentResult`
+- `OperationLogEntry`
 
 这些边界应该始终保持容易被 Go、shell、Node.js 和其他 agent runtime 调用。

@@ -168,6 +168,7 @@ Working today:
 - inspect local conversation/thread summaries from indexed messages
 - compile outbound drafts and replies (RFC 2047 encoded headers)
 - send through SMTP-backed IMAP-style accounts (returns `message_id`)
+- prepare and confirm send intents with local operation logs for agent-safe outbound workflows
 - delete, move, mark-read/unread on remote mailboxes
 - export the local index as JSONL, JSON, or CSV
 - **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed, persistent seen state across restarts)
@@ -185,10 +186,12 @@ Stable enough to build against in current `main`:
 - `mailcli threads`
 - `mailcli thread`
 - `mailcli send`
+- `mailcli send prepare|confirm`
 - `mailcli reply`
 - `mailcli delete`
 - `mailcli move`
 - `mailcli mark`
+- `mailcli operations list|show`
 - `mailcli export`
 - `mailcli watch`
 - `mailcli account add`
@@ -197,6 +200,8 @@ Stable enough to build against in current `main`:
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult` (now includes `message_id`)
+- `OperationIntentResult`
+- `OperationLogEntry`
 - `OperationResult` (delete / move / mark)
 
 Still evolving:
@@ -294,7 +299,11 @@ MailCLI solves that by providing a stable boundary:
 
 ### Write path
 
-- `mailcli send [--account] [--dry-run] <draft.json>`
+- `mailcli send [--account] [--dry-run] <draft.json>` for direct send or MIME preview
+- `mailcli send prepare [--account] [--operations] <draft.json>` for agent-safe outbound intent creation
+- `mailcli send confirm [--account] [--operations] <intent-id>` to execute a prepared send intent
+- `mailcli operations list [--operations]`
+- `mailcli operations show [--operations] <operation-id|intent-id>`
 - `mailcli reply [--account] [--dry-run] <reply.json>`
 - `mailcli delete [--account] [--mailbox] <id>`
 - `mailcli move [--account] [--mailbox] <id> <dest-mailbox>`
@@ -426,8 +435,12 @@ flowchart LR
 ### New outbound message loop
 
 ```text
-Agent -> DraftMessage -> mailcli send -> Composer -> Raw MIME -> Driver -> Provider
+Agent -> DraftMessage -> mailcli send prepare -> intent summary -> confirmation -> mailcli send confirm -> operation log -> Provider
 ```
+
+Direct `mailcli send <draft.json>` remains available for trusted scripts and
+interactive use. Agent automation should prefer `send prepare` / `send confirm`
+so a user or controlling harness can inspect the intent before transport.
 
 Detailed workflow docs:
 

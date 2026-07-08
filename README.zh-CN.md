@@ -166,6 +166,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - 查看本地索引中的会话 / thread 摘要
 - 编译出站草稿和回复草稿
 - 通过 SMTP 为 IMAP 风格账户发信
+- 为 `send` 生成可确认的 intent，并把准备、执行、失败结果写入本地 operation log
 - 删除、移动、读/未读标记远端邮件
 - 将本地索引导出为 JSONL、JSON 或 CSV
 - **watch** 一个或多个邮箱（IMAP IDLE 推送事件流，重启后持久化去重）
@@ -183,10 +184,12 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `mailcli threads`
 - `mailcli thread`
 - `mailcli send`
+- `mailcli send prepare|confirm`
 - `mailcli reply`
 - `mailcli delete`
 - `mailcli move`
 - `mailcli mark`
+- `mailcli operations list|show`
 - `mailcli export`
 - `mailcli watch`
 - `mailcli account add`
@@ -195,6 +198,8 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult`
+- `OperationIntentResult`
+- `OperationLogEntry`
 - `OperationResult`
 
 仍在持续完善的部分：
@@ -292,8 +297,12 @@ MailCLI 提供的是一个稳定边界：
 
 ### 写路径
 
-- `mailcli send --dry-run <draft.json>`
-- `mailcli send --config ~/.config/mailcli/config.yaml <draft.json>`
+- `mailcli send --dry-run <draft.json>`：直接预览 MIME
+- `mailcli send --config ~/.config/mailcli/config.yaml <draft.json>`：受信任脚本或人工场景的直接发送
+- `mailcli send prepare --config ~/.config/mailcli/config.yaml [--operations <path>] <draft.json>`：生成待确认发送 intent，不发信
+- `mailcli send confirm --config ~/.config/mailcli/config.yaml [--operations <path>] <intent-id>`：确认并执行已准备的发送 intent
+- `mailcli operations list [--operations <path>]`
+- `mailcli operations show [--operations <path>] <operation-id|intent-id>`
 - `mailcli reply --dry-run <reply.json>`
 - `mailcli reply --config ~/.config/mailcli/config.yaml <reply.json>`
 
@@ -403,8 +412,10 @@ flowchart LR
 ### 新邮件发送循环
 
 ```text
-Agent -> DraftMessage -> mailcli send -> Composer -> Raw MIME -> Driver -> Provider
+Agent -> DraftMessage -> mailcli send prepare -> intent 摘要 -> 确认 -> mailcli send confirm -> operation log -> Provider
 ```
+
+直接 `mailcli send <draft.json>` 仍然保留，适合受信任脚本和人工操作。Agent 自动化应优先使用 `send prepare` / `send confirm`，让用户或上层 harness 在真正发信前先看到可确认的 intent。
 
 详细说明见：
 

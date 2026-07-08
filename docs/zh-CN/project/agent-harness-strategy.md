@@ -12,7 +12,7 @@
 
 ## 外部对标
 
-截至 2026-07-07，外部 agent / workflow 系统呈现出几条清晰路线：
+截至 2026-07-08，外部 agent / workflow 系统呈现出几条清晰路线：
 
 | 系统 | 主要启发 | 对 MailCLI 的意义 |
 | --- | --- | --- |
@@ -219,11 +219,11 @@ I will ask you only if:
 - 让 LLM provider 进入 Go core
 - 需要用户理解 Python / Node runtime 的官方路径
 
-## 下一步最小开发切片
+## 当前最小开发切片
 
-推荐下一步直接做：
+当前第一阶段已经落地：
 
-**Operation intent + log 的设计先行。**
+**`send` 的 operation intent + log。**
 
 原因：
 
@@ -231,17 +231,23 @@ I will ask you only if:
 - 它会决定未来 MCP 是否能安全暴露写操作
 - 它和外部 harness 的核心思想一致：规则自动执行，判断留给人，证据被记录
 
-最小交付可以先是设计和 CLI 契约，不急着覆盖所有 provider：
+第一阶段 CLI 契约：
 
-- `mailcli send prepare draft.json --format json`
-- `mailcli send confirm <intent-id> --format json`
-- `mailcli operations list --format json`
-- `mailcli operations show <operation-id> --format json`
+- `mailcli send prepare [--config] [--operations] draft.json`
+- `mailcli send confirm [--config] [--operations] <intent-id>`
+- `mailcli operations list [--operations]`
+- `mailcli operations show [--operations] <operation-id|intent-id>`
 
 验收标准：
 
 - dry-run / prepare 不发送邮件
 - confirm 只能执行同一个 intent
 - operation log 不记录 secret
-- JSON 输出稳定并有 snapshot 覆盖
+- JSON 输出稳定并有命令级测试覆盖
 - 文档说明 agent 何时必须请求人确认
+
+后续扩展：
+
+- 给 `reply`、`delete`、`move`、`mark` 增加同样的 prepare / confirm / log 契约
+- 先补 inbox triage 信号，再扩大自动执行范围
+- MCP 写工具继续默认关闭，除非本地 policy 明确开启

@@ -156,13 +156,63 @@
 
 - [Outbound Draft Patterns](../examples/outbound-draft-patterns.md)
 
+## 可确认发送 Intent
+
+对于 agent 自动化，全新出站邮件通常应该先准备，再发送：
+
+```bash
+mailcli send prepare --config ~/.config/mailcli/config.yaml draft.json
+mailcli send confirm --config ~/.config/mailcli/config.yaml <intent-id>
+mailcli operations list
+mailcli operations show <operation-id|intent-id>
+```
+
+`send prepare` 会校验 draft，编译足够的 MIME 来生成稳定 `Message-ID`，写入发送 intent，并返回 `OperationIntentResult` JSON。它不会初始化 transport driver，也不会发信。
+
+prepare 结果示例：
+
+```json
+{
+  "status": "prepared",
+  "intent_id": "intent_...",
+  "operation": "send",
+  "account": "work",
+  "message_id": "<...>",
+  "operations_path": "/home/user/.local/state/mailcli/operations.jsonl",
+  "confirm_command": "mailcli send confirm --operations /home/user/.local/state/mailcli/operations.jsonl intent_...",
+  "summary": {
+    "subject": "Welcome",
+    "to": [{"address": "user@example.com"}]
+  }
+}
+```
+
+`send confirm` 会重新加载已保存的 intent，并发送同一份 draft。成功时，`SendResult` 会包含 `intent_id` 和 `operation_id`。发生业务失败时，只要 intent 已经成功加载，MailCLI 仍会返回带 `error.code` 的结构化 `SendResult` JSON，并追加一条 failed operation log。confirm 失败返回也会包含 `intent_id` 和失败的 `operation_id`，agent 可以直接继续调用 `mailcli operations show` 追踪。
+如果某个 intent 已经有成功的 `sent` operation 记录，后续再次 `send confirm` 会在调用 transport driver 前被拒绝，并返回 `error.code = "intent_already_sent"`。
+
+operation log 是 JSONL，默认位置是：
+
+```text
+~/.local/state/mailcli/operations.jsonl
+```
+
+intent payload 会存放在 log 旁边：
+
+```text
+~/.local/state/mailcli/operations.jsonl.intents/
+```
+
+log 只保存摘要：主题、发件人、可见收件人、Bcc 数量、附件数量、状态、ID、时间和结构化错误。它不能保存完整 `body_text`、完整 `body_md`、raw MIME 或配置里的 secret。intent payload 文件为了确认时能发送同一个 draft，会保存完整 draft，并使用仅 owner 可读写的权限。
+
 ## 命令方向
 
-建议的未来命令形态：
+推荐命令形态：
 
 ```bash
 cat draft.json | mailcli send -
 cat reply.json | mailcli reply -
+mailcli send prepare draft.json
+mailcli send confirm <intent-id>
 ```
 
 这样接口保持语言无关，适合 agent、shell、Go、Node.js 和其他 runtime 调用。
@@ -178,6 +228,8 @@ cat reply.json | mailcli reply -
 - 当存在附件时输出 `multipart/mixed`
 
 `mailcli send` 已经接通，在有账户配置时可以把 MIME 交给 driver。
+
+`mailcli send prepare` 和 `mailcli send confirm` 已经接通，作为新邮件发送的第一阶段 operation-intent 契约。
 
 `mailcli reply` 也已经接通，在有账户配置时可以把 MIME 交给 driver。
 

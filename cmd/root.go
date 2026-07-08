@@ -40,6 +40,7 @@ JSON that is ready for LLM consumption or AI pipeline processing.`,
 	cmd.AddCommand(newDeleteCmd())
 	cmd.AddCommand(newMoveCmd())
 	cmd.AddCommand(newMarkCmd())
+	cmd.AddCommand(newOperationsCmd())
 	cmd.AddCommand(newExportCmd())
 	cmd.AddCommand(newWatchCmd())
 	cmd.AddCommand(newConfigCmd())

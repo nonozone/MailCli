@@ -15,7 +15,7 @@ Short version:
 
 ## External References
 
-As of 2026-07-07, external agent and workflow systems point to a few consistent
+As of 2026-07-08, external agent and workflow systems point to a few consistent
 patterns:
 
 | System | Lesson | Meaning for MailCLI |
@@ -160,26 +160,32 @@ Defer:
 - model providers inside Go core
 - official paths that require users to understand Python or Node runtimes
 
-## Next Small Slice
+## Current Small Slice
 
-Recommended next work:
+Current first implementation slice:
 
-**Design operation intent and logs first.**
+**Operation intent and logs for `send`.**
 
 This directly addresses the user's strongest trust concern: AI should not send,
 delete, or move mail without a confirmable intent and durable audit trail.
 
-Minimal contract:
+Implemented first-phase contract:
 
-- `mailcli send prepare draft.json --format json`
-- `mailcli send confirm <intent-id> --format json`
-- `mailcli operations list --format json`
-- `mailcli operations show <operation-id> --format json`
+- `mailcli send prepare [--config] [--operations] draft.json`
+- `mailcli send confirm [--config] [--operations] <intent-id>`
+- `mailcli operations list [--operations]`
+- `mailcli operations show [--operations] <operation-id|intent-id>`
 
 Acceptance criteria:
 
 - dry-run / prepare does not send mail
 - confirm executes only the same intent
 - operation logs do not store secrets
-- JSON output is stable and snapshot-tested
+- JSON output is stable and covered by command-level tests
 - docs say when agents must request human confirmation
+
+Remaining extensions:
+
+- add the same prepare / confirm / log contract for `reply`, `delete`, `move`, and `mark`
+- add inbox triage signals before expanding automatic execution
+- keep MCP write tools disabled by default unless a local policy explicitly enables them

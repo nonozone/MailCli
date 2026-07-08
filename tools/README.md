@@ -52,6 +52,11 @@ Default MCP tools are read/setup only:
 Mutating commands such as send, reply, delete, move, and mark are intentionally
 not exposed by the default MCP server.
 
+Standalone tool schemas still include write-capable tools for integrations that
+explicitly opt in. Agent-initiated new outbound mail should use
+`mailcli_send_prepare` followed by `mailcli_send_confirm`, not direct
+`mailcli_send`.
+
 ---
 
 ## Quick start: on-demand tool use from Go
@@ -66,20 +71,24 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 )
 
-func runMailCLI(args ...string) (string, error) {
+func runMailCLI(stdin string, args ...string) (string, error) {
 	cmd := exec.Command("mailcli", args...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
 
 func main() {
-	cmdArgs := toolToCommand("mailcli_search", map[string]any{
+	cmdArgs, stdin := toolToCommand("mailcli_search", map[string]any{
 		"query": "invoice",
 		"limit": 10,
 	})
-	out, err := runMailCLI(cmdArgs...)
+	out, err := runMailCLI(stdin, cmdArgs...)
 	if err != nil {
 		panic(err)
 	}
@@ -93,19 +102,24 @@ func main() {
 
 | Tool parameter  | mailcli flag        |
 |----------------|---------------------|
+| `config`       | `--config <value>`  |
 | `account`      | `--account <value>` |
 | `mailbox`      | `--mailbox <value>` |
 | `limit`        | `--limit <value>`   |
 | `since`        | `--since <value>`   |
 | `before`       | `--before <value>`  |
+| `operations`   | `--operations <value>` |
 | `query`        | positional arg `[0]`|
+| `id`           | positional arg `[0]`|
+| `intent_id`    | positional arg `[0]`|
+| `thread_id`    | positional arg `[0]`|
 | `full`         | `--full`            |
 | `refresh`      | `--refresh`         |
 | `unread`       | `--unread`          |
 | `has_codes`    | `--has-codes`       |
 | `format`       | `--format <value>`  |
 | `dest_mailbox` | positional arg `[1]`|
-| `draft`        | JSON string arg     |
+| `draft`        | JSON on stdin with positional `-` |
 
 ### Example mapping function (Go)
 
@@ -118,54 +132,66 @@ import (
 	"strings"
 )
 
-func toolToCommand(name string, input map[string]any) []string {
-	sub := strings.TrimPrefix(name, "mailcli_")
-	cmd := []string{sub}
-
-	query, _ := input["query"].(string)
-	dest, _ := input["dest_mailbox"].(string)
-	draft := input["draft"]
-	full, _ := input["full"].(bool)
-	refresh, _ := input["refresh"].(bool)
-	unread, _ := input["unread"].(bool)
-	hasCodes, _ := input["has_codes"].(bool)
-
-	delete(input, "query")
-	delete(input, "dest_mailbox")
-	delete(input, "draft")
-	delete(input, "full")
-	delete(input, "refresh")
-	delete(input, "unread")
-	delete(input, "has_codes")
-
-	if query != "" {
-		cmd = append(cmd, query)
+func toolToCommand(name string, input map[string]any) ([]string, string) {
+	switch name {
+	case "mailcli_search":
+		return commandWithFlags([]string{"search"}, input, "query")
+	case "mailcli_thread":
+		return commandWithFlags([]string{"thread"}, input, "thread_id")
+	case "mailcli_get", "mailcli_delete", "mailcli_mark":
+		return commandWithFlags([]string{strings.TrimPrefix(name, "mailcli_")}, input, "id")
+	case "mailcli_move":
+		return commandWithFlags([]string{"move"}, input, "id", "dest_mailbox")
+	case "mailcli_send", "mailcli_reply":
+		return commandWithFlags([]string{strings.TrimPrefix(name, "mailcli_")}, input, "draft")
+	case "mailcli_send_prepare":
+		return commandWithFlags([]string{"send", "prepare"}, input, "draft")
+	case "mailcli_send_confirm":
+		return commandWithFlags([]string{"send", "confirm"}, input, "intent_id")
+	case "mailcli_operations_list":
+		return commandWithFlags([]string{"operations", "list"}, input)
+	case "mailcli_operations_show":
+		return commandWithFlags([]string{"operations", "show"}, input, "id")
+	default:
+		return commandWithFlags([]string{strings.TrimPrefix(name, "mailcli_")}, input)
 	}
-	if draft != nil {
-		raw, _ := json.Marshal(draft)
-		cmd = append(cmd, string(raw))
+}
+
+func commandWithFlags(cmd []string, input map[string]any, positionalKeys ...string) ([]string, string) {
+	stdin := ""
+	for _, key := range positionalKeys {
+		value, ok := input[key]
+		if !ok {
+			continue
+		}
+		delete(input, key)
+		if key == "draft" {
+			raw, _ := json.Marshal(value)
+			cmd = append(cmd, "-")
+			stdin = string(raw)
+			continue
+		}
+		if text := fmt.Sprint(value); text != "" {
+			cmd = append(cmd, text)
+		}
 	}
-	if dest != "" {
-		cmd = append(cmd, dest)
+
+	for _, key := range []string{"full", "refresh", "unread", "has_codes"} {
+		enabled, _ := input[key].(bool)
+		delete(input, key)
+		if enabled {
+			cmd = append(cmd, "--"+strings.ReplaceAll(key, "_", "-"))
+		}
 	}
 
 	for key, value := range input {
+		if value == nil {
+			continue
+		}
 		flag := "--" + strings.ReplaceAll(key, "_", "-")
 		cmd = append(cmd, flag, fmt.Sprint(value))
 	}
-	if full {
-		cmd = append(cmd, "--full")
-	}
-	if refresh {
-		cmd = append(cmd, "--refresh")
-	}
-	if unread {
-		cmd = append(cmd, "--unread")
-	}
-	if hasCodes {
-		cmd = append(cmd, "--has-codes")
-	}
-	return cmd
+	return cmd, stdin
 }
 ```
 
@@ -220,12 +246,13 @@ mailcli watch --account work --mailbox INBOX --mailbox "Customer Support" \
 3. On new_message event:
    a. Pass StandardMessage to LLM with system prompt
    b. LLM decides: reply / archive / flag / ignore
-   c. If reply → mailcli reply '<draft-json>'
-   d. If archive → mailcli move <id> Archive
-   e. If flag → mailcli mark <id>  (mark read)
+   c. If reply → cat reply.json | mailcli reply --dry-run - first, then require local approval before direct send
+   d. If new outbound mail → cat draft.json | mailcli send prepare -, inspect summary, then mailcli send confirm <intent-id>
+   e. If archive / flag → require local policy approval before mailcli move or mailcli mark until mutation intents are implemented
 4. Periodically:
    a. mailcli search <topic>   ← on-demand context retrieval
    b. mailcli threads          ← summarise recent conversations
+   c. mailcli operations list   ← inspect prepared, sent, and failed operations
 ```
 
 ---

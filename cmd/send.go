@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/nonozone/MailCli/internal/config"
+	opstore "github.com/nonozone/MailCli/internal/operations"
 	"github.com/nonozone/MailCli/pkg/composer"
 	"github.com/nonozone/MailCli/pkg/driver"
 	"github.com/nonozone/MailCli/pkg/parser"
@@ -14,7 +16,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var errSendFailure = errors.New("outbound command failed")
+var (
+	errSendFailure       = errors.New("outbound command failed")
+	errIntentAlreadySent = errors.New("intent already sent")
+)
 
 func ErrSendFailureForExit() error {
 	return errSendFailure
@@ -105,6 +110,164 @@ func newSendCmd() *cobra.Command {
 	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
 	cmd.Flags().StringVar(&account, "account", "", "account name override")
 	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "print MIME instead of sending it")
+	cmd.AddCommand(newSendPrepareCmd())
+	cmd.AddCommand(newSendConfirmCmd())
+	return cmd
+}
+
+func newSendPrepareCmd() *cobra.Command {
+	var (
+		configPath     string
+		account        string
+		operationsPath string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "prepare [file|-]",
+		Short: "Prepare a send intent without sending mail",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			raw, err := readInput(cmd, args[0])
+			if err != nil {
+				return err
+			}
+
+			var draft schema.DraftMessage
+			if err := json.Unmarshal(raw, &draft); err != nil {
+				return err
+			}
+
+			selectedAccount, err := resolveSelectedAccount(configPath, account, draft.Account)
+			if err != nil {
+				return err
+			}
+			applyDefaultFromAddress(selectedAccount, &draft.From)
+			if err := validateEnvelopeAddressing(draft.From, draft.To, draft.Cc, draft.Bcc); err != nil {
+				return err
+			}
+
+			_, messageID, err := composer.ComposeDraft(draft)
+			if err != nil {
+				return err
+			}
+			if draft.Headers == nil {
+				draft.Headers = map[string]string{}
+			}
+			draft.Headers["Message-ID"] = messageID
+
+			store := opstore.NewStore(operationsPath)
+			summary := summarizeDraft(draft)
+			intent := opstore.SendIntent{
+				ID:        opstore.NewID("intent"),
+				Operation: "send",
+				Account:   selectedAccount.Name,
+				MessageID: messageID,
+				CreatedAt: opstore.Now(),
+				Summary:   summary,
+				Draft:     draft,
+			}
+			if err := store.SaveSendIntent(intent); err != nil {
+				return err
+			}
+
+			return writeJSON(cmd.OutOrStdout(), schema.OperationIntentResult{
+				Status:         "prepared",
+				IntentID:       intent.ID,
+				Operation:      intent.Operation,
+				Account:        intent.Account,
+				MessageID:      intent.MessageID,
+				OperationsPath: store.Path(),
+				ConfirmCommand: buildSendConfirmCommand(configPath, store.Path(), intent.ID),
+				Summary:        summary,
+			})
+		},
+	}
+
+	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
+	cmd.Flags().StringVar(&account, "account", "", "account name override")
+	cmd.Flags().StringVar(&operationsPath, "operations", "", "operations log path")
+	return cmd
+}
+
+func newSendConfirmCmd() *cobra.Command {
+	var (
+		configPath     string
+		account        string
+		operationsPath string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "confirm [intent-id]",
+		Short: "Send a previously prepared send intent",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			store := opstore.NewStore(operationsPath)
+			intent, err := store.LoadSendIntent(args[0])
+			if err != nil {
+				return err
+			}
+			if intent.Operation != "send" {
+				return fmt.Errorf("unsupported intent operation: %s", intent.Operation)
+			}
+
+			selectedAccount, err := resolveSelectedAccount(configPath, account, intent.Account)
+			if err != nil {
+				return recordAndWriteSendFailure(cmd, store, intent, "", intent.Account, err)
+			}
+			if strings.TrimSpace(account) != "" && selectedAccount.Name != intent.Account {
+				return fmt.Errorf("intent %s belongs to account %s, not %s", intent.ID, intent.Account, selectedAccount.Name)
+			}
+			if sentEntry, err := store.SentEntryForIntent(intent.ID); err == nil {
+				return recordAndWriteSendFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, fmt.Errorf("%w: %s was sent as %s", errIntentAlreadySent, intent.ID, sentEntry.ID))
+			} else if !errors.Is(err, opstore.ErrNotFound) {
+				return err
+			}
+
+			if err := validateEnvelopeAddressing(intent.Draft.From, intent.Draft.To, intent.Draft.Cc, intent.Draft.Bcc); err != nil {
+				return recordAndWriteSendFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+			mime, _, err := composer.ComposeDraft(intent.Draft)
+			if err != nil {
+				return recordAndWriteSendFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+
+			drv, err := driverFactoryFunc(selectedAccount)
+			if err != nil {
+				return recordAndWriteSendFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+			if err := drv.SendRaw(cmd.Context(), mime); err != nil {
+				return recordAndWriteSendFailure(cmd, store, intent, selectedAccount.Driver, selectedAccount.Name, err)
+			}
+
+			operationID := opstore.NewID("op")
+			summary := intent.Summary
+			if err := store.Append(schema.OperationLogEntry{
+				ID:        operationID,
+				IntentID:  intent.ID,
+				Operation: "send",
+				Status:    "sent",
+				Account:   selectedAccount.Name,
+				MessageID: intent.MessageID,
+				CreatedAt: opstore.Now(),
+				Summary:   &summary,
+			}); err != nil {
+				return err
+			}
+
+			return writeJSON(cmd.OutOrStdout(), &schema.SendResult{
+				OK:          true,
+				MessageID:   intent.MessageID,
+				Provider:    selectedAccount.Driver,
+				Account:     selectedAccount.Name,
+				IntentID:    intent.ID,
+				OperationID: operationID,
+			})
+		},
+	}
+
+	cmd.Flags().StringVar(&configPath, "config", "", "config file path")
+	cmd.Flags().StringVar(&account, "account", "", "account name override")
+	cmd.Flags().StringVar(&operationsPath, "operations", "", "operations log path")
 	return cmd
 }
 
@@ -348,12 +511,103 @@ func countAddressRecipients(values []schema.Address) int {
 	return count
 }
 
+func summarizeDraft(draft schema.DraftMessage) schema.OperationSummary {
+	return schema.OperationSummary{
+		Subject:         strings.TrimSpace(draft.Subject),
+		From:            draft.From,
+		To:              append([]schema.Address{}, draft.To...),
+		Cc:              append([]schema.Address{}, draft.Cc...),
+		BccCount:        countAddressRecipients(draft.Bcc),
+		AttachmentCount: len(draft.Attachments),
+	}
+}
+
+func buildSendConfirmCommand(configPath, operationsPath, intentID string) string {
+	args := []string{"mailcli", "send", "confirm"}
+	if strings.TrimSpace(configPath) != "" {
+		args = append(args, "--config", configPath)
+	}
+	if strings.TrimSpace(operationsPath) != "" {
+		args = append(args, "--operations", operationsPath)
+	}
+	args = append(args, intentID)
+
+	parts := make([]string, 0, len(args))
+	for _, arg := range args {
+		parts = append(parts, shellQuoteArg(arg))
+	}
+	return strings.Join(parts, " ")
+}
+
+func shellQuoteArg(arg string) string {
+	if arg == "" {
+		return "''"
+	}
+	if isShellSafeArg(arg) {
+		return arg
+	}
+	return "'" + strings.ReplaceAll(arg, "'", "'\"'\"'") + "'"
+}
+
+func isShellSafeArg(arg string) bool {
+	for _, r := range arg {
+		if r >= 'a' && r <= 'z' {
+			continue
+		}
+		if r >= 'A' && r <= 'Z' {
+			continue
+		}
+		if r >= '0' && r <= '9' {
+			continue
+		}
+		if strings.ContainsRune("@%_+=:,./-", r) {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func recordSendFailure(store *opstore.Store, intent opstore.SendIntent, account string, sendErr *schema.SendError) string {
+	summary := intent.Summary
+	operationID := opstore.NewID("op")
+	_ = store.Append(schema.OperationLogEntry{
+		ID:        operationID,
+		IntentID:  intent.ID,
+		Operation: "send",
+		Status:    "failed",
+		Account:   account,
+		MessageID: intent.MessageID,
+		CreatedAt: opstore.Now(),
+		Summary:   &summary,
+		Error:     sendErr,
+	})
+	return operationID
+}
+
+func recordAndWriteSendFailure(cmd *cobra.Command, store *opstore.Store, intent opstore.SendIntent, provider, account string, err error) error {
+	operationID := recordSendFailure(store, intent, account, mapSendError(err))
+	return writeSendFailureForIntent(cmd, provider, account, intent.ID, operationID, err)
+}
+
 func writeSendFailure(cmd *cobra.Command, provider, account string, err error) error {
+	return writeSendFailureForIntent(cmd, provider, account, "", "", err)
+}
+
+func writeSendFailureForIntent(cmd *cobra.Command, provider, account, intentID, operationID string, err error) error {
+	cmd.SilenceUsage = true
+	cmd.SilenceErrors = true
+	if root := cmd.Root(); root != nil {
+		root.SilenceUsage = true
+		root.SilenceErrors = true
+	}
 	result := schema.SendResult{
-		OK:       false,
-		Provider: provider,
-		Account:  account,
-		Error:    mapSendError(err),
+		OK:          false,
+		Provider:    provider,
+		Account:     account,
+		IntentID:    intentID,
+		OperationID: operationID,
+		Error:       mapSendError(err),
 	}
 	if writeErr := writeJSON(cmd.OutOrStdout(), &result); writeErr != nil {
 		return writeErr
@@ -371,6 +625,8 @@ func mapSendError(err error) *schema.SendError {
 
 	code := "transport_failed"
 	switch {
+	case errors.Is(err, errIntentAlreadySent):
+		code = "intent_already_sent"
 	case errors.Is(err, config.ErrAccountNotFound) || strings.Contains(lower, "account not found"):
 		code = "account_not_found"
 	case errors.Is(err, config.ErrNoAccountSelected) || strings.Contains(lower, "no account selected"):

@@ -156,13 +156,77 @@ Concrete JSON and MIME pairs are documented in:
 
 - [Outbound Draft Patterns](../examples/outbound-draft-patterns.md)
 
+## Prepared Send Intents
+
+For agent automation, a new outbound message should normally be prepared before
+it is sent:
+
+```bash
+mailcli send prepare --config ~/.config/mailcli/config.yaml draft.json
+mailcli send confirm --config ~/.config/mailcli/config.yaml <intent-id>
+mailcli operations list
+mailcli operations show <operation-id|intent-id>
+```
+
+`send prepare` validates the draft, composes enough MIME to allocate a stable
+`Message-ID`, writes a send intent, and returns `OperationIntentResult` JSON. It
+does not initialize the transport driver and does not send mail.
+
+Example prepare result:
+
+```json
+{
+  "status": "prepared",
+  "intent_id": "intent_...",
+  "operation": "send",
+  "account": "work",
+  "message_id": "<...>",
+  "operations_path": "/home/user/.local/state/mailcli/operations.jsonl",
+  "confirm_command": "mailcli send confirm --operations /home/user/.local/state/mailcli/operations.jsonl intent_...",
+  "summary": {
+    "subject": "Welcome",
+    "to": [{"address": "user@example.com"}]
+  }
+}
+```
+
+`send confirm` reloads the stored intent and sends that exact draft. On success,
+`SendResult` includes both `intent_id` and `operation_id`. On operational
+failure, MailCLI still returns structured `SendResult` JSON with `error.code`
+and appends a failed operation entry when the intent could be loaded. Confirm
+failures include `intent_id` and the failed `operation_id` in the returned
+`SendResult`, so agents can jump directly to `mailcli operations show`.
+If an intent already has a successful `sent` operation entry, a later
+`send confirm` is rejected with `error.code = "intent_already_sent"` before the
+transport driver is called.
+
+The operation log is JSONL. By default it lives at:
+
+```text
+~/.local/state/mailcli/operations.jsonl
+```
+
+Intent payloads are stored next to the log in:
+
+```text
+~/.local/state/mailcli/operations.jsonl.intents/
+```
+
+The log stores summaries only: subject, from, visible recipients, Bcc count,
+attachment count, status, IDs, timestamps, and structured errors. It must not
+store full `body_text`, full `body_md`, raw MIME, or configured secrets. Intent
+payload files necessarily store the full draft so confirm can execute the same
+prepared operation; they are written with owner-only permissions.
+
 ## Command Direction
 
-Recommended future commands:
+Recommended commands:
 
 ```bash
 cat draft.json | mailcli send -
 cat reply.json | mailcli reply -
+mailcli send prepare draft.json
+mailcli send confirm <intent-id>
 ```
 
 This keeps the contract language-agnostic and works well for agents, shell scripts, Go, Node.js, and other runtimes.
@@ -178,6 +242,9 @@ That composer now supports:
 - `multipart/mixed` when attachments are present
 
 `mailcli send` is now wired for driver-backed transport when an account is configured.
+
+`mailcli send prepare` and `mailcli send confirm` are wired for the first
+operation-intent phase for new outbound messages.
 
 `mailcli reply` is also wired for driver-backed transport when an account is configured.
 
