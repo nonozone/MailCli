@@ -173,6 +173,9 @@ Working today:
 - export the local index as JSONL, JSON, or CSV
 - **watch** one or more mailboxes with IMAP IDLE push (streaming JSONL event feed, persistent seen state across restarts)
 - create, inspect, diagnose, test, and inspect account capabilities with `mailcli config init` / `mailcli config show` / `mailcli config doctor` / `mailcli config test` / `mailcli config capabilities`
+- start an experimental local-only Mail Center with `mailcli web` for account
+  status, sync, unified indexed inbox, message/thread reading, and operation
+  queue inspection
 - integrate with Go, shell, and external agent workflows through stable JSON contracts
 - LLM tool-use schemas for OpenAI and Anthropic (`tools/` directory)
 
@@ -211,6 +214,28 @@ Still evolving:
 - richer list/search semantics for inbox workflows
 - richer outbound HTML rendering and attachment ergonomics
 - broader provider coverage and extension guidance
+- local Web panel reply flows, native forwarding, and attachment download
+  ergonomics
+
+### Experimental local Web panel
+
+`mailcli web` starts a temporary browser control panel bound to `127.0.0.1`.
+It prints a per-run tokenized URL and serves embedded static assets from the
+same Go binary:
+
+```bash
+mailcli web --config ~/.config/mailcli/config.yaml --index ~/.local/state/mailcli/index.db
+```
+
+For fixture-only local testing:
+
+```bash
+mailcli web --config examples/config/fixtures-dir.yaml --index /tmp/mailcli-web.db --no-open
+```
+
+The v1 Web panel is local-only. It does not expose a LAN/public server, does not
+store secrets in the browser, and does not give AI automatic send/delete/move
+authority.
 
 Current built-in driver types:
 

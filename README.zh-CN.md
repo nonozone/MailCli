@@ -171,6 +171,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - 将本地索引导出为 JSONL、JSON 或 CSV
 - **watch** 一个或多个邮箱（IMAP IDLE 推送事件流，重启后持久化去重）
 - `mailcli account add` / `mailcli config init` / `mailcli config show` / `mailcli config doctor` / `mailcli config test` / `mailcli config capabilities` 创建、查看、诊断、测试配置与账户能力
+- 通过实验性的本机 `mailcli web` 控制面板查看账户状态、同步邮件、统一索引收件箱、阅读 message/thread，并检查 operation queue
 - 通过稳定 JSON 契约与 Go、shell 和外部 agent 工作流协作
 - OpenAI 和 Anthropic 格式的 LLM Tool Use Schema（`tools/` 目录）
 
@@ -209,6 +210,24 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - 更适合 inbox workflow 的 list/search 语义
 - 出站 HTML 渲染质量和附件体验
 - 更广的 provider 覆盖与扩展文档
+- 本机 Web 面板里的回复流程、原生转发和附件下载体验
+
+### 实验性本机 Web 面板
+
+`mailcli web` 会启动一个只绑定 `127.0.0.1` 的临时浏览器控制面板。它会
+打印带一次性 token 的本机 URL，静态资源嵌入在同一个 Go binary 中：
+
+```bash
+mailcli web --config ~/.config/mailcli/config.yaml --index ~/.local/state/mailcli/index.db
+```
+
+如果只想用仓库 fixture 做本地测试：
+
+```bash
+mailcli web --config examples/config/fixtures-dir.yaml --index /tmp/mailcli-web.db --no-open
+```
+
+v1 Web 面板仅限本机使用。它不开放局域网/公网服务，不在浏览器里存储秘密值，也不会赋予 AI 自动发送、删除或移动邮件的权限。
 
 当前内置的 driver 类型：
 

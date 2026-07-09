@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MailCLI Mail Center</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">MailCLI</p>
+          <h1>Mail Center</h1>
+        </div>
+        <p id="session-status" class="status">Starting local session</p>
+      </header>
+
+      <section class="grid">
+        <aside class="panel">
+          <div class="panel-head">
+            <h2>Accounts</h2>
+            <button id="refresh-accounts" type="button">Refresh</button>
+          </div>
+          <div id="accounts" class="stack"></div>
+        </aside>
+
+        <section class="panel workspace">
+          <div class="panel-head">
+            <h2>Unified Inbox</h2>
+            <button id="sync-mail" type="button">Sync</button>
+          </div>
+          <div class="search-row">
+            <input id="search-query" type="search" placeholder="Search indexed mail">
+            <button id="search-mail" type="button">Search</button>
+          </div>
+          <div id="messages" class="message-list"></div>
+        </section>
+
+        <section class="panel detail">
+          <div class="panel-head">
+            <h2>Message</h2>
+          </div>
+          <article id="message-detail" class="message-detail muted">
+            Select a message to inspect normalized mail content.
+          </article>
+        </section>
+
+        <section class="panel operations">
+          <div class="panel-head">
+            <h2>Compose</h2>
+            <button id="prepare-send" type="button">Prepare</button>
+          </div>
+          <form id="compose-form" class="compose-form">
+            <label>
+              To
+              <input id="compose-to" type="email" placeholder="recipient@example.com">
+            </label>
+            <label>
+              Subject
+              <input id="compose-subject" type="text" placeholder="Subject">
+            </label>
+            <label>
+              Body
+              <textarea id="compose-body" rows="4" placeholder="Write a plain-text draft"></textarea>
+            </label>
+            <p id="compose-status" class="meta"></p>
+          </form>
+        </section>
+
+        <section class="panel operations">
+          <div class="panel-head">
+            <h2>Operations</h2>
+            <button id="refresh-operations" type="button">Refresh</button>
+          </div>
+          <div id="operations" class="stack"></div>
+        </section>
+      </section>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
