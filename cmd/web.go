@@ -28,6 +28,7 @@ var runWebServerFunc = runWebServer
 func newWebCmd() *cobra.Command {
 	var opts webRunOptions
 	opts.Host = "127.0.0.1"
+	opts.Port = 5566
 
 	cmd := &cobra.Command{
 		Use:   "web",
@@ -44,7 +45,7 @@ func newWebCmd() *cobra.Command {
 	cmd.Flags().StringVar(&opts.IndexPath, "index", "", "local index file path")
 	cmd.Flags().StringVar(&opts.OperationsPath, "operations", "", "operations log path")
 	cmd.Flags().StringVar(&opts.Host, "host", opts.Host, "bind host; v1 allows localhost only")
-	cmd.Flags().IntVar(&opts.Port, "port", 0, "bind port; 0 chooses a random available port")
+	cmd.Flags().IntVar(&opts.Port, "port", opts.Port, "bind port; pass 0 to choose a random available port")
 	cmd.Flags().BoolVar(&opts.NoOpen, "no-open", false, "do not open the browser automatically")
 	return cmd
 }

@@ -120,7 +120,7 @@ mailcli web \
   --index ~/.local/state/mailcli/index.db \
   --operations ~/.local/state/mailcli/operations.jsonl \
   --host 127.0.0.1 \
-  --port 0
+  --port 5566
 ```
 
 Suggested flags:
@@ -130,7 +130,7 @@ Suggested flags:
 - `--operations`: operation log path
 - `--host`: defaults to `127.0.0.1`; v1 should reject non-localhost values unless
   a future explicit unsafe flag exists
-- `--port`: defaults to `0` for random available port
+- `--port`: defaults to `5566`; `0` chooses a random available port
 - `--no-open`: do not open the browser automatically
 
 ### New Packages
@@ -319,7 +319,8 @@ actions that a user can inspect and confirm in the Web panel.
 
 1. `mailcli web` starts a local server bound to `127.0.0.1` and prints the local
    URL.
-2. The command can choose a random port when `--port 0` is used.
+2. The command defaults to local port `5566` and can still choose a random port
+   when `--port 0` is used.
 3. A per-run token is required for API requests that read private mailbox data
    or perform state changes.
 4. The Web panel lists configured accounts without exposing secret values.
@@ -355,8 +356,8 @@ go build -o /tmp/mailcli ./cmd/mailcli
 
 ## 12. Implementation Slices
 
-1. Add `mailcli web` skeleton, localhost binding, random port, token, and static
-   embedded shell.
+1. Add `mailcli web` skeleton, localhost binding, default port `5566`, token,
+   and static embedded shell.
 2. Add account/status APIs and a basic Accounts view.
 3. Add sync/search/messages/thread APIs and unified inbox views using the local
    index.

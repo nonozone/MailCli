@@ -25,13 +25,38 @@ func TestWebRejectsNonLocalHost(t *testing.T) {
 	}
 }
 
-func TestWebPrintsLocalURL(t *testing.T) {
+func TestWebUsesDefaultLocalPort(t *testing.T) {
 	original := runWebServerFunc
 	t.Cleanup(func() { runWebServerFunc = original })
 	runWebServerFunc = func(ctx context.Context, opts webRunOptions, out io.Writer) error {
 		if opts.Host != "127.0.0.1" {
 			t.Fatalf("expected default localhost host, got %q", opts.Host)
 		}
+		if opts.Port != 5566 {
+			t.Fatalf("expected default local port 5566, got %d", opts.Port)
+		}
+		_, err := fmt.Fprintln(out, "MailCLI Web: http://127.0.0.1:5566/?token=test")
+		return err
+	}
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"web", "--no-open"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected web command to start and stop cleanly in test mode: %v\n%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), "http://127.0.0.1:5566/") || !strings.Contains(out.String(), "token=") {
+		t.Fatalf("expected local URL with token, got %s", out.String())
+	}
+}
+
+func TestWebAllowsRandomPort(t *testing.T) {
+	original := runWebServerFunc
+	t.Cleanup(func() { runWebServerFunc = original })
+	runWebServerFunc = func(ctx context.Context, opts webRunOptions, out io.Writer) error {
 		if opts.Port != 0 {
 			t.Fatalf("expected requested random port, got %d", opts.Port)
 		}
@@ -48,7 +73,7 @@ func TestWebPrintsLocalURL(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected web command to start and stop cleanly in test mode: %v\n%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "http://127.0.0.1:") || !strings.Contains(out.String(), "token=") {
+	if !strings.Contains(out.String(), "http://127.0.0.1:49231/") || !strings.Contains(out.String(), "token=") {
 		t.Fatalf("expected local URL with token, got %s", out.String())
 	}
 }

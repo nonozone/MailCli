@@ -221,6 +221,9 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 mailcli web --config ~/.config/mailcli/config.yaml --index ~/.local/state/mailcli/index.db
 ```
 
+默认使用 `127.0.0.1:5566`。如果希望随机选择可用本机端口，可以传
+`--port 0`。
+
 如果只想用仓库 fixture 做本地测试：
 
 ```bash

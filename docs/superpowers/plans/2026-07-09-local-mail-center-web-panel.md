@@ -32,7 +32,7 @@
 - Create: `cmd/web_test.go`
 - Modify: `cmd/root.go`
 
-- [ ] Write failing tests that `mailcli web --host 0.0.0.0` is rejected and `mailcli web --no-open --port 0` prints a localhost URL.
+- [ ] Write failing tests that `mailcli web --host 0.0.0.0` is rejected, `mailcli web --no-open` defaults to port `5566`, and `--port 0` still allows a random localhost URL.
 - [ ] Add `newWebCmd()` and register it in `NewRootCmd`.
 - [ ] Verify with `go test ./cmd -run Web`.
 

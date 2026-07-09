@@ -227,6 +227,9 @@ same Go binary:
 mailcli web --config ~/.config/mailcli/config.yaml --index ~/.local/state/mailcli/index.db
 ```
 
+By default it uses `127.0.0.1:5566`. Pass `--port 0` if you want a random
+available local port.
+
 For fixture-only local testing:
 
 ```bash
