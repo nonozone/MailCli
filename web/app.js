@@ -1,6 +1,3 @@
-const params = new URLSearchParams(window.location.search);
-const token = params.get("token") || "";
-
 const state = {
   accounts: [],
   messages: [],
@@ -19,12 +16,11 @@ function el(tag, attrs = {}, children = []) {
 
 async function api(path, options = {}) {
   const url = new URL(path, window.location.origin);
-  url.searchParams.set("token", token);
   const response = await fetch(url, {
     ...options,
+    credentials: "same-origin",
     headers: {
       "Content-Type": "application/json",
-      "X-MailCLI-Token": token,
       ...(options.headers || {}),
     },
   });

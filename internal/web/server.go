@@ -23,6 +23,8 @@ import (
 	"github.com/nonozone/MailCli/web"
 )
 
+const sessionCookieName = "mailcli_local_session"
+
 type Options struct {
 	ConfigPath     string
 	IndexPath      string
@@ -83,6 +85,7 @@ func (s *Server) Token() string {
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /session/start", s.handleSessionStart)
 	mux.HandleFunc("GET /api/session", s.withToken(s.handleSession))
 	mux.HandleFunc("GET /api/accounts", s.withToken(s.handleAccounts))
 	mux.HandleFunc("POST /api/sync", s.withToken(s.handleSync))
@@ -94,7 +97,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/operations", s.withToken(s.handleOperations))
 	mux.HandleFunc("GET /api/operations/{id}", s.withToken(s.handleOperation))
 	mux.HandleFunc("POST /api/operations/{id}/confirm", s.withToken(s.handleOperationConfirm))
-	mux.Handle("/", staticHandler())
+	mux.HandleFunc("GET /", s.handleStatic)
 	return mux
 }
 
@@ -115,12 +118,54 @@ func (s *Server) validToken(r *http.Request) bool {
 	}
 	actual := strings.TrimSpace(r.Header.Get("X-MailCLI-Token"))
 	if actual == "" {
+		if cookie, err := r.Cookie(sessionCookieName); err == nil {
+			actual = strings.TrimSpace(cookie.Value)
+		}
+	}
+	if actual == "" {
 		actual = strings.TrimSpace(r.URL.Query().Get("token"))
 	}
 	if actual == "" {
 		return false
 	}
+	return s.validRawToken(actual)
+}
+
+func (s *Server) validRawToken(actual string) bool {
+	expected := strings.TrimSpace(s.options.Token)
+	actual = strings.TrimSpace(actual)
+	if expected == "" || actual == "" {
+		return false
+	}
 	return subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1
+}
+
+func (s *Server) handleSessionStart(w http.ResponseWriter, r *http.Request) {
+	if !s.validRawToken(r.URL.Query().Get("token")) {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "A valid local session token is required.", "")
+		return
+	}
+	s.setSessionCookie(w)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *Server) handleStatic(w http.ResponseWriter, r *http.Request) {
+	if token := r.URL.Query().Get("token"); s.validRawToken(token) {
+		s.setSessionCookie(w)
+		http.Redirect(w, r, r.URL.Path, http.StatusSeeOther)
+		return
+	}
+	staticHandler().ServeHTTP(w, r)
+}
+
+func (s *Server) setSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    s.options.Token,
+		Path:     "/",
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
+	})
 }
 
 func (s *Server) handleSession(w http.ResponseWriter, r *http.Request) {

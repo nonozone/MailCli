@@ -7,28 +7,33 @@
     <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
-    <main class="shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">MailCLI</p>
-          <h1>Mail Center</h1>
+    <main class="app-shell">
+      <header class="app-topbar">
+        <div class="brand-block">
+          <span class="brand-mark" aria-hidden="true">@</span>
+          <div>
+            <p class="eyebrow">MailCLI Local</p>
+            <h1>Mail Desk</h1>
+          </div>
         </div>
-        <p id="session-status" class="status">Starting local session</p>
+        <div class="top-actions">
+          <p id="session-status" class="status">Starting local session</p>
+          <button id="sync-mail" type="button">Sync</button>
+        </div>
       </header>
 
-      <section class="grid">
-        <aside class="panel">
-          <div class="panel-head">
+      <section class="mail-workbench">
+        <aside class="account-rail workspace-section">
+          <div class="section-head">
             <h2>Accounts</h2>
             <button id="refresh-accounts" type="button">Refresh</button>
           </div>
-          <div id="accounts" class="stack"></div>
+          <div id="accounts" class="account-list"></div>
         </aside>
 
-        <section class="panel workspace">
-          <div class="panel-head">
+        <section class="inbox-column workspace-section">
+          <div class="section-head">
             <h2>Unified Inbox</h2>
-            <button id="sync-mail" type="button">Sync</button>
           </div>
           <div class="search-row">
             <input id="search-query" type="search" placeholder="Search indexed mail">
@@ -37,44 +42,46 @@
           <div id="messages" class="message-list"></div>
         </section>
 
-        <section class="panel detail">
-          <div class="panel-head">
+        <section class="reader-column workspace-section">
+          <div class="section-head">
             <h2>Message</h2>
           </div>
           <article id="message-detail" class="message-detail muted">
-            Select a message to inspect normalized mail content.
+            Select a message.
           </article>
         </section>
 
-        <section class="panel operations">
-          <div class="panel-head">
-            <h2>Compose</h2>
-            <button id="prepare-send" type="button">Prepare</button>
-          </div>
-          <form id="compose-form" class="compose-form">
-            <label>
-              To
-              <input id="compose-to" type="email" placeholder="recipient@example.com">
-            </label>
-            <label>
-              Subject
-              <input id="compose-subject" type="text" placeholder="Subject">
-            </label>
-            <label>
-              Body
-              <textarea id="compose-body" rows="4" placeholder="Write a plain-text draft"></textarea>
-            </label>
-            <p id="compose-status" class="meta"></p>
-          </form>
-        </section>
+        <aside class="action-rail">
+          <section class="workspace-section compose-section">
+            <div class="section-head">
+              <h2>Draft</h2>
+              <button id="prepare-send" type="button">Prepare</button>
+            </div>
+            <form id="compose-form" class="compose-form">
+              <label>
+                To
+                <input id="compose-to" type="email" placeholder="recipient@example.com">
+              </label>
+              <label>
+                Subject
+                <input id="compose-subject" type="text" placeholder="Subject">
+              </label>
+              <label>
+                Body
+                <textarea id="compose-body" rows="6" placeholder="Plain-text draft"></textarea>
+              </label>
+              <p id="compose-status" class="meta"></p>
+            </form>
+          </section>
 
-        <section class="panel operations">
-          <div class="panel-head">
-            <h2>Operations</h2>
-            <button id="refresh-operations" type="button">Refresh</button>
-          </div>
-          <div id="operations" class="stack"></div>
-        </section>
+          <section class="workspace-section operations-section">
+            <div class="section-head">
+              <h2>Operations</h2>
+              <button id="refresh-operations" type="button">Refresh</button>
+            </div>
+            <div id="operations" class="operation-list"></div>
+          </section>
+        </aside>
       </section>
     </main>
     <script src="/app.js" defer></script>

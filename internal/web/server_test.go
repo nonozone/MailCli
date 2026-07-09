@@ -63,6 +63,47 @@ func TestServerAcceptsTokenFromQuery(t *testing.T) {
 	}
 }
 
+func TestServerStartsSessionWithCookie(t *testing.T) {
+	srv, err := NewServer(Options{Token: "secret", Version: "test-version"})
+	if err != nil {
+		t.Fatalf("expected server: %v", err)
+	}
+
+	startRec := httptest.NewRecorder()
+	startReq := httptest.NewRequest(http.MethodGet, "/session/start?token=secret", nil)
+	srv.Handler().ServeHTTP(startRec, startReq)
+
+	if startRec.Code != http.StatusSeeOther {
+		t.Fatalf("expected redirect after session start, got %d: %s", startRec.Code, startRec.Body.String())
+	}
+	if location := startRec.Header().Get("Location"); location != "/" {
+		t.Fatalf("expected redirect to root, got %q", location)
+	}
+	cookies := startRec.Result().Cookies()
+	if len(cookies) != 1 {
+		t.Fatalf("expected session cookie, got %#v", cookies)
+	}
+	cookie := cookies[0]
+	if cookie.Name != sessionCookieName || cookie.Value != "secret" {
+		t.Fatalf("expected session cookie, got %#v", cookie)
+	}
+	if !cookie.HttpOnly || cookie.SameSite != http.SameSiteStrictMode {
+		t.Fatalf("expected HttpOnly strict same-site cookie, got %#v", cookie)
+	}
+
+	apiRec := httptest.NewRecorder()
+	apiReq := httptest.NewRequest(http.MethodGet, "/api/session", nil)
+	apiReq.AddCookie(cookie)
+	srv.Handler().ServeHTTP(apiRec, apiReq)
+
+	if apiRec.Code != http.StatusOK {
+		t.Fatalf("expected cookie-authenticated session, got %d: %s", apiRec.Code, apiRec.Body.String())
+	}
+	if !strings.Contains(apiRec.Body.String(), "test-version") {
+		t.Fatalf("expected session payload, got %s", apiRec.Body.String())
+	}
+}
+
 func TestServerRendersStaticIndex(t *testing.T) {
 	srv, err := NewServer(Options{Token: "secret"})
 	if err != nil {
@@ -76,8 +117,8 @@ func TestServerRendersStaticIndex(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("expected ok status, got %d: %s", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "Mail Center") {
-		t.Fatalf("expected Mail Center static shell, got %s", rec.Body.String())
+	if !strings.Contains(rec.Body.String(), "Mail Desk") {
+		t.Fatalf("expected Mail Desk static shell, got %s", rec.Body.String())
 	}
 }
 

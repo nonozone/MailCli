@@ -73,7 +73,7 @@ func runWebServer(ctx context.Context, opts webRunOptions, out io.Writer) error 
 	defer listener.Close()
 
 	addr := listener.Addr().(*net.TCPAddr)
-	url := fmt.Sprintf("http://%s:%d/?token=%s", opts.Host, addr.Port, server.Token())
+	url := fmt.Sprintf("http://%s:%d/session/start?token=%s", opts.Host, addr.Port, server.Token())
 	fmt.Fprintf(out, "MailCLI Web: %s\n", url)
 	if !opts.NoOpen {
 		_ = openBrowser(url)

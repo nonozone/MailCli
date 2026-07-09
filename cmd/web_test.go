@@ -35,7 +35,7 @@ func TestWebUsesDefaultLocalPort(t *testing.T) {
 		if opts.Port != 5566 {
 			t.Fatalf("expected default local port 5566, got %d", opts.Port)
 		}
-		_, err := fmt.Fprintln(out, "MailCLI Web: http://127.0.0.1:5566/?token=test")
+		_, err := fmt.Fprintln(out, "MailCLI Web: http://127.0.0.1:5566/session/start?token=test")
 		return err
 	}
 
@@ -48,8 +48,8 @@ func TestWebUsesDefaultLocalPort(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected web command to start and stop cleanly in test mode: %v\n%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "http://127.0.0.1:5566/") || !strings.Contains(out.String(), "token=") {
-		t.Fatalf("expected local URL with token, got %s", out.String())
+	if !strings.Contains(out.String(), "http://127.0.0.1:5566/session/start?token=") {
+		t.Fatalf("expected local session start URL, got %s", out.String())
 	}
 }
 
@@ -60,7 +60,7 @@ func TestWebAllowsRandomPort(t *testing.T) {
 		if opts.Port != 0 {
 			t.Fatalf("expected requested random port, got %d", opts.Port)
 		}
-		_, err := fmt.Fprintln(out, "MailCLI Web: http://127.0.0.1:49231/?token=test")
+		_, err := fmt.Fprintln(out, "MailCLI Web: http://127.0.0.1:49231/session/start?token=test")
 		return err
 	}
 
@@ -73,7 +73,7 @@ func TestWebAllowsRandomPort(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("expected web command to start and stop cleanly in test mode: %v\n%s", err, out.String())
 	}
-	if !strings.Contains(out.String(), "http://127.0.0.1:49231/") || !strings.Contains(out.String(), "token=") {
-		t.Fatalf("expected local URL with token, got %s", out.String())
+	if !strings.Contains(out.String(), "http://127.0.0.1:49231/session/start?token=") {
+		t.Fatalf("expected local session start URL, got %s", out.String())
 	}
 }
