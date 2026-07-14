@@ -124,6 +124,18 @@ func TestMCPServeCallsTriageMessageTool(t *testing.T) {
 	}
 }
 
+func TestMCPFileToolsRejectProtocolStdin(t *testing.T) {
+	for _, tool := range []string{"mailcli_parse", "mailcli_triage_message"} {
+		_, err := mcpToolCommandArgs(tool, map[string]any{"file": "-"})
+		if err == nil {
+			t.Fatalf("expected %s to reject MCP protocol stdin", tool)
+		}
+		if !strings.Contains(err.Error(), "local path") {
+			t.Fatalf("expected actionable local-path error for %s, got %v", tool, err)
+		}
+	}
+}
+
 func decodeJSONLines(t *testing.T, raw []byte) []map[string]any {
 	t.Helper()
 

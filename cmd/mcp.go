@@ -285,6 +285,9 @@ func mcpToolCommandArgs(name string, input map[string]any) ([]string, error) {
 		if file == "" {
 			return nil, fmt.Errorf("file is required")
 		}
+		if file == "-" {
+			return nil, fmt.Errorf("file must be a local path for MCP calls")
+		}
 		return []string{"parse", "--format", "json", file}, nil
 	case "mailcli_list":
 		args := []string{"list", "--format", "json"}
@@ -346,6 +349,9 @@ func mcpToolCommandArgs(name string, input map[string]any) ([]string, error) {
 		file := stringArg(input, "file")
 		if file == "" {
 			return nil, fmt.Errorf("file is required")
+		}
+		if file == "-" {
+			return nil, fmt.Errorf("file must be a local path for MCP calls")
 		}
 		return []string{"triage", "message", file}, nil
 	case "mailcli_triage_thread":

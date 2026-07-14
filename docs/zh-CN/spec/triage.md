@@ -21,6 +21,9 @@ mailcli triage thread --index ~/.cache/mailcli/index.db "<thread-id>"
 逻辑产生。thread 命令会读取匹配线程的全部本地消息，不使用 `mailcli thread`
 展示命令默认的 50 封限制。
 
+每条记录还包含一个 SHA-256 `evidence_id`。外部 enrichment 必须原样回传该值，
+这样线程新增消息后，基于旧上下文生成的判断不会被静默合并到新 evidence。
+
 如果多个账户存在相同 thread id，应传入 `--account`。MailCLI 会拒绝把不同
 账户的邮件静默合并成同一条 triage 记录。
 
@@ -50,6 +53,7 @@ deadline 或 todo 时，如果正文上下文会影响结论，还应读取完�
   "version": "v1",
   "scope": "thread",
   "subject_id": "<root@example.com>",
+  "evidence_id": "sha256:...",
   "source": {
     "kind": "external",
     "provider": "example-provider",
@@ -93,7 +97,7 @@ mailcli triage thread \
 
 以下情况会被拒绝：
 
-- 契约版本、scope 或 subject id 与 evidence 不匹配
+- 契约版本、scope、subject id 或 evidence id 与当前 evidence 不匹配
 - source kind 没有明确标注为 `external` 或 `heuristic`
 - 缺少 provider 或 RFC3339 `generated_at`
 - priority 不属于 `low`、`normal`、`high`、`urgent`

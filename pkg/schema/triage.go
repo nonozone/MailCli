@@ -15,6 +15,7 @@ type TriageRecord struct {
 	Version    string            `json:"version" yaml:"version"`
 	Scope      string            `json:"scope" yaml:"scope"`
 	SubjectID  string            `json:"subject_id" yaml:"subject_id"`
+	EvidenceID string            `json:"evidence_id" yaml:"evidence_id"`
 	Account    string            `json:"account,omitempty" yaml:"account,omitempty"`
 	Mailbox    string            `json:"mailbox,omitempty" yaml:"mailbox,omitempty"`
 	Evidence   TriageEvidence    `json:"evidence" yaml:"evidence"`
@@ -66,6 +67,7 @@ type TriageEnrichment struct {
 	Version     string                 `json:"version" yaml:"version"`
 	Scope       string                 `json:"scope" yaml:"scope"`
 	SubjectID   string                 `json:"subject_id" yaml:"subject_id"`
+	EvidenceID  string                 `json:"evidence_id" yaml:"evidence_id"`
 	Source      TriageEnrichmentSource `json:"source" yaml:"source"`
 	GeneratedAt string                 `json:"generated_at" yaml:"generated_at"`
 	Summary     string                 `json:"summary,omitempty" yaml:"summary,omitempty"`
@@ -83,28 +85,28 @@ type TriageEnrichmentSource struct {
 
 type TriagePriority struct {
 	Level      string   `json:"level" yaml:"level"`
-	Confidence float64  `json:"confidence" yaml:"confidence"`
+	Confidence *float64 `json:"confidence" yaml:"confidence"`
 	Reasons    []string `json:"reasons" yaml:"reasons"`
 }
 
 type TriageNeedsReply struct {
-	Value      bool     `json:"value" yaml:"value"`
-	Confidence float64  `json:"confidence" yaml:"confidence"`
+	Value      *bool    `json:"value" yaml:"value"`
+	Confidence *float64 `json:"confidence" yaml:"confidence"`
 	Reasons    []string `json:"reasons" yaml:"reasons"`
 }
 
 type TriageDeadline struct {
-	Text            string  `json:"text" yaml:"text"`
-	At              string  `json:"at,omitempty" yaml:"at,omitempty"`
-	SourceMessageID string  `json:"source_message_id" yaml:"source_message_id"`
-	Confidence      float64 `json:"confidence" yaml:"confidence"`
+	Text            string   `json:"text" yaml:"text"`
+	At              string   `json:"at,omitempty" yaml:"at,omitempty"`
+	SourceMessageID string   `json:"source_message_id" yaml:"source_message_id"`
+	Confidence      *float64 `json:"confidence" yaml:"confidence"`
 }
 
 type TriageTodo struct {
-	Text            string  `json:"text" yaml:"text"`
-	DueAt           string  `json:"due_at,omitempty" yaml:"due_at,omitempty"`
-	SourceMessageID string  `json:"source_message_id" yaml:"source_message_id"`
-	Confidence      float64 `json:"confidence" yaml:"confidence"`
+	Text            string   `json:"text" yaml:"text"`
+	DueAt           string   `json:"due_at,omitempty" yaml:"due_at,omitempty"`
+	SourceMessageID string   `json:"source_message_id" yaml:"source_message_id"`
+	Confidence      *float64 `json:"confidence" yaml:"confidence"`
 }
 
 func ValidateTriageEnrichment(value TriageEnrichment) error {
@@ -117,6 +119,9 @@ func ValidateTriageEnrichment(value TriageEnrichment) error {
 	}
 	if strings.TrimSpace(value.SubjectID) == "" {
 		problems = append(problems, "subject_id is required")
+	}
+	if strings.TrimSpace(value.EvidenceID) == "" {
+		problems = append(problems, "evidence_id is required")
 	}
 	if value.Source.Kind != "external" && value.Source.Kind != "heuristic" {
 		problems = append(problems, "source.kind must be external or heuristic")
@@ -140,6 +145,9 @@ func ValidateTriageEnrichment(value TriageEnrichment) error {
 		validateAssessment("priority", value.Priority.Confidence, value.Priority.Reasons, &problems)
 	}
 	if value.NeedsReply != nil {
+		if value.NeedsReply.Value == nil {
+			problems = append(problems, "needs_reply.value is required")
+		}
 		validateAssessment("needs_reply", value.NeedsReply.Confidence, value.NeedsReply.Reasons, &problems)
 	}
 	for i, deadline := range value.Deadlines {
@@ -183,7 +191,7 @@ func ValidateTriageEnrichment(value TriageEnrichment) error {
 	return nil
 }
 
-func validateAssessment(name string, confidence float64, reasons []string, problems *[]string) {
+func validateAssessment(name string, confidence *float64, reasons []string, problems *[]string) {
 	if err := validateConfidence(name+".confidence", confidence); err != nil {
 		*problems = append(*problems, err.Error())
 	}
@@ -192,8 +200,11 @@ func validateAssessment(name string, confidence float64, reasons []string, probl
 	}
 }
 
-func validateConfidence(name string, value float64) error {
-	if math.IsNaN(value) || math.IsInf(value, 0) || value < 0 || value > 1 {
+func validateConfidence(name string, value *float64) error {
+	if value == nil {
+		return fmt.Errorf("%s is required", name)
+	}
+	if math.IsNaN(*value) || math.IsInf(*value, 0) || *value < 0 || *value > 1 {
 		return fmt.Errorf("%s must be between 0 and 1", name)
 	}
 	return nil

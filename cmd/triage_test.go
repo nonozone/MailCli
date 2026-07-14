@@ -45,6 +45,7 @@ func TestTriageMessageCommandMergesValidatedExternalEnrichment(t *testing.T) {
   "version": "v1",
   "scope": "message",
   "subject_id": "<mime-attachment-123@example.com>",
+  "evidence_id": "sha256:9a0ac96309d410dbd0dc6713550e8aefe8828fbfd5a820bcb8ce71ca676abda0",
   "source": {"kind": "external", "provider": "test-provider", "model": "test-v1"},
   "generated_at": "2026-07-14T09:00:00Z",
   "summary": "An invoice PDF needs review.",
@@ -70,7 +71,7 @@ func TestTriageMessageCommandMergesValidatedExternalEnrichment(t *testing.T) {
 	if result.Enrichment == nil || result.Enrichment.Priority == nil {
 		t.Fatalf("expected validated enrichment, got %+v", result)
 	}
-	if result.Enrichment.NeedsReply == nil || result.Enrichment.NeedsReply.Value {
+	if result.Enrichment.NeedsReply == nil || result.Enrichment.NeedsReply.Value == nil || *result.Enrichment.NeedsReply.Value {
 		t.Fatalf("expected explicit needs_reply=false, got %+v", result.Enrichment.NeedsReply)
 	}
 }
@@ -80,6 +81,7 @@ func TestTriageMessageCommandRejectsEnrichmentForDifferentSubject(t *testing.T) 
   "version": "v1",
   "scope": "message",
   "subject_id": "<different@example.com>",
+  "evidence_id": "sha256:9a0ac96309d410dbd0dc6713550e8aefe8828fbfd5a820bcb8ce71ca676abda0",
   "source": {"kind": "external", "provider": "test-provider"},
   "generated_at": "2026-07-14T09:00:00Z",
   "summary": "Wrong message."

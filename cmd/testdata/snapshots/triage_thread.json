@@ -2,6 +2,7 @@
   "version": "v1",
   "scope": "thread",
   "subject_id": "<root@example.com>",
+  "evidence_id": "sha256:91df64751209419858e38b01c831f7aa5c61c7aef0082c2db2044303a947ce2e",
   "account": "demo",
   "mailbox": "INBOX",
   "evidence": {

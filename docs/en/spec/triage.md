@@ -22,6 +22,10 @@ Both commands return a versioned `TriageRecord` with deterministic `evidence`.
 The thread command loads the complete matching local thread; it does not apply
 the default 50-message display limit used by `mailcli thread`.
 
+Each record also includes an `evidence_id` SHA-256 value. External enrichment
+must echo this value so a result generated before a thread changed cannot be
+silently attached to newer evidence.
+
 Use `--account` when the same thread id exists in multiple configured accounts.
 MailCLI rejects a mixed-account triage record instead of silently combining it.
 
@@ -52,6 +56,7 @@ An external provider may return a `TriageEnrichment` JSON document:
   "version": "v1",
   "scope": "thread",
   "subject_id": "<root@example.com>",
+  "evidence_id": "sha256:...",
   "source": {
     "kind": "external",
     "provider": "example-provider",
@@ -95,7 +100,7 @@ message and enrichment cannot both use stdin.
 
 MailCLI rejects enrichment when:
 
-- the contract version, scope, or subject id does not match the evidence
+- the contract version, scope, subject id, or evidence id does not match the current evidence
 - source kind is not explicitly `external` or `heuristic`
 - provider or RFC3339 `generated_at` metadata is missing
 - priority is outside `low`, `normal`, `high`, or `urgent`

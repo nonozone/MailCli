@@ -1,6 +1,9 @@
 package triage
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -73,6 +76,9 @@ func ApplyEnrichment(record *schema.TriageRecord, enrichment schema.TriageEnrich
 	if enrichment.SubjectID != record.SubjectID {
 		return fmt.Errorf("enrichment subject_id %q does not match triage subject_id %q", enrichment.SubjectID, record.SubjectID)
 	}
+	if enrichment.EvidenceID != record.EvidenceID {
+		return fmt.Errorf("enrichment evidence_id %q does not match current triage evidence_id %q", enrichment.EvidenceID, record.EvidenceID)
+	}
 
 	messageIDs := make(map[string]struct{}, len(record.Evidence.MessageIDs))
 	for _, id := range record.Evidence.MessageIDs {
@@ -105,7 +111,7 @@ func buildRecord(scope, subjectID, account, mailbox string, messages []messageIn
 		MessageCount: len(messages),
 		Messages:     make([]schema.TriageMessageFact, 0, len(messages)),
 	}
-	participants := map[string]struct{}{}
+	participants := map[string]string{}
 	categories := map[string]struct{}{}
 	labels := map[string]struct{}{}
 	actionTypes := map[string]struct{}{}
@@ -146,9 +152,9 @@ func buildRecord(scope, subjectID, account, mailbox string, messages []messageIn
 			evidence.ErrorCount++
 		}
 
-		addSetValue(participants, from)
-		for _, recipient := range to {
-			addSetValue(participants, recipient)
+		addParticipant(participants, message.Meta.From)
+		for i := range message.Meta.To {
+			addParticipant(participants, &message.Meta.To[i])
 		}
 		addSetValue(categories, message.Content.Category)
 		for _, label := range message.Labels {
@@ -159,7 +165,7 @@ func buildRecord(scope, subjectID, account, mailbox string, messages []messageIn
 		}
 	}
 
-	evidence.Participants = sortedSetValues(participants)
+	evidence.Participants = sortedParticipantValues(participants)
 	evidence.ParticipantCount = len(evidence.Participants)
 	evidence.Categories = sortedSetValues(categories)
 	evidence.Labels = sortedSetValues(labels)
@@ -168,7 +174,7 @@ func buildRecord(scope, subjectID, account, mailbox string, messages []messageIn
 	evidence.HasCodes = evidence.CodeCount > 0
 	evidence.HasAttachments = evidence.AttachmentCount > 0
 
-	return schema.TriageRecord{
+	record := schema.TriageRecord{
 		Version:   schema.TriageContractVersion,
 		Scope:     scope,
 		SubjectID: subjectID,
@@ -176,6 +182,14 @@ func buildRecord(scope, subjectID, account, mailbox string, messages []messageIn
 		Mailbox:   strings.TrimSpace(mailbox),
 		Evidence:  evidence,
 	}
+	record.EvidenceID = triageEvidenceID(evidence)
+	return record
+}
+
+func triageEvidenceID(evidence schema.TriageEvidence) string {
+	raw, _ := json.Marshal(evidence)
+	sum := sha256.Sum256(raw)
+	return "sha256:" + hex.EncodeToString(sum[:])
 }
 
 func uniqueActionTypes(actions []schema.Action) []string {
@@ -191,6 +205,33 @@ func addSetValue(values map[string]struct{}, value string) {
 	if trimmed != "" {
 		values[trimmed] = struct{}{}
 	}
+}
+
+func addParticipant(values map[string]string, address *schema.Address) {
+	formatted := formatAddress(address)
+	if formatted == "" {
+		return
+	}
+	key := strings.ToLower(strings.TrimSpace(address.Address))
+	if key == "" {
+		key = "name:" + strings.ToLower(strings.TrimSpace(address.Name))
+	}
+	current := values[key]
+	if current == "" || (!strings.Contains(current, "<") && strings.Contains(formatted, "<")) {
+		values[key] = formatted
+	}
+}
+
+func sortedParticipantValues(values map[string]string) []string {
+	if len(values) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func sortedSetValues(values map[string]struct{}) []string {

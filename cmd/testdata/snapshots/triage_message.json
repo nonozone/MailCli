@@ -2,6 +2,7 @@
   "version": "v1",
   "scope": "message",
   "subject_id": "<mime-attachment-123@example.com>",
+  "evidence_id": "sha256:9a0ac96309d410dbd0dc6713550e8aefe8828fbfd5a820bcb8ce71ca676abda0",
   "evidence": {
     "source": "deterministic",
     "message_count": 1,
