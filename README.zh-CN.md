@@ -184,6 +184,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `mailcli search`
 - `mailcli threads`
 - `mailcli thread`
+- `mailcli triage message|thread`
 - `mailcli send`
 - `mailcli send prepare|confirm`
 - `mailcli reply`
@@ -197,6 +198,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `mailcli account add`
 - `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
+- `TriageRecord` / `TriageEnrichment`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult`
@@ -317,6 +319,8 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--thread <thread_id>] [--limit <n>] [--full] <query>`
 - `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 - `mailcli thread <thread_id> [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
+- `mailcli triage message [--enrichment <path|->] <file|->`
+- `mailcli triage thread [--index <path>] [--account <name>] [--mailbox <name>] [--enrichment <path|->] <thread_id>`
 
 ### 写路径
 

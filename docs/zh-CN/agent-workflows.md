@@ -79,6 +79,11 @@ mailcli get --config ~/.config/mailcli/config.yaml "<message-id>"
 
 - [Agent Inbox Assistant](examples/agent-inbox-assistant.md)
 
+需要处理 priority、needs-reply、deadline 或 todo 时，使用
+`mailcli triage message` 或 `mailcli triage thread`。MailCLI 输出确定性
+evidence，并校验可选的外部 enrichment，不会把 AI 判断伪装成 parser 事实。
+参见 [Triage Evidence 与 Enrichment](spec/triage.md)。
+
 ## 本地检索路径
 
 当 agent 希望围绕“最近同步过的邮件”进行快速本地检索时，走这条链路。

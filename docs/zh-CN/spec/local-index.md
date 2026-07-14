@@ -18,6 +18,7 @@ MailCLI 提供一个本地 SQLite 索引，让 Agent 可以在不反复访问远
 - `mailcli search` — 全文检索本地索引
 - `mailcli threads` — 查看会话摘要
 - `mailcli thread` — 阅读特定线程的所有邮件
+- `mailcli triage thread` — 基于指定 thread 的全部消息生成确定性 evidence
 - `mailcli export` — 将索引导出为 JSON、JSONL 或 CSV
 - `mailcli watch --index` — 实时流式接收新邮件，附带持久化 seen 状态
 

@@ -79,6 +79,11 @@ Reference example:
 
 - [Agent Inbox Assistant](examples/agent-inbox-assistant.md)
 
+For priority, needs-reply, deadline, and todo workflows, use
+`mailcli triage message` or `mailcli triage thread`. MailCLI emits deterministic
+evidence and validates optional external enrichment without presenting AI
+judgments as parser facts. See [Triage Evidence And Enrichment](spec/triage.md).
+
 ## The Local Retrieval Path
 
 Use this path when an agent wants a fast local retrieval loop across recently synced messages.

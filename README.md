@@ -188,6 +188,7 @@ Stable enough to build against in current `main`:
 - `mailcli search`
 - `mailcli threads`
 - `mailcli thread`
+- `mailcli triage message|thread`
 - `mailcli send`
 - `mailcli send prepare|confirm`
 - `mailcli reply`
@@ -201,6 +202,7 @@ Stable enough to build against in current `main`:
 - `mailcli account add`
 - `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
+- `TriageRecord` / `TriageEnrichment`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult` (now includes `message_id`)
@@ -324,6 +326,8 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli search [--index] [--account] [--mailbox] [--since] [--before] [--thread] [--limit] [--full] <query>`
 - `mailcli threads [query] [--index] [--account] [--mailbox] [--since] [--before] [--category] [--action] [--has-codes] [--limit]`
 - `mailcli thread <thread_id> [--index] [--account] [--mailbox] [--limit]`
+- `mailcli triage message [--enrichment <path|->] <file|->`
+- `mailcli triage thread [--index] [--account] [--mailbox] [--enrichment <path|->] <thread_id>`
 - `mailcli export [query] [--index] [--account] [--mailbox] [--since] [--before] [--format jsonl|json|csv] [--output] [--limit]`
 
 ### Write path

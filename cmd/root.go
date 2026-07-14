@@ -35,6 +35,7 @@ JSON that is ready for LLM consumption or AI pipeline processing.`,
 	cmd.AddCommand(newSearchCmd())
 	cmd.AddCommand(newThreadsCmd())
 	cmd.AddCommand(newThreadCmd())
+	cmd.AddCommand(newTriageCmd())
 	cmd.AddCommand(newSendCmd())
 	cmd.AddCommand(newReplyCmd())
 	cmd.AddCommand(newDeleteCmd())

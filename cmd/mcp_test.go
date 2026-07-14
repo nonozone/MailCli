@@ -48,6 +48,8 @@ func TestMCPServeInitializesAndListsSafeTools(t *testing.T) {
 		"mailcli_search",
 		"mailcli_threads",
 		"mailcli_thread",
+		"mailcli_triage_message",
+		"mailcli_triage_thread",
 		"mailcli_config_doctor",
 		"mailcli_config_capabilities",
 	} {
@@ -94,6 +96,31 @@ func TestMCPServeCallsParseTool(t *testing.T) {
 	text := first["text"].(string)
 	if !strings.Contains(text, `"subject": "Plaintext message"`) {
 		t.Fatalf("expected parse output in MCP response, got %s", text)
+	}
+}
+
+func TestMCPServeCallsTriageMessageTool(t *testing.T) {
+	input := `{"jsonrpc":"2.0","id":"call-triage","method":"tools/call","params":{"name":"mailcli_triage_message","arguments":{"file":"../testdata/emails/mime_attachment.eml"}}}` + "\n"
+
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetIn(strings.NewReader(input))
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"mcp", "serve"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected MCP triage call to succeed: %v\n%s", err, out.String())
+	}
+
+	responses := decodeJSONLines(t, out.Bytes())
+	result := responses[0]["result"].(map[string]any)
+	content := result["content"].([]any)
+	text := content[0].(map[string]any)["text"].(string)
+	for _, want := range []string{`"source": "deterministic"`, `"attachment_count": 1`} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("expected triage evidence to contain %q, got %s", want, text)
+		}
 	}
 }
 
