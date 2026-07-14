@@ -26,6 +26,15 @@
       "url": "https://security.example.com/verify/session-123"
     }
   ],
+  "attachments": [
+    {
+      "part_id": "2",
+      "content_type": "image/png",
+      "size_bytes": 5,
+      "content_id": "hero-image",
+      "inline": true
+    }
+  ],
   "token_usage": {
     "estimated_input_tokens": 17
   }

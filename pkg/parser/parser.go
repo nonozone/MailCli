@@ -44,12 +44,13 @@ func Parse(raw []byte) (*schema.StandardMessage, error) {
 	}
 
 	msg := &schema.StandardMessage{
-		ID:         firstNonEmpty(meta.MessageID, meta.InReplyTo),
-		Meta:       meta,
-		Content:    content,
-		Actions:    extractActions(meta, htmlBody, extractReportAbuseTargets(env)...),
-		Codes:      extractCodes(meta.Subject, env.Text, bodyMD),
-		TokenUsage: estimateTokenUsage(bodyMD),
+		ID:          firstNonEmpty(meta.MessageID, meta.InReplyTo),
+		Meta:        meta,
+		Content:     content,
+		Actions:     extractActions(meta, htmlBody, extractReportAbuseTargets(env)...),
+		Codes:       extractCodes(meta.Subject, env.Text, bodyMD),
+		Attachments: extractInboundAttachments(env),
+		TokenUsage:  estimateTokenUsage(bodyMD),
 	}
 	if msg.ID == "" {
 		msg.ID = "unknown"

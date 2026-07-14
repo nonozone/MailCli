@@ -301,7 +301,7 @@ MailCLI 的存在，就是为了让 agent 处理邮件像读取一份 JSON 文�
 MailCLI 提供的是一个稳定边界：
 
 - 入站邮件统一变成 `StandardMessage`
-- 同时提取 actions、codes、退信上下文等机器可直接消费的结果
+- 同时提取 actions、codes、入站 MIME 附件 metadata、退信上下文等机器可直接消费的结果
 - 出站意图统一变成 `DraftMessage` 或 `ReplyDraft`
 - 传输细节隐藏在 driver 后面
 

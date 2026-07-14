@@ -73,6 +73,42 @@ func TestParseChineseAttachmentNoticeEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/attachment_notice_cn.eml", "../../testdata/golden/attachment_notice_cn.json")
 }
 
+func TestParseMIMEAttachmentEmail(t *testing.T) {
+	assertFixtureMatchesGolden(t, "../../testdata/emails/mime_attachment.eml", "../../testdata/golden/mime_attachment.json")
+}
+
+func TestParseMIMEAttachmentExposesMetadataWithoutContent(t *testing.T) {
+	raw, err := os.ReadFile("../../testdata/emails/mime_attachment.eml")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := Parse(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.Attachments) != 1 {
+		t.Fatalf("expected one MIME attachment, got %+v", got.Attachments)
+	}
+	attachment := got.Attachments[0]
+	if attachment.PartID != "2" || attachment.Filename != "invoice-2026-042.pdf" {
+		t.Fatalf("expected stable MIME metadata, got %+v", attachment)
+	}
+	if attachment.SizeBytes != 23 || attachment.ContentType != "application/pdf" {
+		t.Fatalf("expected decoded size and content type, got %+v", attachment)
+	}
+
+	encoded, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, secret := range []string{"JVBERi0xLjQKaW52b2ljZQolJUVPRgo=", "%PDF-1.4"} {
+		if strings.Contains(string(encoded), secret) {
+			t.Fatalf("expected StandardMessage to omit attachment content, found %q", secret)
+		}
+	}
+}
+
 func TestParseChineseViewOnlineAndReportAbuseEmail(t *testing.T) {
 	assertFixtureMatchesGolden(t, "../../testdata/emails/view_online_abuse_cn.eml", "../../testdata/golden/view_online_abuse_cn.json")
 }

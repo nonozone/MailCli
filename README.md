@@ -288,7 +288,7 @@ MailCLI exists to make email as easy for agents to consume and produce as a JSON
 - **Protocol/content separation**
   Drivers handle transport, parsers handle content, composers handle outbound MIME.
 - **Action extraction**
-  Extract unsubscribe links, security entry points, verification codes, invoice/payment entry points, attachment entry points, bounce/error context, and thread-related metadata.
+  Extract unsubscribe links, security entry points, verification codes, invoice/payment entry points, attachment entry points, inbound MIME attachment metadata, bounce/error context, and thread-related metadata.
   Verification-code extraction is conservative but now handles common multilingual and next-line layouts, and can expose `expires_in_seconds` when the mail states a relative expiry.
 - **Developer-friendly CLI**
   Support `json`, `yaml`, and `table` output formats, stdin pipelines, and scriptable commands.
@@ -309,7 +309,7 @@ Raw email is a poor interface for agents:
 MailCLI solves that by providing a stable boundary:
 
 - inbound email becomes `StandardMessage`
-- machine-usable artifacts such as actions, codes, and bounce context are extracted
+- machine-usable artifacts such as actions, codes, inbound attachment metadata, and bounce context are extracted
 - outbound intent becomes `DraftMessage` or `ReplyDraft`
 - transport stays behind drivers
 

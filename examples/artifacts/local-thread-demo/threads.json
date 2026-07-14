@@ -28,6 +28,29 @@
   },
   {
     "account": "fixtures",
+    "action_count": 0,
+    "code_count": 0,
+    "has_codes": false,
+    "last_message_from": "Billing Team <billing@example.com>",
+    "last_message_id": "mime_attachment.eml",
+    "last_message_preview": "Your invoice PDF is attached.",
+    "latest_date": "2026-03-26T06:00:00Z",
+    "mailbox": "INBOX",
+    "message_count": 1,
+    "message_ids": [
+      "mime_attachment.eml"
+    ],
+    "participant_count": 2,
+    "participants": [
+      "Billing Team <billing@example.com>",
+      "nono@example.com"
+    ],
+    "score": 19,
+    "subject": "Invoice PDF attached",
+    "thread_id": "<mime-attachment-123@example.com>"
+  },
+  {
+    "account": "fixtures",
     "action_count": 2,
     "action_types": [
       "pay_invoice",

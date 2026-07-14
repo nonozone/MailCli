@@ -66,6 +66,7 @@ flowchart LR
 - 归一化后的 header 与线程元数据
 - 提取出来的 `codes`，用于验证码类邮件，支持常见多语言关键词、“下一非空行”排版，以及可选的 `expires_in_seconds`
 - 已提取的动作，例如 `unsubscribe`、`view_online`、`confirm_subscription`、`report_abuse`、`view_attachment`、`download_attachment`、`view_invoice`、`pay_invoice`、`reset_password`、`verify_sign_in`
+- 入站 MIME 附件 metadata，包括 `part_id`、文件名、内容类型、解码后大小、disposition、content id 和 inline 状态；`StandardMessage` 不嵌入附件字节
 
 ### 示例
 

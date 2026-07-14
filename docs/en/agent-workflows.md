@@ -66,6 +66,7 @@ Typical agent-usable fields from this step include:
 - normalized headers and thread metadata
 - extracted `codes` for verification-code style emails, including common multilingual and next-line layouts, plus optional `expires_in_seconds`
 - extracted actions such as `unsubscribe`, `view_online`, `confirm_subscription`, `report_abuse`, `view_attachment`, `download_attachment`, `view_invoice`, `pay_invoice`, `reset_password`, and `verify_sign_in`
+- inbound MIME attachment metadata such as `part_id`, filename, content type, decoded size, disposition, content id, and inline status; attachment bytes are never embedded in `StandardMessage`
 
 ### Example
 
