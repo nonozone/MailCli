@@ -2,19 +2,72 @@
 
 # MailCLI
 
-**AI-Native Email Interface: turning messy MIME into clean, structured context for agents.**
+**A local-first email interface for AI agents, built on top of the mailboxes people already use.**
 
-MailCLI is an open-source email interface built for **AI agents**, **LLM workflows**, and **automation developers**.
+MailCLI connects Gmail, Outlook / Microsoft 365, QQ Mail, 163 Mail, generic IMAP accounts, and local `.eml` fixtures to a stable CLI and JSON contract for agents.
 
-It is not trying to be a traditional mail client for humans browsing inboxes.
+It turns messy email into structured agent context:
 
-It is trying to be the stable boundary between agents and email systems:
+- raw MIME becomes `StandardMessage` JSON and clean Markdown
+- local mailboxes become searchable indexes and thread context
+- deterministic parser output becomes triage evidence an agent can reason over
+- outbound work uses `DraftMessage`, `ReplyDraft`, prepare/confirm steps, and operation logs
 
-- agents consume structured message context instead of raw MIME
-- agents produce `DraftMessage` or `ReplyDraft` instead of hand-written MIME
-- mailbox and transport details stay behind drivers and CLI contracts
+The core is written in Go and keeps provider quirks, MIME parsing, local indexing, and transport details behind explicit commands. Model-backed enrichment can be connected around that boundary, but MailCLI does not require a hosted mailbox service or a bundled LLM to be useful.
 
-Instead of pushing raw MIME, bloated HTML, and provider-specific quirks into prompts, MailCLI turns email into structured JSON, clean Markdown, and machine-facing workflows.
+## What It Is
+
+MailCLI is:
+
+- an AI-facing layer over existing email accounts
+- a provider-neutral CLI and JSON contract for email automation
+- a local-first toolkit for parsing, indexing, searching, threading, triage evidence, and safe outbound workflows
+- an MCP server for exposing read/setup workflows to local agents
+
+MailCLI is not:
+
+- a hosted agent mailbox with a new address
+- a replacement for a human mail client like Gmail, Outlook, or Apple Mail
+- a service that grants agents automatic permission to send, delete, move, or mark mail
+- a promise that a model has made a decision for you inside the Go core
+
+By default, the MCP server exposes read and setup tools: parse, list, get, sync, search, threads, thread, and config diagnostics/capabilities. Mutating mailbox actions such as send, delete, move, and mark are not exposed through the default MCP server.
+
+## Who It Is For
+
+MailCLI is useful if you are building:
+
+- AI agents that need reliable inbox context without pasting raw email into prompts
+- workflow automation that searches and summarizes real mailboxes
+- tools that need a stable email JSON contract across multiple providers
+- local-first prototypes that should work before OAuth, API quotas, or hosted mail infrastructure exist
+- safety-sensitive outbound flows where drafts, intents, confirmation, and audit logs matter
+
+## Try It Locally In 2 Minutes
+
+You do not need a real mailbox or network access to understand the agent boundary.
+
+```bash
+go build -o mailcli ./cmd/mailcli
+./mailcli parse --format json testdata/emails/invoice.eml
+./mailcli triage message testdata/emails/invoice.eml
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
+```
+
+Those commands show the read and local-index side. The full MailCLI boundary also covers safe outbound work:
+
+```mermaid
+flowchart LR
+  A["Existing mailbox or .eml"] --> B["MailCLI"]
+  B --> C["StandardMessage / Triage Evidence"]
+  C --> D["Local Index / Thread Context"]
+  D --> E["Agent or Automation"]
+  E --> F["Draft / Intent"]
+  F --> G["Confirm / Operation Log"]
+```
+
+For a full local round trip, see [Local Thread Demo](docs/en/examples/local-thread-demo.md). For fixed outbound JSON and MIME pairs, see [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md).
 
 ## Install
 
@@ -52,99 +105,6 @@ Windows:
 ```powershell
 $env:MAILCLI_AGENT_AUTO_CONFIGURE = "1"
 irm https://raw.githubusercontent.com/nonozone/MailCli/main/install.ps1 | iex
-```
-
-Default MCP exposure is intentionally read/setup focused: parse, list, get,
-sync, search, threads, thread, and config diagnostics/capabilities. Mutating
-mailbox actions such as send, delete, move, and mark are not exposed through the
-default MCP server.
-
-## Zero-Network First Run
-
-If you only want to understand the agent boundary, start here:
-
-```bash
-# 1. build mailcli
-go build -o mailcli ./cmd/mailcli
-
-# 2. inspect one local message as structured JSON
-./mailcli parse --format json testdata/emails/invoice.eml
-
-# 3. run the local thread loop
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.json --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.json invoice
-
-# 4. compile the smallest useful reply boundary
-./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/minimal-reply.reply.json
-```
-
-Minimal agent handoff:
-
-```json
-{
-  "account": "fixtures",
-  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
-  "reply_to_id": "invoice.eml"
-}
-```
-
-MailCLI fills in the rest:
-
-- `from.address` from account config
-- default reply recipient from the source message
-- `In-Reply-To`
-- `References`
-- default reply subject
-
-## In 10 Seconds
-
-```bash
-# 1. build mailcli
-go build -o mailcli ./cmd/mailcli
-
-# 2. run the zero-network local thread loop
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
-
-# 3. inspect the full agent boundary
-go run ./examples/go/agent_thread_assistant \
-  --mailcli-bin ./mailcli \
-  --config examples/config/fixtures-dir.yaml \
-  --account fixtures \
-  --index /tmp/mailcli-fixtures-index.db \
-  --sync-limit 0 \
-  --query invoice
-```
-
-```mermaid
-flowchart LR
-  A["Raw Email"] --> B["MailCLI"]
-  B --> C["StandardMessage / Thread Context"]
-  C --> D["Agent"]
-  D --> E["Minimal ReplyDraft JSON"]
-  E --> F["MailCLI"]
-  F --> G["Derived MIME + Transport"]
-```
-
-## Start Without IMAP
-
-The fastest way to understand MailCLI is to avoid mailbox setup entirely.
-
-The repository already includes:
-
-- a local fixture corpus under `testdata/emails`
-- a zero-network config at `examples/config/fixtures-dir.yaml`
-- runnable Go examples under `examples/go`
-- a full local round-trip demo at [Local Thread Demo](docs/en/examples/local-thread-demo.md)
-- fixed outbound JSON and MIME pairs at [Outbound Draft Patterns](docs/en/examples/outbound-draft-patterns.md)
-
-Recommended first commands:
-
-```bash
-go build -o mailcli ./cmd/mailcli
-./mailcli parse --format json testdata/emails/verification.eml
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 ```
 
 If you are maintaining the repository itself, the local demo artifacts now have a standard check entrypoint:
@@ -550,7 +510,7 @@ Recommended usage:
 - inject them through environment variables
 - avoid committing real mailbox secrets into config files
 
-## Quick Start
+## Command Cookbook
 
 ### Recommended Paths
 

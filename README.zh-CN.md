@@ -2,19 +2,72 @@
 
 # MailCLI
 
-**AI Native 的邮件接口：把混乱的 MIME 转换成适合 agent 使用的结构化上下文。**
+**一个本地优先的 AI Agent 邮件接口，连接用户已经在使用的邮箱。**
 
-MailCLI 是一个面向 **AI agent**、**LLM 工作流** 和 **自动化开发者** 的开源邮件接口。
+MailCLI 可以连接 Gmail、Outlook / Microsoft 365、QQ 邮箱、163 邮箱、通用 IMAP 账户，也可以直接处理本地 `.eml` fixture。它给 Agent 提供的是稳定 CLI 和 JSON 契约，而不是又开一个新的托管邮箱地址。
 
-它并不打算成为一个给人类浏览收件箱的传统 mail client。
+它会把混乱的邮件变成适合 Agent 使用的结构化上下文：
 
-它的目标是成为 agent 与邮件系统之间的稳定边界：
+- 原始 MIME 变成 `StandardMessage` JSON 和干净 Markdown
+- 本地邮箱变成可搜索索引和 thread context
+- 确定性 parser 输出变成 Agent 可推理的 triage evidence
+- 出站动作通过 `DraftMessage`、`ReplyDraft`、prepare/confirm 和 operation log 执行
 
-- agent 消费的是结构化消息上下文，而不是原始 MIME
-- agent 产出的是 `DraftMessage` 或 `ReplyDraft`，而不是手写 MIME
-- 邮箱接入与传输细节隐藏在 driver 和 CLI 契约后面
+核心用 Go 实现，把 provider 差异、MIME 解析、本地索引和传输细节收在明确命令后面。你可以在这个边界外接模型做 enrichment，但 MailCLI 本身不依赖托管邮箱服务，也不要求内置 LLM 才能工作。
 
-它不会把原始 MIME、臃肿 HTML 和 provider 私有行为直接推给 prompt，而是把邮件转换成结构化 JSON、干净 Markdown 和面向机器的工作流。
+## 它是什么
+
+MailCLI 是：
+
+- 叠在已有邮箱账户之上的 AI 处理层
+- provider 无关的邮件自动化 CLI 和 JSON 契约
+- 本地优先的解析、索引、搜索、线程读取、triage evidence 和安全出站工具箱
+- 可以把读和配置诊断流程暴露给本机 Agent 的 MCP server
+
+MailCLI 不是：
+
+- 一个带新邮箱地址的托管 Agent Mailbox
+- Gmail、Outlook、Apple Mail 这类人类邮件客户端的替代品
+- 默认允许 Agent 自动发送、删除、移动或标记邮件的服务
+- 在 Go 核心里替模型替你做最终判断的系统
+
+默认 MCP server 只暴露读和配置诊断能力：parse、list、get、sync、search、threads、thread、config doctor、config capabilities。send、delete、move、mark 这类会改变邮箱状态的动作默认不会暴露给 Agent。
+
+## 适合谁
+
+MailCLI 适合这些场景：
+
+- AI Agent 需要稳定读取 inbox context，而不是把原始邮件塞进 prompt
+- 自动化工作流需要搜索、摘要和处理真实邮箱
+- 工具需要跨 provider 的稳定邮件 JSON 契约
+- 本地优先原型想在 OAuth、API quota 或托管邮件基础设施之前先跑起来
+- 安全敏感的出站流程需要草稿、intent、人工确认和 audit log
+
+## 2 分钟本地体验
+
+不需要真实邮箱，也不需要联网，就能先看清楚 Agent 边界。
+
+```bash
+go build -o mailcli ./cmd/mailcli
+./mailcli parse --format json testdata/emails/invoice.eml
+./mailcli triage message testdata/emails/invoice.eml
+./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
+./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
+```
+
+这组命令展示的是读取和本地索引这一侧。完整的 MailCLI 边界还包括安全出站流程：
+
+```mermaid
+flowchart LR
+  A["已有邮箱或 .eml"] --> B["MailCLI"]
+  B --> C["StandardMessage / Triage Evidence"]
+  C --> D["本地索引 / Thread Context"]
+  D --> E["Agent 或自动化"]
+  E --> F["Draft / Intent"]
+  F --> G["Confirm / Operation Log"]
+```
+
+完整本地往返示例见 [Local Thread Demo](docs/zh-CN/examples/local-thread-demo.md)。固定出站 JSON / MIME 对照见 [Outbound Draft Patterns](docs/zh-CN/examples/outbound-draft-patterns.md)。
 
 ## 安装
 
@@ -51,98 +104,6 @@ Windows：
 ```powershell
 $env:MAILCLI_AGENT_AUTO_CONFIGURE = "1"
 irm https://raw.githubusercontent.com/nonozone/MailCli/main/install.ps1 | iex
-```
-
-默认 MCP server 只暴露读和配置诊断能力：parse、list、get、sync、search、
-threads、thread、config doctor、config capabilities。send、delete、move、mark
-这类会改变邮箱状态的动作默认不会暴露给 Agent。
-
-## 零网络优先上手
-
-如果你只是想先看清楚 agent 边界，优先跑这一组：
-
-```bash
-# 1. 先构建 mailcli
-go build -o mailcli ./cmd/mailcli
-
-# 2. 先把一封本地邮件解析成结构化 JSON
-./mailcli parse --format json testdata/emails/invoice.eml
-
-# 3. 跑本地 thread 闭环
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
-
-# 4. 编译最小可用的 reply 边界
-./mailcli reply --config examples/config/fixtures-dir.yaml --account fixtures --dry-run examples/artifacts/outbound-patterns/minimal-reply.reply.json
-```
-
-最小 agent handoff：
-
-```json
-{
-  "account": "fixtures",
-  "body_text": "Thanks, we received the invoice notification and queued it for processing.",
-  "reply_to_id": "invoice.eml"
-}
-```
-
-剩下的细节交给 MailCLI：
-
-- 从 account config 补 `from.address`
-- 从原邮件补默认回复收件人
-- 自动补 `In-Reply-To`
-- 自动补 `References`
-- 自动补默认回复主题
-
-## 10 秒理解
-
-```bash
-# 1. 先构建 mailcli
-go build -o mailcli ./cmd/mailcli
-
-# 2. 跑零网络的本地 thread 闭环
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
-
-# 3. 查看完整的 agent 边界
-go run ./examples/go/agent_thread_assistant \
-  --mailcli-bin ./mailcli \
-  --config examples/config/fixtures-dir.yaml \
-  --account fixtures \
-  --index /tmp/mailcli-fixtures-index.db \
-  --sync-limit 0 \
-  --query invoice
-```
-
-```mermaid
-flowchart LR
-  A["Raw Email"] --> B["MailCLI"]
-  B --> C["StandardMessage / Thread Context"]
-  C --> D["Agent"]
-  D --> E["最小 ReplyDraft JSON"]
-  E --> F["MailCLI"]
-  F --> G["推导后的 MIME + Transport"]
-```
-
-## 不配 IMAP 先上手
-
-理解 MailCLI 的最快方式，是先完全绕开真实邮箱配置。
-
-仓库已经自带：
-
-- `testdata/emails` 下的本地 fixture 语料
-- 零网络配置 `examples/config/fixtures-dir.yaml`
-- `examples/go` 下可直接运行的 Go 示例
-- 一份完整的本地往返说明：[Local Thread Demo](docs/zh-CN/examples/local-thread-demo.md)
-- 一组固定的出站 JSON / MIME 对照样例：[Outbound Draft Patterns](docs/zh-CN/examples/outbound-draft-patterns.md)
-
-推荐先跑这几条命令：
-
-```bash
-go build -o mailcli ./cmd/mailcli
-./mailcli parse --format json testdata/emails/verification.eml
-./mailcli sync --config examples/config/fixtures-dir.yaml --account fixtures --index /tmp/mailcli-fixtures-index.db --limit 0
-./mailcli threads --index /tmp/mailcli-fixtures-index.db invoice
 ```
 
 如果你正在维护仓库本身，现在也有统一的 demo 产物校验入口：
@@ -518,7 +479,7 @@ examples/config/fixtures-dir.yaml
 - 通过环境变量注入
 - 不要把真实邮箱密码直接提交进配置文件
 
-## 快速开始
+## 命令手册
 
 ### 推荐路径
 
