@@ -19,6 +19,7 @@ The index supports:
 - `mailcli search` — full-text search the index
 - `mailcli threads` — view conversation summaries
 - `mailcli thread` — read a specific thread's messages
+- `mailcli triage thread` — build deterministic evidence across every message in a selected thread
 - `mailcli export` — export the index as JSON, JSONL, or CSV
 - `mailcli watch --index` — stream new messages with a persistent seen set
 

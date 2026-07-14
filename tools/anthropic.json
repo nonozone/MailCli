@@ -92,6 +92,30 @@
       }
     },
     {
+      "name": "mailcli_triage_message",
+      "description": "Build deterministic triage evidence for one local .eml message. This does not guess priority, needs-reply, deadlines, or todos.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "file": { "type": "string", "description": "Local .eml file path" }
+        },
+        "required": ["file"]
+      }
+    },
+    {
+      "name": "mailcli_triage_thread",
+      "description": "Build deterministic triage evidence for a complete local thread, preserving one compact fact entry per message.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "thread_id": { "type": "string", "description": "Thread ID from mailcli_threads output" },
+          "account":   { "type": "string" },
+          "mailbox":   { "type": "string" }
+        },
+        "required": ["thread_id"]
+      }
+    },
+    {
       "name": "mailcli_send_prepare",
       "description": "Prepare a new outbound email intent without sending it. Use this before any agent-initiated send so a human or controlling harness can inspect and confirm the operation.",
       "input_schema": {

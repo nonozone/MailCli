@@ -3,6 +3,7 @@ package parser
 import (
 	"bytes"
 	"net/mail"
+	"sort"
 	"strings"
 
 	"github.com/jhillyerd/enmime"
@@ -101,4 +102,46 @@ func extractReportAbuseTargets(env *enmime.Envelope) []string {
 	}
 
 	return targets
+}
+
+func extractInboundAttachments(env *enmime.Envelope) []schema.InboundAttachment {
+	if env == nil {
+		return nil
+	}
+
+	parts := make([]*enmime.Part, 0, len(env.Attachments)+len(env.Inlines)+len(env.OtherParts))
+	seen := map[*enmime.Part]struct{}{}
+	for _, group := range [][]*enmime.Part{env.Attachments, env.Inlines, env.OtherParts} {
+		for _, part := range group {
+			if part == nil {
+				continue
+			}
+			if _, ok := seen[part]; ok {
+				continue
+			}
+			seen[part] = struct{}{}
+			parts = append(parts, part)
+		}
+	}
+
+	sort.SliceStable(parts, func(i, j int) bool {
+		return parts[i].PartID < parts[j].PartID
+	})
+
+	attachments := make([]schema.InboundAttachment, 0, len(parts))
+	for _, part := range parts {
+		disposition := strings.ToLower(strings.TrimSpace(part.Disposition))
+		contentID := strings.Trim(strings.TrimSpace(part.ContentID), "<>")
+		attachments = append(attachments, schema.InboundAttachment{
+			PartID:      strings.TrimSpace(part.PartID),
+			Filename:    strings.TrimSpace(part.FileName),
+			ContentType: strings.ToLower(strings.TrimSpace(part.ContentType)),
+			SizeBytes:   int64(len(part.Content)),
+			Disposition: disposition,
+			ContentID:   contentID,
+			Inline:      disposition == "inline" || (disposition == "" && contentID != ""),
+		})
+	}
+
+	return attachments
 }

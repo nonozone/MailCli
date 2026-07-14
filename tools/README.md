@@ -290,7 +290,18 @@ follows this structure:
   "codes": ["482991"],          // extracted verification / OTP codes
   "labels": ["invoice"],
   "attachments": [
-    {"filename": "invoice.pdf", "content_type": "application/pdf", "size": 42000}
+    {
+      "part_id": "2",
+      "filename": "invoice.pdf",
+      "content_type": "application/pdf",
+      "size_bytes": 42000,
+      "disposition": "attachment"
+    }
   ]
 }
 ```
+
+Inbound `attachments` contain metadata only. `part_id` is stable within the
+source RFC 822 message, `size_bytes` is the decoded MIME-part size, and
+`filename` is untrusted metadata rather than a filesystem path. Attachment
+contents are never embedded in `StandardMessage` JSON.

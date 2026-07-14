@@ -184,6 +184,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `mailcli search`
 - `mailcli threads`
 - `mailcli thread`
+- `mailcli triage message|thread`
 - `mailcli send`
 - `mailcli send prepare|confirm`
 - `mailcli reply`
@@ -197,6 +198,7 @@ MailCLI 已经发布 **v0.2.0**，包含一键安装和 MCP Agent 接入。当�
 - `mailcli account add`
 - `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
+- `TriageRecord` / `TriageEnrichment`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult`
@@ -301,7 +303,7 @@ MailCLI 的存在，就是为了让 agent 处理邮件像读取一份 JSON 文�
 MailCLI 提供的是一个稳定边界：
 
 - 入站邮件统一变成 `StandardMessage`
-- 同时提取 actions、codes、退信上下文等机器可直接消费的结果
+- 同时提取 actions、codes、入站 MIME 附件 metadata、退信上下文等机器可直接消费的结果
 - 出站意图统一变成 `DraftMessage` 或 `ReplyDraft`
 - 传输细节隐藏在 driver 后面
 
@@ -317,6 +319,8 @@ MailCLI 提供的是一个稳定边界：
 - `mailcli search [--index <path>] [--account <name>] [--mailbox <name>] [--thread <thread_id>] [--limit <n>] [--full] <query>`
 - `mailcli threads [query] [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
 - `mailcli thread <thread_id> [--index <path>] [--account <name>] [--mailbox <name>] [--limit <n>]`
+- `mailcli triage message [--enrichment <path|->] <file|->`
+- `mailcli triage thread [--index <path>] [--account <name>] [--mailbox <name>] [--enrichment <path|->] <thread_id>`
 
 ### 写路径
 

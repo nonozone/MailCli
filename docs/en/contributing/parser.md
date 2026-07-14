@@ -144,6 +144,7 @@ Representative fixtures already in the repo:
 - `reply_quoted_verification.eml`: verification content inside quoted thread noise
 - `invoice.eml`: transactional billing or invoice flow
 - `attachment_notice.eml`: message where the main user action is attachment access
+- `mime_attachment.eml`: real multipart message with a decoded MIME attachment metadata contract
 - `bounce.eml` and `postfix_bounce.eml`: delivery failure and machine-generated bounce context
 - `unsubscribe_mixed.eml`: mixed-content mail where unsubscribe must stay available but not dominate the body
 

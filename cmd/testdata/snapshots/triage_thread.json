@@ -1,0 +1,83 @@
+{
+  "version": "v1",
+  "scope": "thread",
+  "subject_id": "<root@example.com>",
+  "evidence_id": "sha256:91df64751209419858e38b01c831f7aa5c61c7aef0082c2db2044303a947ce2e",
+  "account": "demo",
+  "mailbox": "INBOX",
+  "evidence": {
+    "source": "deterministic",
+    "message_count": 4,
+    "message_ids": ["msg-root", "msg-ack", "msg-detail", "msg-last"],
+    "participant_count": 2,
+    "participants": ["Alice <alice@example.com>", "Support <support@example.com>"],
+    "categories": ["sales"],
+    "latest_date": "2026-07-14T11:00:00Z",
+    "last_message_id": "msg-last",
+    "last_message_from": "Support <support@example.com>",
+    "has_actions": true,
+    "action_count": 1,
+    "action_types": ["view_invoice"],
+    "has_codes": false,
+    "code_count": 0,
+    "has_attachments": true,
+    "attachment_count": 1,
+    "auto_submitted_count": 0,
+    "error_count": 0,
+    "messages": [
+      {
+        "id": "msg-root",
+        "from": "Alice <alice@example.com>",
+        "to": ["Support <support@example.com>"],
+        "subject": "Revised quote",
+        "date": "2026-07-14T08:00:00Z",
+        "snippet": "Could you send the revised quote by Friday?",
+        "auto_submitted": false,
+        "action_count": 1,
+        "action_types": ["view_invoice"],
+        "code_count": 0,
+        "attachment_count": 0,
+        "has_error": false
+      },
+      {
+        "id": "msg-ack",
+        "from": "Support <support@example.com>",
+        "to": ["Alice <alice@example.com>"],
+        "subject": "Re: Revised quote",
+        "date": "2026-07-14T09:00:00Z",
+        "snippet": "I will check with the team.",
+        "auto_submitted": false,
+        "action_count": 0,
+        "code_count": 0,
+        "attachment_count": 0,
+        "has_error": false
+      },
+      {
+        "id": "msg-detail",
+        "from": "Alice <alice@example.com>",
+        "to": ["Support <support@example.com>"],
+        "subject": "Re: Revised quote",
+        "date": "2026-07-14T10:00:00Z",
+        "snippet": "The requested quantities are in the attached sheet.",
+        "auto_submitted": false,
+        "action_count": 0,
+        "code_count": 0,
+        "attachment_count": 1,
+        "has_error": false
+      },
+      {
+        "id": "msg-last",
+        "from": "Support <support@example.com>",
+        "to": ["Alice <alice@example.com>"],
+        "subject": "Re: Revised quote",
+        "date": "2026-07-14T11:00:00Z",
+        "snippet": "I am still looking into it.",
+        "auto_submitted": false,
+        "action_count": 0,
+        "code_count": 0,
+        "attachment_count": 0,
+        "has_error": false
+      }
+    ]
+  }
+}

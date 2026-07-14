@@ -160,6 +160,8 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 
 #### Issue: 将入站附件和发票入口提升为一等结构化输出
 
+状态：基础版已完成，包括入站 MIME 附件 metadata、现有 invoice/code/action 提取和 fixture 契约覆盖。
+
 - Area: parser, schema, cmd
 - Problem: 普通邮箱中的高价值信息经常藏在附件、发票入口、下载链接或正文 URL 中，agent 不应该只靠全文猜测。
 - Scope:
@@ -206,6 +208,8 @@ RC 收口阶段最关键的一批工作已经在 `main` 上完成：
 - Deliverable: schema / 输出增强 + 文档
 
 #### Issue: 增加 inbox / thread 的优先级与待办提取信号
+
+状态：基础 evidence/enrichment 契约已完成。Provider 判断质量仍需单独评估，不以 parser snapshot 代表。
 
 - Area: internal/index, cmd, schema
 - Problem: 用户最常见的问题不是“搜到邮件”，而是“哪些邮件重要、哪些需要处理、下一步做什么”。

@@ -161,6 +161,8 @@ Status: baseline improvement completed; follow-up work should focus on more fixt
 
 #### Issue: Promote inbound attachments and invoice entry points to first-class structured output
 
+Status: baseline completed with inbound MIME attachment metadata, existing invoice/code/action extraction, and fixture-backed contract coverage.
+
 - Area: parser, schema, cmd
 - Problem: high-value inbox information often lives in attachments, invoice entry points, download links, or body URLs; agents should not rely on full-text guessing.
 - Scope:
@@ -207,6 +209,8 @@ Status: baseline thread-summary expansion and local ranking refinement completed
 - Deliverable: schema/output adjustment with docs
 
 #### Issue: Add priority and todo extraction signals for inbox/thread triage
+
+Status: baseline evidence/enrichment contract completed. Provider judgment quality remains evaluation work and is intentionally not represented by parser snapshots.
 
 - Area: internal/index, cmd, schema
 - Problem: the common user question is not just "find mail"; it is "what matters, what needs handling, and what should happen next."

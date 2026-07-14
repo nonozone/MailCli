@@ -188,6 +188,7 @@ Stable enough to build against in current `main`:
 - `mailcli search`
 - `mailcli threads`
 - `mailcli thread`
+- `mailcli triage message|thread`
 - `mailcli send`
 - `mailcli send prepare|confirm`
 - `mailcli reply`
@@ -201,6 +202,7 @@ Stable enough to build against in current `main`:
 - `mailcli account add`
 - `mailcli config init|show|doctor|test|capabilities`
 - `StandardMessage`
+- `TriageRecord` / `TriageEnrichment`
 - `DraftMessage`
 - `ReplyDraft`
 - `SendResult` (now includes `message_id`)
@@ -288,7 +290,7 @@ MailCLI exists to make email as easy for agents to consume and produce as a JSON
 - **Protocol/content separation**
   Drivers handle transport, parsers handle content, composers handle outbound MIME.
 - **Action extraction**
-  Extract unsubscribe links, security entry points, verification codes, invoice/payment entry points, attachment entry points, bounce/error context, and thread-related metadata.
+  Extract unsubscribe links, security entry points, verification codes, invoice/payment entry points, attachment entry points, inbound MIME attachment metadata, bounce/error context, and thread-related metadata.
   Verification-code extraction is conservative but now handles common multilingual and next-line layouts, and can expose `expires_in_seconds` when the mail states a relative expiry.
 - **Developer-friendly CLI**
   Support `json`, `yaml`, and `table` output formats, stdin pipelines, and scriptable commands.
@@ -309,7 +311,7 @@ Raw email is a poor interface for agents:
 MailCLI solves that by providing a stable boundary:
 
 - inbound email becomes `StandardMessage`
-- machine-usable artifacts such as actions, codes, and bounce context are extracted
+- machine-usable artifacts such as actions, codes, inbound attachment metadata, and bounce context are extracted
 - outbound intent becomes `DraftMessage` or `ReplyDraft`
 - transport stays behind drivers
 
@@ -324,6 +326,8 @@ MailCLI solves that by providing a stable boundary:
 - `mailcli search [--index] [--account] [--mailbox] [--since] [--before] [--thread] [--limit] [--full] <query>`
 - `mailcli threads [query] [--index] [--account] [--mailbox] [--since] [--before] [--category] [--action] [--has-codes] [--limit]`
 - `mailcli thread <thread_id> [--index] [--account] [--mailbox] [--limit]`
+- `mailcli triage message [--enrichment <path|->] <file|->`
+- `mailcli triage thread [--index] [--account] [--mailbox] [--enrichment <path|->] <thread_id>`
 - `mailcli export [query] [--index] [--account] [--mailbox] [--since] [--before] [--format jsonl|json|csv] [--output] [--limit]`
 
 ### Write path

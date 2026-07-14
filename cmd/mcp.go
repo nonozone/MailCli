@@ -212,6 +212,20 @@ func safeMCPTools() []mcpTool {
 			}), []string{"thread_id"}),
 		},
 		{
+			Name:        "mailcli_triage_message",
+			Description: "Build deterministic triage evidence for one local .eml message without guessing priority or reply state.",
+			InputSchema: objectSchema(map[string]any{
+				"file": stringSchema("Local .eml file path"),
+			}, []string{"file"}),
+		},
+		{
+			Name:        "mailcli_triage_thread",
+			Description: "Build deterministic triage evidence for a complete local thread, preserving one compact fact entry per message.",
+			InputSchema: objectSchema(commonIndexProperties(map[string]any{
+				"thread_id": stringSchema("Thread ID from mailcli_threads"),
+			}), []string{"thread_id"}),
+		},
+		{
 			Name:        "mailcli_config_doctor",
 			Description: "Diagnose local MailCLI account configuration without connecting to mailbox servers.",
 			InputSchema: objectSchema(map[string]any{
@@ -271,6 +285,9 @@ func mcpToolCommandArgs(name string, input map[string]any) ([]string, error) {
 		if file == "" {
 			return nil, fmt.Errorf("file is required")
 		}
+		if file == "-" {
+			return nil, fmt.Errorf("file must be a local path for MCP calls")
+		}
 		return []string{"parse", "--format", "json", file}, nil
 	case "mailcli_list":
 		args := []string{"list", "--format", "json"}
@@ -327,6 +344,23 @@ func mcpToolCommandArgs(name string, input map[string]any) ([]string, error) {
 		args := []string{"thread"}
 		args = appendCommonIndexArgs(args, input)
 		args = appendOptionalIntFlag(args, "--limit", input, "limit")
+		return append(args, threadID), nil
+	case "mailcli_triage_message":
+		file := stringArg(input, "file")
+		if file == "" {
+			return nil, fmt.Errorf("file is required")
+		}
+		if file == "-" {
+			return nil, fmt.Errorf("file must be a local path for MCP calls")
+		}
+		return []string{"triage", "message", file}, nil
+	case "mailcli_triage_thread":
+		threadID := stringArg(input, "thread_id")
+		if threadID == "" {
+			return nil, fmt.Errorf("thread_id is required")
+		}
+		args := []string{"triage", "thread"}
+		args = appendCommonIndexArgs(args, input)
 		return append(args, threadID), nil
 	case "mailcli_config_doctor":
 		args := []string{"config", "doctor"}

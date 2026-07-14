@@ -1,0 +1,35 @@
+{
+  "id": "<mime-attachment-123@example.com>",
+  "meta": {
+    "from": {
+      "name": "Billing Team",
+      "address": "billing@example.com"
+    },
+    "to": [
+      {
+        "address": "nono@example.com"
+      }
+    ],
+    "subject": "Invoice PDF attached",
+    "date": "2026-03-26T06:00:00Z",
+    "message_id": "<mime-attachment-123@example.com>"
+  },
+  "content": {
+    "format": "markdown",
+    "body_md": "Your invoice PDF is attached.",
+    "snippet": "Your invoice PDF is attached."
+  },
+  "attachments": [
+    {
+      "part_id": "2",
+      "filename": "invoice-2026-042.pdf",
+      "content_type": "application/pdf",
+      "size_bytes": 23,
+      "disposition": "attachment",
+      "content_id": "invoice-pdf"
+    }
+  ],
+  "token_usage": {
+    "estimated_input_tokens": 5
+  }
+}

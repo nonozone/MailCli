@@ -144,6 +144,7 @@ parser 可以是 heuristic。
 - `reply_quoted_verification.eml`：验证码内容被引用回复噪音包裹的场景
 - `invoice.eml`：账单 / 发票类 transactional 邮件
 - `attachment_notice.eml`：主要动作是查看附件或附件入口的邮件
+- `mime_attachment.eml`：带真实 MIME 附件、用于保护 metadata 契约的 multipart 邮件
 - `bounce.eml` 与 `postfix_bounce.eml`：投递失败和机器生成退信上下文
 - `unsubscribe_mixed.eml`：正文和退订动作并存，且退订不能压过主内容的场景
 

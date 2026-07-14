@@ -1,0 +1,22 @@
+From: Billing Team <billing@example.com>
+To: nono@example.com
+Subject: Invoice PDF attached
+Message-ID: <mime-attachment-123@example.com>
+Date: Thu, 26 Mar 2026 14:00:00 +0800
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="boundary-mixed"
+
+--boundary-mixed
+Content-Type: text/plain; charset=UTF-8
+
+Your invoice PDF is attached.
+
+--boundary-mixed
+Content-Type: application/pdf; name="invoice-2026-042.pdf"
+Content-Disposition: attachment; filename="invoice-2026-042.pdf"
+Content-ID: <invoice-pdf>
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKaW52b2ljZQolJUVPRgo=
+
+--boundary-mixed--

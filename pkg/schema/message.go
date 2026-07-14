@@ -1,14 +1,28 @@
 package schema
 
 type StandardMessage struct {
-	ID           string        `json:"id" yaml:"id"`
-	Meta         MessageMeta   `json:"meta" yaml:"meta"`
-	Content      Content       `json:"content" yaml:"content"`
-	Actions      []Action      `json:"actions,omitempty" yaml:"actions,omitempty"`
-	Codes        []Code        `json:"codes,omitempty" yaml:"codes,omitempty"`
-	ErrorContext *ErrorContext `json:"error_context,omitempty" yaml:"error_context,omitempty"`
-	Labels       []string      `json:"labels,omitempty" yaml:"labels,omitempty"`
-	TokenUsage   *TokenUsage   `json:"token_usage,omitempty" yaml:"token_usage,omitempty"`
+	ID           string              `json:"id" yaml:"id"`
+	Meta         MessageMeta         `json:"meta" yaml:"meta"`
+	Content      Content             `json:"content" yaml:"content"`
+	Actions      []Action            `json:"actions,omitempty" yaml:"actions,omitempty"`
+	Codes        []Code              `json:"codes,omitempty" yaml:"codes,omitempty"`
+	Attachments  []InboundAttachment `json:"attachments,omitempty" yaml:"attachments,omitempty"`
+	ErrorContext *ErrorContext       `json:"error_context,omitempty" yaml:"error_context,omitempty"`
+	Labels       []string            `json:"labels,omitempty" yaml:"labels,omitempty"`
+	TokenUsage   *TokenUsage         `json:"token_usage,omitempty" yaml:"token_usage,omitempty"`
+}
+
+// InboundAttachment describes one decoded MIME part without exposing its
+// contents. PartID is the stable reference within the source RFC 822 message;
+// callers must not treat Filename as a safe filesystem path.
+type InboundAttachment struct {
+	PartID      string `json:"part_id" yaml:"part_id"`
+	Filename    string `json:"filename,omitempty" yaml:"filename,omitempty"`
+	ContentType string `json:"content_type,omitempty" yaml:"content_type,omitempty"`
+	SizeBytes   int64  `json:"size_bytes" yaml:"size_bytes"`
+	Disposition string `json:"disposition,omitempty" yaml:"disposition,omitempty"`
+	ContentID   string `json:"content_id,omitempty" yaml:"content_id,omitempty"`
+	Inline      bool   `json:"inline,omitempty" yaml:"inline,omitempty"`
 }
 
 type MessageMeta struct {
